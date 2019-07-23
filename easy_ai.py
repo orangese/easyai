@@ -51,20 +51,13 @@ def load_mnist():
   (x_train, y_train), (x_test, y_test) = K.datasets.mnist.load_data()
 
   x_train = (x_train.reshape(x_train.shape[0], -1) / 255).astype("float32")
-  y_train = (K.utils.to_categorical(y_train, 10) / 255).astype("float32")
+  y_train = K.utils.to_categorical(y_train, 10).astype("float32")
 
   x_test = (x_test.reshape(x_test.shape[0], -1) / 255).astype("float32")
-  y_test = (K.utils.to_categorical(y_test, 10) / 255).astype("float32")
+  y_test = K.utils.to_categorical(y_test, 10).astype("float32")
 
   return (x_train, y_train), (x_test, y_test)
 
-test = Network([Input(784), Dense(30), Dense(10)])
+test = Network([Input(784), Dense(100), Dense(10)])
 (x_train, y_train), (x_test, y_test) = load_mnist()
-
-test2 = K.Sequential([K.layers.Dense(30, input_shape= (784, ), activation= "sigmoid"),
-                      K.layers.Dense(10, input_shape = (30, ), activation= "sigmoid")])
-
-test2.compile(K.optimizers.SGD(lr = 0.1), loss = 'mse', metrics = ["accuracy"])
-test2.fit(x_train, y_train, epochs = 60, batch_size = 10, verbose = 2)
-
 test.train(x_train, y_train)
