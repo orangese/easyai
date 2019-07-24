@@ -1,7 +1,7 @@
 
 """
 
-"easy_ai.py"
+"easyai.py" (library)
 
 Wrapper library for easy use of keras. Targeted towards those with little to no experience with Python and
 machine learning.
