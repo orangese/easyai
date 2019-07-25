@@ -8,7 +8,7 @@ Program that implements easyai.support.datasets and easyai.core in examples like
 """
 
 from easyai.core import *
-from easyai.support.datasets import *
+from easyai.support.datasets import Builtins
 
 class MNIST(Static_Interface):
 
@@ -16,7 +16,7 @@ class MNIST(Static_Interface):
   def mlp():
     """MNIST multi-layer perceptron network. One sigmoidal hidden layer of 100 neurons and MSE cost"""
     mlp = NN([Input(784), Dense(100), Dense(10)])
-    (x_train, y_train), (x_test, y_test) = load_mnist()
+    (x_train, y_train), (x_test, y_test) = Builtins.load_mnist()
     print (mlp.summary())
     mlp.train(x_train, y_train)
     mlp.evaluate(x_test, y_test)
