@@ -1,0 +1,65 @@
+
+#EasyAI
+
+EasyAI (`easyai`) is a small wrapper API for Keras. It simplifies Keras' syntax so that a person with little 
+programming experience and even less knowledge of machine learning can use it. Users should use this API as a 
+springboard from which they can start coding using advanced and capable tools.
+
+##Core principles
+
+* **Ease of use.** EasyAI was created for a very specific target audience: those who are just beginning their 
+machine learning (and coding) journeys. It is meant to emulate pseudocode as much as possible. 
+Because of its overly simple design, many features are not customizable. However, since the purpose of this API is to 
+provide a simple introduction to programming AI, a lack of functionality is acceptable.
+
+* **Ease of transition.** Ultimately, EasyAI is just an introduction to AI programming. Hopefully, EasyAI users 
+will move on to more advanced and capable machine learning libraries. Since EasyAI is built off of Keras, users will
+probably find it easiest to transition to Keras from EasyAI.
+
+##Using EasyAI
+
+As stated in the [core principles] (#core-principles), EasyAI focuses on usability and should be simple to use
+_with some background in machine learning_. Since this library is meant to be a teaching library, it does require
+a bit of background knowledge.
+
+The most basic EasyAI model is the `NN` object:
+
+```python
+
+from easyai.core import NN, Input, Dense
+
+neural_network = NN([Input(100), Dense(200), Dense(5)])
+
+```
+
+You can add and remove layers using the `add_layer` and `rm_layer` functions:
+
+```python
+
+neural_network.add_layer(Dense(200), position = 1)
+
+neural_network.rm_layer(position = 1)
+
+```
+
+Training is as easy as `neural_network.train()`:
+
+```python
+
+x_train = "your training examples here"
+y_train = "your training labels here"
+
+neural_network.train(x_train, y_train, epochs = 10)
+
+
+```
+
+Need help getting started? Run `easyai.support.examples`.
+
+```python
+
+from easyai.support.examples import MNIST
+
+mnist_mlp() #creates and runs a standard neural network on the digit classifying dataset, MNIST
+
+```
