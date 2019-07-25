@@ -43,7 +43,7 @@ Training is as easy as `neural_network.train()`:
 x_train = "your training examples here"
 y_train = "your training labels here"
 
-neural_network.train(x_train, y_train, epochs = 10)w
+neural_network.train(x_train, y_train, epochs = 10)
 
 ```
 
