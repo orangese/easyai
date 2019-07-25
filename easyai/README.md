@@ -1,26 +1,20 @@
 
-#EasyAI
+# EasyAI
 
-EasyAI (`easyai`) is a small wrapper API for Keras. It simplifies Keras' syntax so that a person with little 
-programming experience and even less knowledge of machine learning can use it. Users should use this API as a 
-springboard from which they can start coding using advanced and capable tools.
+EasyAI (`easyai`) is a small wrapper API for Keras. It simplifies Keras' syntax so that a person with little programming experience and even less knowledge of machine learning can use it. Users should use this API as a springboard from which they can start coding using advanced and capable tools.
 
-##Core principles
+## Core principles
 
 * **Ease of use.** EasyAI was created for a very specific target audience: those who are just beginning their 
-machine learning (and coding) journeys. It is meant to emulate pseudocode as much as possible. 
-Because of its overly simple design, many features are not customizable. However, since the purpose of this API is to 
-provide a simple introduction to programming AI, a lack of functionality is acceptable.
+machine learning (and coding) journeys. It is meant to emulate pseudocode as much as possible. Because of its overly simple design, many features are not customizable. However, since the purpose of this API is to provide a simple introduction to programming AI, a lack of functionality is acceptable.
 
 * **Ease of transition.** Ultimately, EasyAI is just an introduction to AI programming. Hopefully, EasyAI users 
 will move on to more advanced and capable machine learning libraries. Since EasyAI is built off of Keras, users will
 probably find it easiest to transition to Keras from EasyAI.
 
-##Using EasyAI
+## Using EasyAI
 
-As stated in the [core principles] (#core-principles), EasyAI focuses on usability and should be simple to use
-_with some background in machine learning_. Since this library is meant to be a teaching library, it does require
-a bit of background knowledge.
+As previously stated, EasyAI focuses on usability and should be simple to use _with some background in machine learning_. Since this library is meant to be a teaching library, it does require a bit of background knowledge.
 
 The most basic EasyAI model is the `NN` object:
 
