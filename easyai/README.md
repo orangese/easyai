@@ -43,8 +43,7 @@ Training is as easy as `neural_network.train()`:
 x_train = "your training examples here"
 y_train = "your training labels here"
 
-neural_network.train(x_train, y_train, epochs = 10)
-
+neural_network.train(x_train, y_train, epochs = 10)w
 
 ```
 
@@ -54,6 +53,6 @@ Need help getting started? Run `easyai.support.examples`.
 
 from easyai.support.examples import MNIST
 
-mnist_mlp() #creates and runs a standard neural network on the digit classifying dataset, MNIST
+MNIST.mlp() #creates and runs a standard neural network on the digit classifying dataset, MNIST
 
 ```
