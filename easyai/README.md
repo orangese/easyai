@@ -53,6 +53,6 @@ Need help getting started? Run `easyai.support.examples`.
 
 from easyai.support.examples import MNIST
 
-mnist_mlp() #creates and runs a standard neural network on the digit classifying dataset, MNIST
+MNIST.mlp() #creates and runs a standard neural network on the digit classifying dataset, MNIST
 
 ```
