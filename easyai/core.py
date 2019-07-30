@@ -9,10 +9,9 @@ machine learning.
 """
 
 import keras as K
-from typing import Union
 from time import time
 
-# Support for other programs
+# SUPPORT
 class Static_Interface(object):
   """Static interface for other programs. An object of this class cannot be created."""
 
@@ -34,11 +33,11 @@ class Error_Handling(Static_Interface):
     import tensorflow as tf
     tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
-# Core layers
+# CORE LAYERS
 class Abstract_Layer(Static_Interface):
   """Abstract class that acts as the base for all layer classes. Should not be implemented"""
 
-  def __init__(self, num_neurons: int, actv: str):
+  def __init__(self, num_neurons, actv):
     """As Abstract_Layer objects should not be created, __init__ throws a NotImplementedError.
 
     :raises NotImplementedError
@@ -70,7 +69,7 @@ class Abstract_Layer(Static_Interface):
 class Input(Abstract_Layer):
   """MLP input layer with no activation, bias, or weights of its own. [advanced] No Keras mask."""
 
-  def __init__(self, neurons: Union[int, tuple]):
+  def __init__(self, neurons):
     """
     Initializes Input object. Please flatten data before using this object.
 
@@ -94,7 +93,7 @@ class Input(Abstract_Layer):
 class Dense(Abstract_Layer):
   """MLP layer (aka a dense layer). [advanced] Has a Keras mask."""
 
-  def __init__(self, num_neurons: int, actv = "sigmoid"):
+  def __init__(self, num_neurons, actv = "sigmoid"):
     """
     Initializes Dense object.
 
@@ -114,11 +113,11 @@ class Dense(Abstract_Layer):
       self.k_mask = K.layers.Dense(units = self.num_neurons, activation = self.actv,
                                    input_shape = (self.prev.num_neurons, ),)
 
-# Conv net layers
+# CONV NET LAYERS
 class Conv(Abstract_Layer):
   """Convolutional layer. [advanced] Has a Keras mask, stride = 1, padding = "valid"."""
 
-  def __init__(self, filter_size: tuple, num_filters: int, actv = "sigmoid"):
+  def __init__(self, filter_size, num_filters, actv = "sigmoid"):
     """
     Initializes Conv object. [advanced] No padding and a stride of 1 is assumed.
 
@@ -152,7 +151,7 @@ class Conv(Abstract_Layer):
 
 class Pooling(Abstract_Layer):
 
-  def __init__(self, pool_size: tuple):
+  def __init__(self, pool_size):
     """
     Initializes Pooling object. [advanced] Only max pooling is implemented, stride = None.
 
@@ -174,10 +173,11 @@ class Pooling(Abstract_Layer):
     else:
       self.k_mask = K.layers.MaxPool2D(pool_size = self.pool_size)
 
+# NEURAL NETWORK IMPLEMENTATION
 class NN(object):
   """Uses easyai layer objects to create a functional keras model."""
 
-  def __init__(self, layers: list = None, cost = "categorical_crossentropy"):
+  def __init__(self, layers = None, cost = "binary_crossentropy"):
     """
     Initializes NN (neural network) object.
 
@@ -290,8 +290,3 @@ class NN(object):
       result += "Advanced: \n"
       result += "    1. Cost function: {0}\n".format(self.cost)
     return result
-
-if __name__ == "__main__":
-  Error_Handling.suppress_tf_warnings()
-  test = NN([Input((28, 28)), Conv((5, 5), 3), Pooling((2, 2)), Dense(100), Dense(10)])
-  print (test.summary(True))
