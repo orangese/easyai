@@ -7,42 +7,74 @@ Program that implements easyai.support.datasets and easyai.core in examples like
 
 """
 
-from tkinter import *
-from PIL import Image, ImageDraw
-import numpy as np
 from easyai.core import *
-from easyai.support.datasets import Builtins
+from easyai.support.datasets import *
 
+# CLASSES
 class MNIST(Static_Interface):
+  """Contains examples using MNIST and Fashion-MNIST datasets."""
+
+  @staticmethod
+  def mlp(version = "digits"):
+    """MNIST multi-layer perceptron network.
+
+    :param version: "digits" for MNIST dataset or "fashion" for Fashion-MNIST dataset.
+    """
+    Error_Handling.suppress_tf_warnings()
+
+    (x_train, y_train), (x_test, y_test) = Builtins.load_mnist(version = version, mode = "mlp")
+
+    mlp = NN([Input(784), Dense(100), Dense(10, actv = "softmax")], cost = "categorical_crossentropy")
+    print (mlp.summary())
+
+    mlp.train(x_train, y_train, lr = 3.0, epochs = 60)
+    mlp.evaluate(x_test, y_test)
+
+  @staticmethod
+  def cnn(version = "digits"):
+    """MNIST convolutional network.
+
+    :param version: "digits" for MNIST dataset or "fashion" for Fashion-MNIST dataset.
+    """
+    Error_Handling.suppress_tf_warnings()
+
+    (x_train, y_train), (x_test, y_test) = Builtins.load_mnist(version = version, mode = "conv")
+
+    conv_nn = NN([Input((28, 28)), Conv((5, 5), 20), Pooling((2, 2)), Dense(100), Dense(10, actv = "softmax")],
+                 cost = "categorical_crossentropy")
+    print (conv_nn.summary())
+
+    conv_nn.train(x_train, y_train, lr = 0.1, epochs = 60)
+    conv_nn.evaluate(x_test, y_test)
+
+class Lending_Club(Static_Interface):
+  """Contains examples using LendingClub credit rating dataset."""
 
   @staticmethod
   def mlp():
-    """MNIST multi-layer perceptron network."""
+    """LendingClub MLP."""
     Error_Handling.suppress_tf_warnings()
 
-    (x_train, y_train), (x_test, y_test) = Builtins.load_mnist(mode = "mlp")
+    (x_train, y_train), (x_test, y_test) = Extras.load_lending_club()
 
-    mlp = NN([Input(784), Dense(100), Dense(10)])
+    mlp = NN([Input(9), Dense(200, actv = "relu"), Dense(200, actv = "relu"), Dense(7, actv = "softmax")],
+             cost = "categorical_crossentropy")
     print (mlp.summary())
 
-    mlp.train(x_train, y_train, lr = 3.0)
+    mlp.train(x_train, y_train, lr = 0.01, epochs = 50)
     mlp.evaluate(x_test, y_test)
 
-  @staticmethod
-  def cnn():
-    """MNIST convolutional network."""
-    Error_Handling.suppress_tf_warnings()
-    (x_train, y_train), (x_test, y_test) = Builtins.load_mnist(mode = "conv")
+#--BELOW NOT SUPPORTED--
+from tkinter import *
+from PIL import Image, ImageDraw
+import PIL
+import numpy as np
 
-    mlp = NN([Input((28, 28)), Conv((5, 5), 20), Pooling((2, 2)), Dense(100), Dense(10)])
-    print (mlp.summary())
+class Unsupported(Static_Interface):
 
-    mlp.train(x_train, y_train, lr = 0.1)
-    mlp.evaluate(x_test, y_test)
-
-  """--BELOW NOT SUPPORTED--"""
   @staticmethod
   def draw(fileName):
+
     width = 200
     height = 200
     white = (255, 255, 255)
@@ -72,3 +104,5 @@ class MNIST(Static_Interface):
     img = img.resize((28, 28))
     img = np.take(np.asarray(img), [0], axis=2).reshape(28, 28)
     return np.abs(img - 255)
+
+MNIST.cnn()
