@@ -9,121 +9,289 @@ machine learning.
 """
 
 import keras as K
+from typing import Union
 from time import time
 
-#Support for other programs
+# Support for other programs
 class Static_Interface(object):
+  """Static interface for other programs. An object of this class cannot be created."""
 
   def __init__(self):
-    raise ValueError("class is static")
+    """As Static_Interface objects should not be created, __init__ throws a NotImplementedError.
 
-#NN classes
-class Abstract_Layer(object):
+    :raises NotImplementedError
+    """
+    raise NotImplementedError("class is static")
 
-  def __init__(self, num_neurons, actv):
+class Error_Handling(Static_Interface):
+  """Class for any functions that do not fit in other classes."""
+
+  @staticmethod
+  def suppress_tf_warnings():
+    """Suppresses tensorflow warnings."""
+    import os
+    os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+    import tensorflow as tf
+    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+
+# Core layers
+class Abstract_Layer(Static_Interface):
+  """Abstract class that acts as the base for all layer classes. Should not be implemented"""
+
+  def __init__(self, num_neurons: int, actv: str):
+    """As Abstract_Layer objects should not be created, __init__ throws a NotImplementedError.
+
+    :raises NotImplementedError
+    """
     self.num_neurons = num_neurons
     self.actv = actv
-    raise ValueError("abstract class should not be implemented")
+    self.prev = None
+    self.k_mask = None
+    raise NotImplementedError("abstract class should not be implemented")
 
   def __str__(self):
-    try: return "{0} {1} layer: {2} neurons".format(self.__class__.__name__, self.actv, self.num_neurons)
-    except AttributeError: return "{0} layer: {1} neurons".format(self.__class__.__name__, self.num_neurons)
+    try:
+      return "{0} {1} layer: {2} neurons".format(self.__class__.__name__, self.actv, self.num_neurons)
+    except AttributeError:
+      return "{0} layer: {1} neurons".format(self.__class__.__name__, self.num_neurons)
 
   def __repr__(self):
     return self.__str__()
 
-class Input(Abstract_Layer):
-  """input layer, no keras mask"""
+  def update_mask(self):
+    """
+    [advanced] Creates Keras mask. This mask will be used for training and all computations.
 
-  def __init__(self, num_neurons):
-    self.num_neurons = num_neurons
+    :raises AssertionError if self.prev is not initialized.
+    """
+    assert self.prev, "self.prev must be initialized"
+    raise NotImplementedError("cannot be implemented. How did you even call this function?")
+
+class Input(Abstract_Layer):
+  """MLP input layer with no activation, bias, or weights of its own. [advanced] No Keras mask."""
+
+  def __init__(self, neurons: Union[int, tuple]):
+    """
+    Initializes Input object. Please flatten data before using this object.
+
+    :param neurons: int or tuple of ints, number of neurons in input layer. Should be of type int if NN is MLP;
+                    if NN is ConvNN, it should be a tuple of ints in the format (num_cols, num_rows, num_channels)
+                    or (num_cols, num_rows) if num_channels == 1.
+    """
+    self.num_neurons = neurons
+    if isinstance(self.num_neurons, tuple):
+      if len(self.num_neurons) == 2:
+        self.is_3d = False
+        self.num_neurons = (*self.num_neurons, 1) # if user only gives two dimensions, assume num_channels = 1
+      else:
+        self.is_3d = True
+      if K.backend.image_data_format() == "channels_first":
+        self.num_neurons = reversed(self.num_neurons)
+    else:
+      self.is_3d = False
+    self.k_mask = None # just to be explicit
 
 class Dense(Abstract_Layer):
-  """wrapper for keras' Dense class"""
+  """MLP layer (aka a dense layer). [advanced] Has a Keras mask."""
 
-  def __init__(self, num_neurons, actv = "sigmoid", prev = None):
+  def __init__(self, num_neurons: int, actv = "sigmoid"):
+    """
+    Initializes Dense object.
+
+    :param num_neurons: int, number of neurons in this layer.
+    :param actv: str, activation function of this layer. Default is sigmoid.
+    """
     self.num_neurons = num_neurons
     self.actv = actv
-    self.prev = prev
+    self.prev = None # previous layer-- used to link layers together to create keras sequential object in NN
     self.k_mask = None
 
   def update_mask(self):
-    self.k_mask = K.layers.Dense(units = self.num_neurons, input_shape = (self.prev.num_neurons, ),
-                                 activation = self.actv)
+    assert self.prev, "self.prev must be initialized"
+    if hasattr(self.prev, "is_3d") and not isinstance(self.prev, Input):
+      self.k_mask = [K.layers.Flatten(), K.layers.Dense(units = self.num_neurons, activation = self.actv)]
+    else:
+      self.k_mask = K.layers.Dense(units = self.num_neurons, activation = self.actv,
+                                   input_shape = (self.prev.num_neurons, ),)
+
+# Conv net layers
+class Conv(Abstract_Layer):
+  """Convolutional layer. [advanced] Has a Keras mask, stride = 1, padding = "valid"."""
+
+  def __init__(self, filter_size: tuple, num_filters: int, actv = "sigmoid"):
+    """
+    Initializes Conv object. [advanced] No padding and a stride of 1 is assumed.
+
+    :param filter_size: tuple of integers, size of the local receptive field (filter).
+    :param num_filters: int, number of filters used. Other sources call this parameter "number of feature maps".
+    :param actv: str, activation function of this layer. Default is sigmoid.
+    """
+    self.filter_size = filter_size
+    self.num_filters = num_filters
+    self.actv = actv
+    self.prev = None
+    self.k_mask = None
+    self.is_3d = False # default, will be changed in update_mask
+
+  def __str__(self):
+    return "Conv {0} layer: {1} filters, filter size of {2}".format(self.actv, self.num_filters, self.filter_size)
+
+  def __repr__(self):
+    return self.__str__()
+
+  def update_mask(self):
+    assert self.prev, "self.prev must be initialized"
+    self.is_3d = self.prev.is_3d
+    if self.is_3d:
+      self.k_mask = K.layers.Conv3D(filters = self.num_filters, kernel_size = self.filter_size,
+                                    activation = self.actv, input_shape = self.prev.num_neurons)
+
+    else:
+      self.k_mask = K.layers.Conv2D(filters = self.num_filters, kernel_size = self.filter_size,
+                                    activation = self.actv, input_shape = self.prev.num_neurons)
+
+class Pooling(Abstract_Layer):
+
+  def __init__(self, pool_size: tuple):
+    """
+    Initializes Pooling object. [advanced] Only max pooling is implemented, stride = None.
+
+    :param pool_size: size of pool.
+    """
+    self.pool_size = pool_size
+    self.prev = None
+    self.k_mask = None
+    self.is_3d = False # default, will be changed in other functions
+
+  def __str__(self):
+    return "(Max) pooling layer: pool size of {0}".format(self.pool_size)
+
+  def update_mask(self):
+    assert self.prev, "self.prev must be initialized"
+    self.is_3d = self.prev.is_3d
+    if self.is_3d:
+      self.k_mask = K.layers.MaxPool3D(pool_size = self.pool_size)
+    else:
+      self.k_mask = K.layers.MaxPool2D(pool_size = self.pool_size)
 
 class NN(object):
-  """uses wrapper classes to create a functional network-- wrapper for Sequential"""
+  """Uses easyai layer objects to create a functional keras model."""
 
-  def __init__(self, layers = [], cost = "mse"):
+  def __init__(self, layers: list = None, cost = "categorical_crossentropy"):
+    """
+    Initializes NN (neural network) object.
+
+    :param layers: list, layers of the network. Expects easyai core layer objects.
+    :param cost: str, [advanced feature] cost used by the neural network. Default is categorical_crossentropy.
+    """
+    if layers is None:
+      layers = []
     self.layers = tuple(layers)
-    self.cost = cost
     self.link_layers()
+
+    self.cost = cost
     self.is_trained = False
 
-  def __setattr__(self, name, value):
-    """tweaked so that only the layer/model attributes can be changed"""
-    if hasattr(self, name) and not (name in "k_model, k_layers, layer, is_trained"):
-      raise ValueError("cannot modify attribute {0}".format(name))
-    super().__setattr__(name, value)
-    if name == "layers": self.link_layers()
-
   def link_layers(self):
-    """links wrapper objects and creates a wrapper keras Sequential object"""
+    """[advanced] Links wrapper objects and creates a wrapper keras Sequential object."""
     self.k_layers = []
     for prev, layer in zip(self.layers, self.layers[1:]):
       layer.prev = prev
       layer.update_mask()
-      self.k_layers.append(layer.k_mask)
+      if isinstance(layer.k_mask, list):
+        for mask in layer.k_mask:
+          self.k_layers.append(mask)
+      else:
+        self.k_layers.append(layer.k_mask)
     self.k_model = K.Sequential(self.k_layers)
 
   def add_layer(self, layer, position = None):
-    """adds a layer"""
+    """Adds a layer and creates a new keras object.
+
+    :param layer: core layer object, layer to be added. Should be instance of easyai core layer classes.
+    :param position: int, position at which to insert new layer. Uses Python's list "insert".
+    """
     new_layers = list(self.layers)
-    if not position: position = len(self.layers)
+    if not position:
+      position = len(self.layers)
     new_layers.insert(position, layer)
-    self.layers = new_layers
+    self.__init__(new_layers)
 
   def rm_layer(self, position = None, layer = None):
-    """removes a layer"""
+    """Removes a layer and creates a new keras object.
+
+    :param position: int, position at which layer should be removed. Recommended instead of `layer`.
+    :param layer: core layer object, layer that should be removed. Not recommended due to possible duplicate layers.
+    """
     assert position or layer, "position or layer arguments must be provided"
     new_layers = list(self.layers)
-    if layer: new_layers.remove(layer)
-    elif position: del new_layers[position]
-    self.layers = new_layers
+    if layer:
+      new_layers.remove(layer)
+    elif position:
+      del new_layers[position]
+    self.__init__(new_layers)
 
-  def train(self, x, y, lr = 3.0, epochs = 1, batch_size = 10):
-    """trains and compiles k_model-- simplified version of keras' compile and fit"""
+  def train(self, x, y, lr = 0.1, epochs = 1, batch_size = 10):
+    """Trains and compiles this NN object. [advanced] Only SGD is used.
+
+    :param x: numpy array, input data. For example, if classifying an image, `x` would the pixel vectors.
+    :param y: numpy array, labels. For example, if classifying an image, `y` would be the image labels.
+    [advanced] The `y` data should be comprised of one-hot encodings.
+    :param lr: float, [advanced] learning rate used in SGD. Default is 3.0.
+    :param epochs: int, number of epochs. Default is 1.
+    :param batch_size: int, [advanced] minibatch size. Default is 10.
+    """
     optimizer = K.optimizers.SGD(lr = lr)
-    metrics = ["categorical_accuracy"] if self.layers[-1].num_neurons != 1 else ["binary_accuracy"]
+    metrics = ["categorical_accuracy"] if self.layers[-1].num_neurons > 2 else ["binary_accuracy"]
+    # fixes weird keras feature in which "accuracy" metric causes unexpected results if using "binary_crossentropy"
     self.k_model.compile(optimizer = optimizer, loss = self.cost, metrics = metrics)
     self.k_model.fit(x, y, epochs = epochs, batch_size = batch_size, validation_split = 0.2, verbose = 2)
     self.is_trained = True
 
   def evaluate(self, x, y, verbose = True):
-    """wrapper for Sequential evaluate"""
+    """Evaluates this NN object using test data.
+
+    :param x: numpy array, inputs. See train documentation for more information.
+    :param y: numpy array, labels. See train documentation for more information.
+    :param verbose: bool, if true, this function gives more information about the evaluation process.
+    :returns: list, evaluation.
+    """
     start = time()
     evaluation = self.k_model.evaluate(x, y, verbose = 2)
     result = "Test evaluation\n - {0}s".format(round(time() - start))
     for name, evaluation in zip(self.k_model.metrics_names, evaluation):
       result += (" - test_{0}: {1}".format(name, round(evaluation, 4)))
-    if verbose: print (result)
+    if verbose:
+      print (result)
     return evaluation
 
   def predict(self, x):
-    """wrapper for Sequential predict"""
+    """Predicts the labels given input data.
+
+    :param x: numpy array, input data.
+    :returns: numpy array, prediction.
+    """
     return self.k_model.predict(x)
 
   def summary(self, advanced = False):
-    """beginner-oriented version of keras' model.summary()"""
-    result = "Layers: \n"
+    """
+    Summary of model.
+
+    :param advanced: bool, if true, print advanced information.
+    :return: str, summary of this NN object.
+    """
+    alphabet = list(map(chr, range(97, 123)))
+    result = "Network summary: \n"
+    result += "  1. Layers: \n"
     for layer in self.layers:
-      result += "  {0}. {1}\n".format(self.layers.index(layer) + 1, layer)
-    result += "Trained: {0}\n".format(self.is_trained)
+      result += "    {0}. {1}\n".format(alphabet[self.layers.index(layer)], layer)
+    result += "  2. Trained: {0}\n".format(self.is_trained)
     if advanced and self.is_trained:
       result += "Advanced: \n"
-      result += "  1. Cost function: {0}\n".format(self.cost)
+      result += "    1. Cost function: {0}\n".format(self.cost)
     return result
 
 if __name__ == "__main__":
-  test = NN([Input(784), Dense(100), Dense(10)])
+  Error_Handling.suppress_tf_warnings()
+  test = NN([Input((28, 28)), Conv((5, 5), 3), Pooling((2, 2)), Dense(100), Dense(10)])
   print (test.summary(True))
