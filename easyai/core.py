@@ -9,7 +9,9 @@ machine learning.
 """
 
 import keras as K
+import numpy as np
 from time import time
+from typing import Union
 
 # SUPPORT
 class Static_Interface(object):
@@ -23,7 +25,7 @@ class Static_Interface(object):
     raise NotImplementedError("class is static")
 
 class Error_Handling(Static_Interface):
-  """Class for any functions that do not fit in other classes."""
+  """Static class for error handling."""
 
   @staticmethod
   def suppress_tf_warnings():
@@ -69,11 +71,11 @@ class Abstract_Layer(Static_Interface):
 class Input(Abstract_Layer):
   """MLP input layer with no activation, bias, or weights of its own. [advanced] No Keras mask."""
 
-  def __init__(self, neurons):
+  def __init__(self, neurons: Union[int, tuple]):
     """
     Initializes Input object. Please flatten data before using this object.
 
-    :param neurons: int or tuple of ints, number of neurons in input layer. Should be of type int if NN is MLP;
+    :param neurons: number of neurons in input layer. Should be of type int if NN is MLP;
                     if NN is ConvNN, it should be a tuple of ints in the format (num_cols, num_rows, num_channels)
                     or (num_cols, num_rows) if num_channels == 1.
     """
@@ -93,12 +95,12 @@ class Input(Abstract_Layer):
 class Dense(Abstract_Layer):
   """MLP layer (aka a dense layer). [advanced] Has a Keras mask."""
 
-  def __init__(self, num_neurons, actv = "sigmoid"):
+  def __init__(self, num_neurons: int , actv: str = "sigmoid"):
     """
     Initializes Dense object.
 
-    :param num_neurons: int, number of neurons in this layer.
-    :param actv: str, activation function of this layer. Default is sigmoid.
+    :param num_neurons: number of neurons in this layer.
+    :param actv: activation function of this layer. Default is sigmoid.
     """
     self.num_neurons = num_neurons
     self.actv = actv
@@ -117,13 +119,13 @@ class Dense(Abstract_Layer):
 class Conv(Abstract_Layer):
   """Convolutional layer. [advanced] Has a Keras mask, stride = 1, padding = "valid"."""
 
-  def __init__(self, filter_size, num_filters, actv = "sigmoid"):
+  def __init__(self, filter_size: tuple, num_filters: int, actv: str = "sigmoid"):
     """
     Initializes Conv object. [advanced] No padding and a stride of 1 is assumed.
 
-    :param filter_size: tuple of integers, size of the local receptive field (filter).
-    :param num_filters: int, number of filters used. Other sources call this parameter "number of feature maps".
-    :param actv: str, activation function of this layer. Default is sigmoid.
+    :param filter_size: size of the local receptive field (filter).
+    :param num_filters: number of filters used. Other sources call this parameter "number of feature maps".
+    :param actv: activation function of this layer. Default is sigmoid.
     """
     self.filter_size = filter_size
     self.num_filters = num_filters
@@ -151,7 +153,7 @@ class Conv(Abstract_Layer):
 
 class Pooling(Abstract_Layer):
 
-  def __init__(self, pool_size):
+  def __init__(self, pool_size: tuple):
     """
     Initializes Pooling object. [advanced] Only max pooling is implemented, stride = None.
 
@@ -177,12 +179,12 @@ class Pooling(Abstract_Layer):
 class NN(object):
   """Uses easyai layer objects to create a functional keras model."""
 
-  def __init__(self, layers = None, cost = "binary_crossentropy"):
+  def __init__(self, layers: list = None, cost: str = "binary_crossentropy"):
     """
     Initializes NN (neural network) object.
 
-    :param layers: list, layers of the network. Expects easyai core layer objects.
-    :param cost: str, [advanced feature] cost used by the neural network. Default is categorical_crossentropy.
+    :param layers: layers of the network. Expects easyai core layer objects.
+    :param cost: [advanced feature] cost used by the neural network. Default is categorical_crossentropy.
     """
     if layers is None:
       layers = []
@@ -205,11 +207,11 @@ class NN(object):
         self.k_layers.append(layer.k_mask)
     self.k_model = K.Sequential(self.k_layers)
 
-  def add_layer(self, layer, position = None):
+  def add_layer(self, layer: Abstract_Layer, position: int = None):
     """Adds a layer and creates a new keras object.
 
-    :param layer: core layer object, layer to be added. Should be instance of easyai core layer classes.
-    :param position: int, position at which to insert new layer. Uses Python's list "insert".
+    :param layer: layer to be added. Should be instance of easyai core layer classes.
+    :param position: position at which to insert new layer. Uses Python's list "insert".
     """
     new_layers = list(self.layers)
     if not position:
@@ -217,11 +219,11 @@ class NN(object):
     new_layers.insert(position, layer)
     self.__init__(new_layers)
 
-  def rm_layer(self, position = None, layer = None):
+  def rm_layer(self, position: int = None, layer: Abstract_Layer = None):
     """Removes a layer and creates a new keras object.
 
-    :param position: int, position at which layer should be removed. Recommended instead of `layer`.
-    :param layer: core layer object, layer that should be removed. Not recommended due to possible duplicate layers.
+    :param position: position at which layer should be removed. Recommended instead of `layer`.
+    :param layer: layer that should be removed. Not recommended due to possible duplicate layers.
     """
     assert position or layer, "position or layer arguments must be provided"
     new_layers = list(self.layers)
@@ -231,15 +233,15 @@ class NN(object):
       del new_layers[position]
     self.__init__(new_layers)
 
-  def train(self, x, y, lr = 0.1, epochs = 1, batch_size = 10):
+  def train(self, x: np.array, y: np.array, lr: float = 0.1, epochs: int = 1, batch_size: int = 10):
     """Trains and compiles this NN object. [advanced] Only SGD is used.
 
-    :param x: numpy array, input data. For example, if classifying an image, `x` would the pixel vectors.
-    :param y: numpy array, labels. For example, if classifying an image, `y` would be the image labels.
+    :param x: input data. For example, if classifying an image, `x` would the pixel vectors.
+    :param y: labels. For example, if classifying an image, `y` would be the image labels.
     [advanced] The `y` data should be comprised of one-hot encodings.
-    :param lr: float, [advanced] learning rate used in SGD. Default is 3.0.
-    :param epochs: int, number of epochs. Default is 1.
-    :param batch_size: int, [advanced] minibatch size. Default is 10.
+    :param lr: [advanced] learning rate used in SGD. Default is 3.0.
+    :param epochs: number of epochs. Default is 1.
+    :param batch_size: [advanced] minibatch size. Default is 10.
     """
     optimizer = K.optimizers.SGD(lr = lr)
     metrics = ["categorical_accuracy"] if self.layers[-1].num_neurons > 2 else ["binary_accuracy"]
@@ -248,13 +250,13 @@ class NN(object):
     self.k_model.fit(x, y, epochs = epochs, batch_size = batch_size, validation_split = 0.2, verbose = 2)
     self.is_trained = True
 
-  def evaluate(self, x, y, verbose = True):
+  def evaluate(self, x: np.array, y: np.array, verbose: bool = True):
     """Evaluates this NN object using test data.
 
-    :param x: numpy array, inputs. See train documentation for more information.
-    :param y: numpy array, labels. See train documentation for more information.
-    :param verbose: bool, if true, this function gives more information about the evaluation process.
-    :returns: list, evaluation.
+    :param x: inputs. See train documentation for more information.
+    :param y: labels. See train documentation for more information.
+    :param verbose: if true, this function gives more information about the evaluation process.
+    :returns: evaluation (list).
     """
     start = time()
     evaluation = self.k_model.evaluate(x, y, verbose = 2)
@@ -265,20 +267,20 @@ class NN(object):
       print (result)
     return evaluation
 
-  def predict(self, x):
+  def predict(self, x: np.array):
     """Predicts the labels given input data.
 
-    :param x: numpy array, input data.
-    :returns: numpy array, prediction.
+    :param x: input data.
+    :returns: prediction (numpy array).
     """
     return self.k_model.predict(x)
 
-  def summary(self, advanced = False):
+  def summary(self, advanced: bool = False):
     """
     Summary of model.
 
-    :param advanced: bool, if true, print advanced information.
-    :return: str, summary of this NN object.
+    :param advanced: if true, print advanced information.
+    :return: summary of this NN object (str).
     """
     alphabet = list(map(chr, range(97, 123)))
     result = "Network summary: \n"

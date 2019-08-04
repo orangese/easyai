@@ -18,13 +18,13 @@ class Builtins(Static_Interface):
   CIFAR-10, CIFAR-100, Boston housing, IMDB, Reuters."""
 
   @staticmethod
-  def load_mnist(version = "digits", mode = "mlp"):
+  def load_mnist(version: str = "digits", mode: str = "mlp"):
     """
     Loads MNIST or Fashion-MNIST data. These two datasets are combined into one method because they are so similar.
 
     :param version: either "digits" for regular MNIST or "fashion" for Fashion-MNIST.
     :param mode: either "mlp" or "conv".
-    :return: two tuples-- (x_train, y_train) and (x_test, y_test).
+    :return: two tuples: (x_train, y_train) and (x_test, y_test).
     """
     assert version == "digits" or version == "fashion", "only MNIST or Fashion-MNIST are available"
 
@@ -57,12 +57,12 @@ class Builtins(Static_Interface):
     return (x_train, y_train), (x_test, y_test)
 
   @staticmethod
-  def load_cifar(version):
+  def load_cifar(version: int):
     """
     Loads CIFAR-10 or CIFAR-100 data.
 
     :param version: either 10 for CIFAR-10 or 100 for CIFAR-100
-    :return: two tuples-- (x_train, y_train) and (x_test, y_test).
+    :return: two tuples: (x_train, y_train) and (x_test, y_test).
     """
     assert version == 10 or version == 100, "only CIFAR-10 and CIFAR-100 are available"
 
@@ -96,7 +96,10 @@ class Extras(Static_Interface):
 
   @staticmethod
   def load_lending_club():
-    """Loads LendingClub credit rating dataset."""
+    """Loads LendingClub credit rating dataset.
+
+    :return: two tuples: (x_train, y_train) and (x_test, y_test).
+    """
     globals_ = {}
 
     def sigmoid_normalize(raw_array, range_ = None):
@@ -218,6 +221,4 @@ class Extras(Static_Interface):
 
       return (big_data[0][:num_train], big_data[1][:num_train]), (big_data[0][num_train:], big_data[1][num_train:])
 
-    return  load_data("/Users/Ryan/PycharmProjects/millburn-ai/easyai/support/raw_datasets/lending_club_dataset.xlsx")
-
-    return (x_train, y_train), (x_test, y_test)
+    return load_data("/Users/Ryan/PycharmProjects/millburn-ai/easyai/support/raw_datasets/lending_club_dataset.xlsx")
