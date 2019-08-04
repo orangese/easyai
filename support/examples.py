@@ -15,7 +15,7 @@ class MNIST(Static_Interface):
   """Contains examples using MNIST and Fashion-MNIST datasets."""
 
   @staticmethod
-  def mlp(version: str = "digits"):
+  def mlp(version: str = "digits") -> list:
     """MNIST multi-layer perceptron network.
 
     :param version: "digits" for MNIST dataset or "fashion" for Fashion-MNIST dataset.
@@ -33,7 +33,7 @@ class MNIST(Static_Interface):
     return mlp.evaluate(x_test, y_test)
 
   @staticmethod
-  def cnn(version: str = "digits"):
+  def cnn(version: str = "digits") -> list:
     """MNIST convolutional network.
 
     :param version: "digits" for MNIST dataset or "fashion" for Fashion-MNIST dataset.
@@ -55,7 +55,7 @@ class Lending_Club(Static_Interface):
   """Contains examples using LendingClub credit rating dataset."""
 
   @staticmethod
-  def mlp():
+  def mlp() -> list:
     """LendingClub MLP.
 
     :returns result of mlp.evaluate(x_test, y_test)

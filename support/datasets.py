@@ -18,7 +18,7 @@ class Builtins(Static_Interface):
   CIFAR-10, CIFAR-100, Boston housing, IMDB, Reuters."""
 
   @staticmethod
-  def load_mnist(version: str = "digits", mode: str = "mlp"):
+  def load_mnist(version: str = "digits", mode: str = "mlp") -> tuple:
     """
     Loads MNIST or Fashion-MNIST data. These two datasets are combined into one method because they are so similar.
 
@@ -57,7 +57,7 @@ class Builtins(Static_Interface):
     return (x_train, y_train), (x_test, y_test)
 
   @staticmethod
-  def load_cifar(version: int):
+  def load_cifar(version: int) -> tuple:
     """
     Loads CIFAR-10 or CIFAR-100 data.
 
@@ -95,7 +95,7 @@ class Extras(Static_Interface):
   datasets. These include: LendingClub (credit rating) dataset."""
 
   @staticmethod
-  def load_lending_club():
+  def load_lending_club() -> tuple:
     """Loads LendingClub credit rating dataset.
 
     :return: two tuples: (x_train, y_train) and (x_test, y_test).

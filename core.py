@@ -39,7 +39,7 @@ class Error_Handling(Static_Interface):
 class Abstract_Layer(Static_Interface):
   """Abstract class that acts as the base for all layer classes. Should not be implemented"""
 
-  def __init__(self, num_neurons, actv):
+  def __init__(self, num_neurons: int , actv: str):
     """As Abstract_Layer objects should not be created, __init__ throws a NotImplementedError.
 
     :raises NotImplementedError
@@ -250,13 +250,13 @@ class NN(object):
     self.k_model.fit(x, y, epochs = epochs, batch_size = batch_size, validation_split = 0.2, verbose = 2)
     self.is_trained = True
 
-  def evaluate(self, x: np.array, y: np.array, verbose: bool = True):
+  def evaluate(self, x: np.array, y: np.array, verbose: bool = True) -> list:
     """Evaluates this NN object using test data.
 
     :param x: inputs. See train documentation for more information.
     :param y: labels. See train documentation for more information.
     :param verbose: if true, this function gives more information about the evaluation process.
-    :returns: evaluation (list).
+    :returns: evaluation.
     """
     start = time()
     evaluation = self.k_model.evaluate(x, y, verbose = 2)
@@ -267,20 +267,20 @@ class NN(object):
       print (result)
     return evaluation
 
-  def predict(self, x: np.array):
+  def predict(self, x: np.array) -> np.array:
     """Predicts the labels given input data.
 
     :param x: input data.
-    :returns: prediction (numpy array).
+    :returns: prediction.
     """
     return self.k_model.predict(x)
 
-  def summary(self, advanced: bool = False):
+  def summary(self, advanced: bool = False) -> str:
     """
     Summary of model.
 
     :param advanced: if true, print advanced information.
-    :return: summary of this NN object (str).
+    :return: summary of this NN object.
     """
     alphabet = list(map(chr, range(97, 123)))
     result = "Network summary: \n"
