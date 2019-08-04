@@ -47,7 +47,7 @@ neural_network.train(x_train, y_train, epochs = 10)
 
 ```
 
-Need help getting started? Run `easyai.support.examples`.
+Need help getting started? Run `easyai.support.examples`:
 
 ```python
 

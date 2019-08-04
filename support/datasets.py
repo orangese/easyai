@@ -10,7 +10,7 @@ Program that implements easyai.core and provides wrapper for keras data loaders.
 import keras as K
 import pandas as pd
 import numpy as np
-from easyai.core import Static_Interface
+from core import Static_Interface
 
 # CLASSES
 class Builtins(Static_Interface):

@@ -7,8 +7,8 @@ Program that implements easyai.support.datasets and easyai.core in examples like
 
 """
 
-from easyai.core import *
-from easyai.support.datasets import *
+from core import *
+from support.datasets import *
 
 # CLASSES
 class MNIST(Static_Interface):
