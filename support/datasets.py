@@ -221,4 +221,4 @@ class Extras(Static_Interface):
 
       return (big_data[0][:num_train], big_data[1][:num_train]), (big_data[0][num_train:], big_data[1][num_train:])
 
-    return load_data("/Users/Ryan/PycharmProjects/millburn-ai/easyai/support/raw_datasets/lending_club_dataset.xlsx")
+    return load_data("/Users/Ryan/PycharmProjects/easyai/easyai/support/raw_datasets/lending_club_dataset.xlsx")
