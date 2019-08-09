@@ -292,3 +292,11 @@ class NN(object):
       result += "Advanced: \n"
       result += "    1. Cost function: {0}\n".format(self.cost)
     return result
+
+  def save(self, filename: str):
+    """
+    Saves self as hdf5 file.
+
+    :param filename: hdf5 file to save to.
+    """
+    self.k_model.save(filename)
