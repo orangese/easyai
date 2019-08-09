@@ -24,7 +24,7 @@ class MNIST(Static_Interface):
     Error_Handling.suppress_tf_warnings()
 
     (x_train, y_train), (x_test, y_test) = Builtins.load_mnist(version = version, mode = "mlp")
-    print ("Loaded MNIST data")
+    print ("Loaded MNIST data\n")
 
     mlp = NN([Input(784), Dense(100), Dense(10, actv = "softmax")], cost = "categorical_crossentropy")
     print (mlp.summary())
@@ -49,6 +49,8 @@ class MNIST(Static_Interface):
     print (conv_nn.summary())
 
     conv_nn.train(x_train, y_train, lr = 0.1, epochs = 60)
+
+    conv_nn.save("model.h5")
     return conv_nn.evaluate(x_test, y_test)
 
 class Lending_Club(Static_Interface):
@@ -113,4 +115,4 @@ class Lending_Club(Static_Interface):
 #     img = np.take(np.asarray(img), [0], axis=2).reshape(28, 28)
 #     return np.abs(img - 255)
 
-Lending_Club.mlp()
+MNIST.cnn()
