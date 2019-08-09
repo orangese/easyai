@@ -61,7 +61,7 @@ class Abstract_Layer(Static_Interface):
 
   def update_mask(self):
     """
-    [advanced] Creates Keras mask. This mask will be used for training and all computations.
+    [advanced] Creates keras mask. This mask will be used for training and all computations.
 
     :raises AssertionError if self.prev is not initialized.
     """
@@ -69,7 +69,7 @@ class Abstract_Layer(Static_Interface):
     raise NotImplementedError("cannot be implemented. How did you even call this function?")
 
 class Input(Abstract_Layer):
-  """MLP input layer with no activation, bias, or weights of its own. [advanced] No Keras mask."""
+  """MLP input layer with no activation, bias, or weights of its own. [advanced] No keras mask."""
 
   def __init__(self, neurons: Union[int, tuple]):
     """
@@ -93,7 +93,7 @@ class Input(Abstract_Layer):
     self.k_mask = None # just to be explicit
 
 class Dense(Abstract_Layer):
-  """MLP layer (aka a dense layer). [advanced] Has a Keras mask."""
+  """MLP layer (aka a dense layer). [advanced] Has a keras mask."""
 
   def __init__(self, num_neurons: int , actv: str = "sigmoid"):
     """
@@ -117,7 +117,7 @@ class Dense(Abstract_Layer):
 
 # CONV NET LAYERS
 class Conv(Abstract_Layer):
-  """Convolutional layer. [advanced] Has a Keras mask, stride = 1, padding = "valid"."""
+  """Convolutional layer. [advanced] Has a keras mask, stride = 1, padding = "valid"."""
 
   def __init__(self, filter_size: tuple, num_filters: int, actv: str = "sigmoid"):
     """
@@ -233,7 +233,7 @@ class NN(object):
       del new_layers[position]
     self.__init__(new_layers)
 
-  def train(self, x: np.array, y: np.array, lr: float = 0.1, epochs: int = 1, batch_size: int = 10):
+  def train(self, x: np.ndarray, y: np.ndarray, lr: float = 0.1, epochs: int = 1, batch_size: int = 10):
     """Trains and compiles this NN object. [advanced] Only SGD is used.
 
     :param x: input data. For example, if classifying an image, `x` would the pixel vectors.
@@ -250,7 +250,7 @@ class NN(object):
     self.k_model.fit(x, y, epochs = epochs, batch_size = batch_size, validation_split = 0.2, verbose = 2)
     self.is_trained = True
 
-  def evaluate(self, x: np.array, y: np.array, verbose: bool = True) -> list:
+  def evaluate(self, x: np.ndarray, y: np.ndarray, verbose: bool = True) -> list:
     """Evaluates this NN object using test data.
 
     :param x: inputs. See train documentation for more information.
@@ -267,7 +267,7 @@ class NN(object):
       print (result)
     return evaluation
 
-  def predict(self, x: np.array) -> np.array:
+  def predict(self, x: np.ndarray) -> np.ndarray:
     """Predicts the labels given input data.
 
     :param x: input data.
