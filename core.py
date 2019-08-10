@@ -256,7 +256,7 @@ class NN(object):
     :param x: inputs. See train documentation for more information.
     :param y: labels. See train documentation for more information.
     :param verbose: if true, this function gives more information about the evaluation process.
-    :returns: evaluation.
+    :return: evaluation.
     """
     start = time()
     evaluation = self.k_model.evaluate(x, y, verbose = 2)
@@ -271,7 +271,7 @@ class NN(object):
     """Predicts the labels given input data.
 
     :param x: input data.
-    :returns: prediction.
+    :return: prediction.
     """
     return self.k_model.predict(x)
 
