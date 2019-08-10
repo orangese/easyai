@@ -16,10 +16,11 @@ class MNIST(Static_Interface):
 
   @staticmethod
   def mlp(version: str = "digits") -> NN:
-    """MNIST multi-layer perceptron network.
+    """
+    MNIST multi-layer perceptron network.
 
     :param version: "digits" for MNIST dataset or "fashion" for Fashion-MNIST dataset.
-    :return result of mlp.evaluate(x_test, y_test).
+    :return trained NN model.
     """
     Error_Handling.suppress_tf_warnings()
 
@@ -36,10 +37,11 @@ class MNIST(Static_Interface):
 
   @staticmethod
   def cnn(version: str = "digits") -> NN:
-    """MNIST convolutional network.
+    """
+    MNIST convolutional network.
 
     :param version: "digits" for MNIST dataset or "fashion" for Fashion-MNIST dataset.
-    :return result of conv_nn.evaluate(x_test, y_test).
+    :return trained NN model.
     """
     Error_Handling.suppress_tf_warnings()
 
@@ -60,9 +62,10 @@ class Lending_Club(Static_Interface):
 
   @staticmethod
   def mlp() -> NN:
-    """LendingClub MLP.
+    """
+    LendingClub MLP.
 
-    :return result of mlp.evaluate(x_test, y_test)
+    :return trained NN model.
     """
     Error_Handling.suppress_tf_warnings()
 
@@ -78,6 +81,42 @@ class Lending_Club(Static_Interface):
 
     return mlp
 
+class Art(Static_Interface):
+  """Uses neural networks to create art."""
+
+  @staticmethod
+  def style_transfer(img_path):
+    """
+    Neural style transfer to make a content image (C) look a certain style (S). Uses VGG as base network.
+
+    :return trained NN model.
+    """
+    Error_Handling.suppress_tf_warnings()
+
+    from keras.applications import vgg19
+    from keras.preprocessing import image
+    import keras as K
+    import matplotlib.pyplot as plt
+
+    vgg_model = vgg19.VGG19(weights = "imagenet", include_top = False)
+    img = image.load_img(img_path, target_size = (224, 224))
+    arr_img = image.img_to_array(img)
+    arr_img = np.expand_dims(arr_img, axis = 0)
+    arr_img = vgg19.preprocess_input(arr_img)
+
+    def
+
+    def cost():
+      raise NotImplementedError()
+
+    def content_cost():
+      raise NotImplementedError()
+
+    def style_cost():
+      raise NotImplementedError()
+
+
+Art.style_transfer("/Users/ryan/PycharmProjects/easyai/dog.jpg")
 #--BELOW NOT SUPPORTED--
 from tkinter import *
 from PIL import Image, ImageDraw
