@@ -96,7 +96,8 @@ class Extras(Static_Interface):
 
   @staticmethod
   def load_lending_club() -> tuple:
-    """Loads LendingClub credit rating dataset.
+    """
+    Loads LendingClub credit rating dataset.
 
     :return: two tuples: (x_train, y_train) and (x_test, y_test).
     """
