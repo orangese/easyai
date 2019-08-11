@@ -18,7 +18,7 @@ class Static_Interface(object):
   """Static interface for other programs. An object of this class cannot be created."""
 
   def __init__(self):
-    """As Static_Interface objects should not be created, __init__ throws a NotImplementedError.
+    """As Static_Interface objects should not be created, __init__ raises a NotImplementedError.
 
     :raises NotImplementedError
     """
@@ -33,14 +33,17 @@ class Error_Handling(Static_Interface):
     import os
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
     import tensorflow as tf
-    tf.logging.set_verbosity(tf.logging.ERROR)
+    try:
+      tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.Error)
+    except AttributeError:
+      tf.logging.set_verbosity(tf.logging.ERROR)
 
 # CORE LAYERS
 class Abstract_Layer(Static_Interface):
   """Abstract class that acts as the base for all layer classes. Should not be implemented"""
 
   def __init__(self, num_neurons: int , actv: str):
-    """As Abstract_Layer objects should not be created, __init__ throws a NotImplementedError.
+    """As Abstract_Layer objects should not be created, __init__ raises a NotImplementedError.
 
     :raises NotImplementedError
     """
