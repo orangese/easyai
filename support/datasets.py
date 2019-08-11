@@ -43,12 +43,8 @@ class Builtins(Static_Interface):
       x_train = x_train.reshape(x_train.shape[0], -1)
       x_test = x_test.reshape(x_test.shape[0], -1)
     elif mode == "conv":
-      if K.backend.image_data_format() == "channels_first":
-        x_train.resize(x_train.shape[0], 1, *x_train.shape[1:])
-        x_test.resize(x_test.shape[0], 1, *x_test.shape[1:])
-      else:
-        x_train.resize(*x_train.shape, 1)
-        x_test.resize(*x_test.shape, 1)
+      x_train.resize(*x_train.shape, 1)
+      x_test.resize(*x_test.shape, 1)
 
     num_classes = 10
     y_train = K.utils.to_categorical(y_train, num_classes)
@@ -71,10 +67,6 @@ class Builtins(Static_Interface):
     num_classes = version
     y_train = K.utils.to_categorical(y_train, num_classes)
     y_test = K.utils.to_categorical(y_test, num_classes)
-
-    if K.backend.image_data_format() == "channels_first":
-      x_train.resize(x_train.shape[0], x_train.shape[-1], *x_train.shape[1:])
-      x_test.resize(x_test.shape[0], x_train.shape[-1], *x_test.shape[1:])
 
     return (x_train, y_train), (x_test, y_test)
 
