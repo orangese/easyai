@@ -86,8 +86,6 @@ class Input(Abstract_Layer):
         self.num_neurons = (*self.num_neurons, 1) # if user only gives two dimensions, assume num_channels = 1
       else:
         self.is_3d = True
-      if K.backend.image_data_format() == "channels_first":
-        self.num_neurons = reversed(self.num_neurons)
     else:
       self.is_3d = False
     self.k_mask = None # just to be explicit
