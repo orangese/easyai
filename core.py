@@ -12,7 +12,6 @@ import keras as K
 import numpy as np
 from time import time
 from typing import Union
-import importlib
 
 # SUPPORT
 class Static_Interface(object):
@@ -34,7 +33,7 @@ class Error_Handling(Static_Interface):
     import os
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
     import tensorflow as tf
-    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+    tf.logging.set_verbosity(tf.logging.ERROR)
 
 # CORE LAYERS
 class Abstract_Layer(Static_Interface):
@@ -323,7 +322,7 @@ class Neural_Style_Transfer(object):
 
     def preprocess_helper(content_path, style_path, target_size = None):
       content = K.preprocessing.image.load_img(content_path, target_size = target_size)
-      content = np.expand_dims(K.preprocessing.image.img_to_array(content), axis=0)
+      content = np.expand_dims(K.preprocessing.image.img_to_array(content), axis = 0)
 
       style = K.preprocessing.image.load_img(style_path, target_size = target_size)
       style = np.expand_dims(K.preprocessing.image.img_to_array(style), axis = 0)
@@ -352,7 +351,6 @@ class Neural_Style_Transfer(object):
     content, style = self.preprocess(content_path, style_path)
     generated = np.random.randn(*content.shape).astype(content.dtype)
 
-    self.img_list = ["content", "style", "generated"]
     self.img_tensor = K.backend.concatenate([content, style, generated], axis = 0)
 
     self.create_net()
