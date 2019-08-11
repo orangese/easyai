@@ -3,37 +3,19 @@ from keras.preprocessing.image import load_img, save_img, img_to_array
 import numpy as np
 from scipy.optimize import fmin_l_bfgs_b
 import time
-import argparse
 
 from keras.applications import vgg19
 from keras import backend as K
 
-parser = argparse.ArgumentParser(description='Neural style transfer with Keras.')
-parser.add_argument('base_image_path', metavar='base', type=str,
-                    help='Path to the image to transform.')
-parser.add_argument('style_reference_image_path', metavar='ref', type=str,
-                    help='Path to the style reference image.')
-parser.add_argument('result_prefix', metavar='res_prefix', type=str,
-                    help='Prefix for the saved results.')
-parser.add_argument('--iter', type=int, default=10, required=False,
-                    help='Number of iterations to run.')
-parser.add_argument('--content_weight', type=float, default=0.025, required=False,
-                    help='Content weight.')
-parser.add_argument('--style_weight', type=float, default=1.0, required=False,
-                    help='Style weight.')
-parser.add_argument('--tv_weight', type=float, default=1.0, required=False,
-                    help='Total Variation weight.')
-
-args = parser.parse_args()
-base_image_path = args.base_image_path
-style_reference_image_path = args.style_reference_image_path
-result_prefix = args.result_prefix
-iterations = args.iter
+base_image_path = "/home/ryan/PycharmProjects/easyai/dog.jpg"
+style_reference_image_path = "/home/ryan/PycharmProjects/easyai/picasso.jpg"
+result_prefix = "/home/ryan/PycharmProjects/easyai"
+iterations = 2
 
 # these are the weights of the different loss components
-total_variation_weight = args.tv_weight
-style_weight = args.style_weight
-content_weight = args.content_weight
+total_variation_weight = 0.0
+style_weight = 2.0
+content_weight = 1.0
 
 # dimensions of the generated picture.
 width, height = load_img(base_image_path).size
@@ -41,7 +23,6 @@ img_nrows = 400
 img_ncols = int(width * img_nrows / height)
 
 # util function to open, resize and format pictures into appropriate tensors
-
 
 def preprocess_image(image_path):
     img = load_img(image_path, target_size=(img_nrows, img_ncols))
@@ -88,7 +69,6 @@ input_tensor = K.concatenate([base_image,
 model = vgg19.VGG19(input_tensor=input_tensor,
                     weights='imagenet', include_top=False)
 print('Model loaded.')
-print (model.summary())
 
 # get the symbolic outputs of each "key" layer (we gave them unique names).
 outputs_dict = dict([(layer.name, layer.output) for layer in model.layers])
@@ -122,7 +102,8 @@ def style_loss(style, combination):
     C = gram_matrix(combination)
     channels = 3
     size = img_nrows * img_ncols
-    return K.sum(K.square(S - C)) / (4.0 * (channels ** 2) * (size ** 2))
+    cost = K.sum(K.square(S - C)) / (4.0 * (channels ** 2) * (size ** 2))
+    return cost
 
 # an auxiliary loss function
 # designed to maintain the "content" of the
@@ -153,6 +134,7 @@ def total_variation_loss(x):
 # combine these loss functions into a single scalar
 loss = K.variable(0.0)
 layer_features = outputs_dict['block5_conv2']
+
 base_image_features = layer_features[0, :, :, :]
 combination_features = layer_features[2, :, :, :]
 loss += content_weight * content_loss(base_image_features,
@@ -167,7 +149,7 @@ for layer_name in feature_layers:
     combination_features = layer_features[2, :, :, :]
     sl = style_loss(style_reference_features, combination_features)
     loss += (style_weight / len(feature_layers)) * sl
-loss += total_variation_weight * total_variation_loss(combination_image)
+# loss += total_variation_weight * total_variation_loss(combination_image)
 
 # get the gradients of the generated image wrt the loss
 grads = K.gradients(loss, combination_image)
@@ -179,7 +161,6 @@ else:
     outputs.append(grads)
 
 f_outputs = K.function([combination_image], outputs)
-
 
 def eval_loss_and_grads(x):
     if K.image_data_format() == 'channels_first':
@@ -236,7 +217,8 @@ for i in range(iterations):
     print('Current loss value:', min_val)
     # save current generated image
     img = deprocess_image(x.copy())
-    fname = result_prefix + '_at_iteration_%d.png' % i
+    # fname = result_prefix + '_at_iteration_%d.png' % i
+    fname = "/home/ryan/PycharmProjects/easyai/result.png"
     save_img(fname, img)
     end_time = time.time()
     print('Image saved as', fname)
