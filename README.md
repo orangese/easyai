@@ -14,7 +14,7 @@ probably find it easiest to transition to Keras from EasyAI.
 
 ## Using EasyAI
 
-As previously stated, EasyAI focuses on usability and should be simple to use _with some background in machine learning_. Since this library is meant to be a teaching library, it does require a bit of background knowledge.
+As previously stated, EasyAI focuses on usability and should be simple to use _if you have some understanding of machine learning concepts_. Since this library is meant to be a teaching library, using it does require a bit of background knowledge.
 
 The most basic EasyAI model is the `NN` object:
 
