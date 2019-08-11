@@ -156,3 +156,21 @@ class Unsupported(Static_Interface):
     :return trained NN model.
     """
     Error_Handling.suppress_tf_warnings()
+
+  @staticmethod
+  def display_image(pixels, label=None):
+    # function that displays an image using matplotlib-- not really necessary for the digit classifier
+    import matplotlib as plt
+    figure = plt.gcf()
+    figure.canvas.set_window_title("Number display")
+
+    if label: plt.title("Label: \"{label}\"".format(label=label))
+    else: plt.title("No label")
+
+    plt.imshow(pixels, cmap="gray")
+    plt.show()
+
+# filename = "test.png"
+# Unsupported.draw("test.png")
+# activation = Unsupported.getActivation(filename)
+# Unsupported.display_image(activation)
