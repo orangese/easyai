@@ -12,6 +12,7 @@ import keras as K
 import numpy as np
 from time import time
 from typing import Union
+import importlib
 
 # SUPPORT
 class Static_Interface(object):
@@ -298,3 +299,92 @@ class NN(object):
     :param filename: hdf5 file to save to.
     """
     self.k_model.save(filename)
+
+class Neural_Style_Transfer(object):
+
+  def __init__(self, net: Union[str, NN] = None):
+    self.net = net if not (net is None) else "vgg19"
+    self.generated = None
+    self.img_tensor = None
+
+  def create_net(self):
+    assert not (self.img_tensor is None), "img_tensor is not initialized"
+    if isinstance(self.net, str):
+      assert self.net == "vgg19", "only the vgg19 pre-trained model is supported"
+    if self.net == "vgg19":
+      self.k_model = K.applications.vgg19.VGG19(input_tensor = self.img_tensor, weights = "imagenet",
+                                                include_top = False)
+      for layer in self.k_model.layers:
+        layer.trainable = False
+    elif isinstance(self.net, NN):
+      self.k_model = self.net.k_model
+
+  def preprocess(self, content_path: str, style_path: str) -> tuple:
+
+    def preprocess_helper(content_path, style_path, target_size = None):
+      content = K.preprocessing.image.load_img(content_path, target_size = target_size)
+      content = np.expand_dims(K.preprocessing.image.img_to_array(content), axis=0)
+
+      style = K.preprocessing.image.load_img(style_path, target_size = target_size)
+      style = np.expand_dims(K.preprocessing.image.img_to_array(style), axis = 0)
+
+      return content, style
+
+    content, style = preprocess_helper(content_path, style_path)
+
+    if content.shape != style.shape:
+      common_res = content if min(np.prod(content.shape), np.prod(style.shape)) == content.shape else style
+      print("Warning: content and style images have different shapes. Shape of {0} will be used".format(common_res))
+      content, style = preprocess_helper(content_path, style_path, target_size = common_res.shape[:-1])
+
+    if self.net == "vgg19":
+      content = K.applications.vgg19.preprocess_input(content)
+      style = K.applications.vgg19.preprocess_input(style)
+    else:
+      raise NotImplementedError("data normalization for other nets is not supported yet")
+
+    return content, style
+
+  def deprocess(self, generated):
+    raise NotImplementedError()
+
+  def train(self, content_path: str, style_path: str, lr: float = 0.1, epochs: int = 1):
+    content, style = self.preprocess(content_path, style_path)
+    generated = np.random.randn(*content.shape).astype(content.dtype)
+
+    self.img_list = ["content", "style", "generated"]
+    self.img_tensor = K.backend.concatenate([content, style, generated], axis = 0)
+
+    self.create_net()
+    print (self.k_model.summary())
+
+    for epoch in range(epochs):
+      if self.net == "vgg19":
+        generated = K.applications.vgg19.preprocess_input(generated)
+      # PSEUDOCODE:
+      # cost = self.calculate_cost()
+      # grad = self.get_grads()
+      # generated -= lr * grad
+
+  def cost(self, content_weight, style_weight):
+    raise NotImplementedError()
+
+  @staticmethod
+  def content_cost(a_C, a_G):
+    return K.backend.sum(K.backend.square(a_C - a_G))
+
+  @staticmethod
+  def style_cost(a_S, a_G):
+
+    def gram_matrix(a):
+      return K.backend.dot(a, a.T)
+
+    gram_s = gram_matrix(a_S)
+    gram_g = gram_matrix(a_G)
+
+    cost = K.backend.sum(K.backend.square(gram_s - gram_g)) * 1. / (2 * np.prod(a_S.shape)) ** 2
+    return cost
+
+Error_Handling.suppress_tf_warnings()
+net = Neural_Style_Transfer("vgg19")
+net.train("/Users/ryan/PycharmProjects/easyai/dog.jpg", "/Users/ryan/PycharmProjects/easyai/dog.jpg")
