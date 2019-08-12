@@ -8,6 +8,7 @@ Program that implements easyai.core and provides wrapper for keras data loaders.
 """
 
 from core import *
+import pandas as pd
 
 # CLASSES
 class Builtins(Static_Interface):
