@@ -4,5 +4,7 @@ __pycache__/
 
 # Pycharm
 .idea/
-venv/
 .DS_Store
+
+# Testing files
+\_*
