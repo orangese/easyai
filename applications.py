@@ -7,6 +7,8 @@ Applications of core layers and networks in larger, more real-world-based algori
 
 """
 
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 from scipy.optimize import fmin_l_bfgs_b
 from core import *
 
@@ -90,7 +92,7 @@ class Neural_Style_Transfer(object):
   def train_init(self, content_path: str, style_path: str, verbose: bool):
     """
     Initializes processed images (content, style, generated) from paths as keras tensors in preparation for training.
-    Also initializes the created image as a copy of the content image. All variables are object attributes.
+    Also initializes the created image as a copy. All variables are object attributes.
 
     :param content_path: path to content image.
     :param style_path: path to style image.
@@ -169,6 +171,9 @@ class Neural_Style_Transfer(object):
     self.train_init(content_path, style_path, verbose = verbose)
     self.func_init(content_layer, style_layers)
 
+    if verbose:
+      Neural_Style_Transfer.show_original(content_path, style_path)
+
     for epoch in range(epochs):
       start = time()
 
@@ -176,8 +181,9 @@ class Neural_Style_Transfer(object):
       self.img, cost, throwaway = fmin_l_bfgs_b(func = self.evaluator.f_loss, x0 = self.img.flatten(),
                                                 fprime = self.evaluator.f_grads, maxfun = 20) # 20 iterations per epoch
       if verbose:
-        print("Epoch {0}/{1}".format(epoch + 1, epochs))
-        print(" - {0}s - cost: {1}".format(round(time() - start), cost)) # cost is broken-- it's way too high
+        print ("Epoch {0}/{1}".format(epoch + 1, epochs))
+        print (" - {0}s - cost: {1} [broken]".format(round(time() - start), cost)) # cost is broken-- it's way too high
+        self.display_img(self.img, "Epoch {0}/{1}".format(epoch + 1, epochs))
 
       if not (save_path is None):
         full_save_path = save_path + "/epoch{0}.png".format(epoch + 1)
@@ -203,7 +209,8 @@ class Neural_Style_Transfer(object):
       grads = np.array(outputs[1:]).flatten().astype(np.float64)
     return cost, grads
 
-  def cost_tensor(self, content_layer: str, style_layers: list, coef_C: float = 1e-2, coef_S: float = 1e3):
+  def cost_tensor(self, content_layer: str, style_layers: list, coef_C: float = 1e-2, coef_S: float = 1e3,
+                  coef_V = 0):
     """
     Gets the symbolic cost tensor as a keras tensor. This tensor will be used to calculate cost and
     the gradients of cost. Is broken but training still works.
@@ -212,11 +219,12 @@ class Neural_Style_Transfer(object):
     :param style_layers: layer(s) at which style cost will be evaluated. Is a pre-defined hyperparameter.
     :param coef_C: content weight. Is a pre-defined hyperparameter but can be edited.
     :param coef_S: stye weight. Is a pre-defined hyperparameter but can be edited.
+    :param coef_V: total variation weight.Is a pre-defined hyperparameter but can be edited.
     :return: cost tensor.
     """
 
     def content_cost(layer):
-      """Computes the content cost at layer \"layer\"."""
+      """Computes the content cost at layer "layer"."""
       layer_features = self.outputs[layer]
 
       content_actvs = layer_features[self.img_order.index("content"), :, :, :]
@@ -225,7 +233,7 @@ class Neural_Style_Transfer(object):
       return K.backend.sum(K.backend.square(generated_actvs - content_actvs)) # i.e., squared norm
 
     def layer_style_cost(a_G, a_S):
-      """Computes the style cost at layer \"layer\". Is broken but training still works."""
+      """Computes the style cost at layer "layer". Is broken but training still works."""
 
       def gram_matrix(a):
         """Computes the gram matrix of a."""
@@ -237,33 +245,42 @@ class Neural_Style_Transfer(object):
 
       return K.backend.sum(K.backend.square(gram_s - gram_g))
 
+    def total_variation_loss(a_G, num_rows, num_cols):
+      """Computes the total variation loss of the generated image. According to keras, it is designed to keep
+      the generated image locally coherent."""
+      a = K.backend.square(a_G[:, :num_rows - 1, :num_cols - 1, :] - a_G[:, 1:, :num_cols - 1, :])
+      b = K.backend.square(a_G[:, :num_rows - 1, :num_cols - 1, :] - a_G[:, :num_rows - 1, 1:, :])
+
+      return K.backend.sum(K.backend.pow(a + b, 1.25))
+
     cost = K.backend.variable(0.0) # it is necessary to initialize cost like this
 
-    cost += coef_C * content_cost(content_layer)
+    cost += coef_C * content_cost(content_layer) # content cost
 
     # this loop is probably broken (and/or the computation of layer_style_cost)
-    for layer in style_layers:
+    for layer in style_layers: # style cost
       layer_features = self.outputs[layer]
 
       generated_actvs = layer_features[self.img_order.index("generated"), :, :, :]
       style_actvs = layer_features[self.img_order.index("style"), :, :, :]
 
-      cost += layer_style_cost(generated_actvs, style_actvs) * (coef_S / len(style_layers)) / \
+      cost += (coef_S / len(style_layers)) * layer_style_cost(generated_actvs, style_actvs) / \
               (4.0 * (int(self.generated.shape[-1]) ** 2) * (self.num_rows * self.num_cols ** 2)) # normalization
+
+    cost += coef_V * total_variation_loss(self.generated, self.num_rows, self.num_cols)
 
     return cost
 
   # IMAGE PROCESSING
-  def preprocess(self, img_: Union[str, np.ndarray], target_size = None):
+  def preprocess(self, img: Union[str, np.ndarray], target_size = None):
     """
     Preprocesses an image.
 
-    :param img_: image to preprocess. Can either be a pixel array or a string representing the path to an image.
+    :param img: image to preprocess. Can either be a pixel array or a string representing the path to an image.
     :param target_size: target size of the image. If is none, defaults to object attributes.
     :return: preprocessed image.
     :raises NotImplementedError: data normalization for other nets is not supported yet
     """
-    img = np.copy(img_)
     # because of pass-by-assignment properties, a copy must be made to prevent tampering with original img
     if target_size is None:
       if self.num_cols is None:
@@ -300,6 +317,31 @@ class Neural_Style_Transfer(object):
 
     return img
 
+  def display_img(self, img, title):
+    try:
+      img = self.deprocess(img)
+    except np.core._exceptions.UFuncTypeError:
+      pass
+    plt.imshow(img.reshape(*self.generated.shape[1:]))
+    plt.title(title)
+    plt.axis("off")
+    plt.show()
+
+  @staticmethod
+  def show_original(content_path, style_path):
+    images = [mpimg.imread(content_path), mpimg.imread(style_path)]
+
+    fig, (content, style) = plt.subplots(1, 2)
+    fig.suptitle("Original images")
+
+    content.imshow(images[0])
+    content.title.set_text([char for char in content_path.split("/")][-1])
+
+    style.imshow(images[1])
+    style.title.set_text([char for char in style_path.split("/")][-1])
+
+    plt.show()
+
   # MISCELLANEOUS
   def get_hyperparams(self, *hyperparams: str) -> Union[str, tuple]:
     """
@@ -310,9 +352,3 @@ class Neural_Style_Transfer(object):
     """
     fetched = tuple(Neural_Style_Transfer.HYPERPARAMS[hp.upper()][self.net] for hp in hyperparams)
     return fetched[0] if len(fetched) == 1 else fetched
-
-Error_Handling.suppress_tf_warnings()
-net = Neural_Style_Transfer("vgg19")
-net.train("/home/ryan/PycharmProjects/easyai/support/raw_datasets/neural_style_transfer/content/dog.jpg",
-          "/home/ryan/PycharmProjects/easyai/support/raw_datasets/neural_style_transfer/style/picasso.jpg",
-          epochs = 1000)

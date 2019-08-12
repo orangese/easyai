@@ -7,7 +7,9 @@ Program that implements easyai.support.datasets and easyai.core in examples like
 
 """
 
+import matplotlib.pyplot as plt
 from support.datasets import *
+from applications import *
 
 # CLASSES
 class MNIST(Static_Interface):
@@ -83,6 +85,52 @@ class Lending_Club(Static_Interface):
     mlp.evaluate(x_test, y_test)
 
     return mlp
+
+class Art(Static_Interface):
+  """
+  Art generated with AI.
+  """
+
+  @staticmethod
+  def neural_style_transfer(path, content_image = None, style_image = None):
+    """
+    Neural style transfer with art and photographs.
+
+    :param path: the path to easyai project (if content_image and style_image are None);
+                 otherwise, the path to directory containing content_image and style_image otherwise.
+    :param content_image: name of content image. Default is a random image from built-in datasets.
+    :param style_image: name of style image. Default is a random image from built-in datasets.
+    :return: trained Neural_Style_Transfer object.
+    """
+    Error_Handling.suppress_tf_warnings()
+
+    if content_image is None or style_image is None:
+      assert path, "path_to_easyai must be provided if content_path or style_path is None"
+
+      import os, random
+
+      content_path = path + "/support/raw_datasets/neural_style_transfer/content/"
+      content_path += random.choice(os.listdir(content_path))
+
+      style_path = path + "/support/raw_datasets/neural_style_transfer/style/"
+      style_path += random.choice(os.listdir(style_path))
+    else:
+      content_path = path + content_image
+      style_path = path + style_image
+
+    content_name = [char for char in content_path.split("/")][-1]
+    style_name = [char for char in style_path.split("/")][-1]
+    print ("Using content image \"{0}\" and style image \"{1}\"".format(content_name, style_name))
+
+    model = Neural_Style_Transfer()
+    # print (model.summary())
+
+    final_img = model.train(content_path, style_path, epochs = 3)
+
+    model.display_img(final_img, "Final result")
+
+Art.neural_style_transfer("/home/ryan/PycharmProjects/easyai/support/raw_datasets/neural_style_transfer/",
+                          "content/flower.jpg", "style/the_scream_munch.jpg")
 
 #--BELOW NOT SUPPORTED--
 from tkinter import *
