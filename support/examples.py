@@ -11,7 +11,9 @@ from support.datasets import *
 
 # CLASSES
 class MNIST(Static_Interface):
-  """Contains examples using MNIST and Fashion-MNIST datasets."""
+  """
+  Contains examples using MNIST and Fashion-MNIST datasets.
+  """
 
   @staticmethod
   def mlp(version: str = "digits") -> NN:
@@ -19,7 +21,7 @@ class MNIST(Static_Interface):
     MNIST multi-layer perceptron network.
 
     :param version: "digits" for MNIST dataset or "fashion" for Fashion-MNIST dataset.
-    :return trained NN model.
+    :return: trained NN model.
     """
     Error_Handling.suppress_tf_warnings()
 
@@ -40,7 +42,7 @@ class MNIST(Static_Interface):
     MNIST convolutional network.
 
     :param version: "digits" for MNIST dataset or "fashion" for Fashion-MNIST dataset.
-    :return trained NN model.
+    :return: trained NN model.
     """
     Error_Handling.suppress_tf_warnings()
 
@@ -57,14 +59,16 @@ class MNIST(Static_Interface):
     return conv_nn
 
 class Lending_Club(Static_Interface):
-  """Contains examples using LendingClub credit rating dataset."""
+  """
+  Contains examples using LendingClub credit rating dataset.
+  """
 
   @staticmethod
   def mlp() -> NN:
     """
     LendingClub MLP.
 
-    :return trained NN model.
+    :return: trained NN model.
     """
     Error_Handling.suppress_tf_warnings()
 
@@ -152,14 +156,14 @@ class Unsupported(Static_Interface):
     """
     Neural style transfer to make a content image (C) look a certain style (S). Uses VGG as base network.
 
-    :return trained NN model.
+    :return: trained NN model.
     """
     Error_Handling.suppress_tf_warnings()
 
   @staticmethod
   def display_image(pixels, label=None):
     # function that displays an image using matplotlib-- not really necessary for the digit classifier
-    import matplotlib as plt
+    import matplotlib.pyplot as plt
     figure = plt.gcf()
     figure.canvas.set_window_title("Number display")
 

@@ -18,21 +18,28 @@ from typing import Union
 
 # SUPPORT
 class Static_Interface(object):
-  """Static interface for other programs. An object of this class cannot be created."""
+  """
+  Static interface for other programs. An object of this class cannot be created.
+  """
 
   def __init__(self):
-    """As Static_Interface objects should not be created, __init__ throws a NotImplementedError.
+    """
+    As Static_Interface objects should not be created, __init__ throws a NotImplementedError.
 
     :raises NotImplementedError
     """
     raise NotImplementedError("class is static")
 
 class Error_Handling(Static_Interface):
-  """Static class for error handling."""
+  """
+  Static class for error handling.
+  """
 
   @staticmethod
   def suppress_tf_warnings():
-    """Suppresses tensorflow warnings. Does not work if tensorflow is outdated."""
+    """
+    Suppresses tensorflow warnings. Does not work if tensorflow is outdated.
+    """
     import os
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
     import tensorflow as tf
@@ -43,10 +50,13 @@ class Error_Handling(Static_Interface):
 
 # CORE LAYERS
 class Abstract_Layer(Static_Interface):
-  """Abstract class that acts as the base for all layer classes. Should not be implemented"""
+  """
+  Abstract class that acts as the base for all layer classes. Should not be implemented.
+  """
 
   def __init__(self, num_neurons: int , actv: str):
-    """As Abstract_Layer objects should not be created, __init__ throws a NotImplementedError.
+    """
+    As Abstract_Layer objects should not be created, __init__ throws a NotImplementedError.
 
     :raises NotImplementedError
     """
@@ -67,7 +77,7 @@ class Abstract_Layer(Static_Interface):
 
   def update_mask(self):
     """
-    [advanced] Creates keras mask. This mask will be used for training and all computations.
+     Creates keras mask. This mask will be used for training and all computations.
 
     :raises AssertionError if self.prev is not initialized.
     """
@@ -75,7 +85,9 @@ class Abstract_Layer(Static_Interface):
     raise NotImplementedError("cannot be implemented. How did you even call this function?")
 
 class Input(Abstract_Layer):
-  """MLP input layer with no activation, bias, or weights of its own. [advanced] No keras mask."""
+  """
+  MLP input layer with no activation, bias, or weights of its own.  No keras mask.
+  """
 
   def __init__(self, neurons: Union[int, tuple]):
     """
@@ -97,7 +109,9 @@ class Input(Abstract_Layer):
     self.k_mask = None # just to be explicit
 
 class Dense(Abstract_Layer):
-  """MLP layer (aka a dense layer). [advanced] Has a keras mask."""
+  """
+  MLP layer (aka a dense layer).  Has a keras mask.
+  """
 
   def __init__(self, num_neurons: int , actv: str = "sigmoid"):
     """
@@ -121,11 +135,13 @@ class Dense(Abstract_Layer):
 
 # CONV NET LAYERS
 class Conv(Abstract_Layer):
-  """Convolutional layer. [advanced] Has a keras mask, stride = 1, padding = "valid"."""
+  """
+  Convolutional layer.  Has a keras mask, stride = 1, padding = "valid".
+  """
 
   def __init__(self, filter_size: tuple, num_filters: int, actv: str = "sigmoid"):
     """
-    Initializes Conv object. [advanced] No padding and a stride of 1 is assumed.
+    Initializes Conv object.  No padding and a stride of 1 is assumed.
 
     :param filter_size: size of the local receptive field (filter).
     :param num_filters: number of filters used. Other sources call this parameter "number of feature maps".
@@ -156,10 +172,13 @@ class Conv(Abstract_Layer):
                                     activation = self.actv, input_shape = self.prev.num_neurons)
 
 class Pooling(Abstract_Layer):
+  """
+  Pooling layer.  Has a keras mask, stride = 1, pooling type = "max pooling".
+  """
 
   def __init__(self, pool_size: tuple):
     """
-    Initializes Pooling object. [advanced] Only max pooling is implemented, stride = None.
+    Initializes Pooling object.  Only max pooling is implemented, stride = None.
 
     :param pool_size: size of pool.
     """
@@ -181,14 +200,16 @@ class Pooling(Abstract_Layer):
 
 # NEURAL NETWORK IMPLEMENTATION
 class NN(object):
-  """Uses easyai layer objects to create a functional keras model."""
+  """
+  Uses easyai layer objects to create a functional keras model.
+  """
 
   def __init__(self, layers: list = None, cost: str = "binary_crossentropy"):
     """
     Initializes NN (neural network) object.
 
     :param layers: layers of the network. Expects easyai core layer objects.
-    :param cost: [advanced feature] cost used by the neural network. Default is categorical_crossentropy.
+    :param cost: cost used by the neural network. Default is categorical_crossentropy.
     """
     if layers is None:
       layers = []
@@ -199,7 +220,7 @@ class NN(object):
     self.is_trained = False
 
   def link_layers(self):
-    """[advanced] Links wrapper objects and creates a wrapper keras Sequential object."""
+    """ Links wrapper objects and creates a wrapper keras Sequential object."""
     self.k_layers = []
     for prev, layer in zip(self.layers, self.layers[1:]):
       layer.prev = prev
@@ -238,14 +259,14 @@ class NN(object):
     self.__init__(new_layers)
 
   def train(self, x: np.ndarray, y: np.ndarray, lr: float = 0.1, epochs: int = 1, batch_size: int = 10):
-    """Trains and compiles this NN object. [advanced] Only SGD is used.
+    """Trains and compiles this NN object.  Only SGD is used.
 
     :param x: input data. For example, if classifying an image, `x` would the pixel vectors.
     :param y: labels. For example, if classifying an image, `y` would be the image labels.
-    [advanced] The `y` data should be comprised of one-hot encodings.
-    :param lr: [advanced] learning rate used in SGD. Default is 3.0.
+     The `y` data should be comprised of one-hot encodings.
+    :param lr:  learning rate used in SGD. Default is 3.0.
     :param epochs: number of epochs. Default is 1.
-    :param batch_size: [advanced] minibatch size. Default is 10.
+    :param batch_size:  minibatch size. Default is 10.
     """
     optimizer = K.optimizers.SGD(lr = lr)
     metrics = ["categorical_accuracy"] if self.layers[-1].num_neurons > 2 else ["binary_accuracy"]

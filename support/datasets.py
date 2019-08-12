@@ -11,8 +11,10 @@ from core import *
 
 # CLASSES
 class Builtins(Static_Interface):
-  """Data loaders (including preprocessing) for built-in keras datasets. These include: MNIST, Fashion-MNIST,
-  CIFAR-10, CIFAR-100, Boston housing, IMDB, Reuters."""
+  """
+  Data loaders (including preprocessing) for built-in keras datasets. These include: MNIST, Fashion-MNIST,
+  CIFAR-10, CIFAR-100, Boston housing, IMDB, Reuters.
+  """
 
   @staticmethod
   def load_mnist(version: str = "digits", mode: str = "mlp") -> tuple:
@@ -80,8 +82,10 @@ class Builtins(Static_Interface):
     raise NotImplementedError()
 
 class Extras(Static_Interface):
-  """Data loaders (including pre-processing) for other datasets, including user-importd ones and native easyai
-  datasets. These include: LendingClub (credit rating) dataset."""
+  """
+  Data loaders (including pre-processing) for other datasets, including user-importd ones and native easyai
+  datasets. These include: LendingClub (credit rating) dataset.
+  """
 
   @staticmethod
   def load_lending_club() -> tuple:
