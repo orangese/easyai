@@ -10,11 +10,11 @@ from keras import backend as K
 base_image_path = "/home/ryan/PycharmProjects/easyai/dog.jpg"
 style_reference_image_path = "/home/ryan/PycharmProjects/easyai/picasso.jpg"
 result_prefix = "/home/ryan/PycharmProjects/easyai"
-iterations = 2
+iterations = 3
 
 # these are the weights of the different loss components
 total_variation_weight = 0.0
-style_weight = 2.0
+style_weight = 10.0
 content_weight = 1.0
 
 # dimensions of the generated picture.
@@ -137,18 +137,19 @@ layer_features = outputs_dict['block5_conv2']
 
 base_image_features = layer_features[0, :, :, :]
 combination_features = layer_features[2, :, :, :]
-loss += content_weight * content_loss(base_image_features,
-                                      combination_features)
+# loss += content_weight * content_loss(base_image_features,
+#                                       combination_features)
 
-feature_layers = ['block1_conv1', 'block2_conv1',
-                  'block3_conv1', 'block4_conv1',
-                  'block5_conv1']
+# feature_layers = ['block1_conv1', 'block2_conv1',
+#                   'block3_conv1', 'block4_conv1',
+#                   'block5_conv1']
+feature_layers = ["block1_conv1"]
 for layer_name in feature_layers:
     layer_features = outputs_dict[layer_name]
     style_reference_features = layer_features[1, :, :, :]
     combination_features = layer_features[2, :, :, :]
     sl = style_loss(style_reference_features, combination_features)
-    loss += (style_weight / len(feature_layers)) * sl
+    loss += sl#(style_weight / len(feature_layers)) * sl
 # loss += total_variation_weight * total_variation_loss(combination_image)
 
 # get the gradients of the generated image wrt the loss
@@ -161,7 +162,6 @@ else:
     outputs.append(grads)
 
 f_outputs = K.function([combination_image], outputs)
-
 def eval_loss_and_grads(x):
     if K.image_data_format() == 'channels_first':
         x = x.reshape((1, 3, img_nrows, img_ncols))
@@ -208,7 +208,6 @@ evaluator = Evaluator()
 # run scipy-based optimization (L-BFGS) over the pixels of the generated image
 # so as to minimize the neural style loss
 x = preprocess_image(base_image_path)
-
 for i in range(iterations):
     print('Start of iteration', i)
     start_time = time.time()
