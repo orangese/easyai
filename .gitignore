@@ -7,4 +7,5 @@ __pycache__/
 .DS_Store
 
 # Testing files
+/_tests/
 \_*
