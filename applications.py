@@ -59,7 +59,8 @@ class Evaluator(object):
 # NEURAL NETWORK APPLICATION
 class Neural_Style_Transfer(object):
   """
-  Class implementation of neural style transfer learning. As of August 2019, only VGG19 is supported.
+  Class implementation of neural style transfer learning. As of August 2019, only VGG19 is supported. Borrowed heavily
+  from the keras implementation of neural style transfer.
   """
 
   HYPERPARAMS = {"CONTENT_LAYER":
@@ -70,6 +71,26 @@ class Neural_Style_Transfer(object):
                    {
                      "vgg19": ["block1_conv1", "block2_conv1", "block3_conv1", "block4_conv1", "block5_conv1"],
                      "NN": ""
+                   },
+                 "COEF_C":
+                   {
+                     "vgg19": 10.0,
+                     "NN": None
+                   },
+                 "COEF_S":
+                   {
+                     "vgg19": 1.0,
+                     "NN": None
+                   },
+                 "COEF_V":
+                   {
+                     "vgg19": 0.1,
+                     "NN": None
+                   },
+                 "MEANS":
+                   {
+                     "vgg19": [103.939, 116.779, 123.68],
+                     "NN": None
                    }
                  }
 
@@ -89,13 +110,14 @@ class Neural_Style_Transfer(object):
     self.num_rows = num_rows
     self.num_cols = None
 
-  def train_init(self, content_path: str, style_path: str, verbose: bool):
+  def train_init(self, content_path: str, style_path: str, noise: float = 0.6, verbose: bool = True):
     """
     Initializes processed images (content, style, generated) from paths as keras tensors in preparation for training.
     Also initializes the created image as a copy. All variables are object attributes.
 
     :param content_path: path to content image.
     :param style_path: path to style image.
+    :param noise: amount of noise in initially generated image. 0. <= noise <= 1.
     :param verbose: if true, prints additional information.
     """
     self.image_init(content_path, style_path)
@@ -108,7 +130,8 @@ class Neural_Style_Transfer(object):
     if verbose:
       print("Loaded {0} model".format(self.net))
 
-    self.img = self.preprocess(content_path)
+    noise_image = np.random.uniform(-20.0, 20.0, size = self.generated.shape)
+    self.img = noise_image * noise + self.preprocess(content_path) * (1.0 - noise)
 
   def model_init(self):
     """
@@ -146,14 +169,16 @@ class Neural_Style_Transfer(object):
     :param content_layer: layer at which content cost will be evaluated. Is a pre-defined hyperparameter.
     :param style_layers: layer(s) at which style cost will be evaluated. Is a pre-defined hyperparameter.
     """
-    cost = self.cost_tensor(content_layer, style_layers)
+    coef_C, coef_S, coef_V = self.get_hyperparams("coef_C", "coef_S", "coef_V")
+    
+    cost = self.cost_tensor(content_layer, style_layers, coef_C, coef_S, coef_V)
     grads = K.backend.gradients(cost, self.generated)
     outputs = [cost, *grads] if isinstance(grads, (list, tuple)) else [cost, grads]
 
     self.model_func = K.backend.function([self.generated], outputs)
     self.evaluator = Evaluator(self)
 
-  def train(self, content_path: str, style_path: str, epochs: int = 1, verbose: bool = True,
+  def train(self, content_path: str, style_path: str, epochs: int = 1, init_noise: float = 0.6, verbose: bool = True,
             save_path: str = None) -> np.ndarray:
     """
     Trains a Neural_Style_Transfer object. More precisely, the pixel values of the created image are optimized using
@@ -162,13 +187,14 @@ class Neural_Style_Transfer(object):
     :param content_path: path to content image.
     :param style_path: path to style image.
     :param epochs: number of iterations or epochs.
+    :param init_noise: amount of noise in initially generated image. 0. <= noise <= 1.
     :param verbose: if true, prints information about each epoch.
     :param save_path: (optional) path at which to save the created image at each iteration.
     :return: final created image.
     """
     content_layer, style_layers = self.get_hyperparams("content_layer", "style_layers")
 
-    self.train_init(content_path, style_path, verbose = verbose)
+    self.train_init(content_path, style_path, verbose = verbose, noise = init_noise)
     self.func_init(content_layer, style_layers)
 
     if verbose:
@@ -209,17 +235,16 @@ class Neural_Style_Transfer(object):
       grads = np.array(outputs[1:]).flatten().astype(np.float64)
     return cost, grads
 
-  def cost_tensor(self, content_layer: str, style_layers: list, coef_C: float = 1e-2, coef_S: float = 1e3,
-                  coef_V = 0):
+  def cost_tensor(self, content_layer: str, style_layers: list, coef_C: float, coef_S: float, coef_V: float):
     """
     Gets the symbolic cost tensor as a keras tensor. This tensor will be used to calculate cost and
     the gradients of cost. Is broken but training still works.
 
     :param content_layer: layer at which content cost will be evaluated. Is a pre-defined hyperparameter.
     :param style_layers: layer(s) at which style cost will be evaluated. Is a pre-defined hyperparameter.
-    :param coef_C: content weight. Is a pre-defined hyperparameter but can be edited.
-    :param coef_S: stye weight. Is a pre-defined hyperparameter but can be edited.
-    :param coef_V: total variation weight.Is a pre-defined hyperparameter but can be edited.
+    :param coef_C: content weight. Is a pre-defined hyperparameter.
+    :param coef_S: stye weight. Is a pre-defined hyperparameter.
+    :param coef_V: total variation weight.Is a pre-defined hyperparameter.
     :return: cost tensor.
     """
 
@@ -265,7 +290,7 @@ class Neural_Style_Transfer(object):
       style_actvs = layer_features[self.img_order.index("style"), :, :, :]
 
       cost += (coef_S / len(style_layers)) * layer_style_cost(generated_actvs, style_actvs) / \
-              (4.0 * (int(self.generated.shape[-1]) ** 2) * (self.num_rows * self.num_cols ** 2)) # normalization
+              (4.0 * (int(self.generated.shape[-1]) ** 2) * ((self.num_rows * self.num_cols) ** 2)) # normalization
 
     cost += coef_V * total_variation_loss(self.generated, self.num_rows, self.num_cols)
 
@@ -306,10 +331,9 @@ class Neural_Style_Transfer(object):
     img = np.copy(img_).reshape(*self.generated.shape[1:])
 
     if self.net == "vgg19":
-      img[:, :, 0] += 103.939
-      img[:, :, 1] += 116.779
-      img[:, :, 2] += 123.68
-
+      means = self.get_hyperparams("means")
+      for i in range(len(means)):
+        img[:, :, i] += means[i]
       img = img[:, :, ::-1]
       img = np.clip(img, 0, 255).astype('uint8')
     else:
@@ -336,14 +360,16 @@ class Neural_Style_Transfer(object):
 
     content.imshow(images[0])
     content.title.set_text([char for char in content_path.split("/")][-1])
+    content.axis("off")
 
     style.imshow(images[1])
     style.title.set_text([char for char in style_path.split("/")][-1])
+    style.axis("off")
 
     plt.show()
 
   # MISCELLANEOUS
-  def get_hyperparams(self, *hyperparams: str) -> Union[str, tuple]:
+  def get_hyperparams(self, *hyperparams: str) -> Union[str, tuple, float]:
     """
     Fetches hyperparameters. Merely a syntax simplification tool.
 
