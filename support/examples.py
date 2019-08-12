@@ -7,7 +7,6 @@ Program that implements easyai.support.datasets and easyai.core in examples like
 
 """
 
-from core import *
 from support.datasets import *
 
 # CLASSES
