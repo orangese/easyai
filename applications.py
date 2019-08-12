@@ -187,7 +187,7 @@ class Neural_Style_Transfer(object):
     :param content_path: path to content image.
     :param style_path: path to style image.
     :param epochs: number of iterations or epochs.
-    :param init_noise: amount of noise in initially generated image. 0. <= noise <= 1.
+    :param init_noise: amount of noise in initially generated image. Range is [0., 1.].
     :param verbose: if true, prints information about each epoch.
     :param save_path: (optional) path at which to save the created image at each iteration.
     :return: final created image.
@@ -198,7 +198,7 @@ class Neural_Style_Transfer(object):
     self.func_init(content_layer, style_layers)
 
     if verbose:
-      Neural_Style_Transfer.show_original(content_path, style_path)
+      Neural_Style_Transfer.display_original(content_path, style_path)
 
     for epoch in range(epochs):
       start = time()
@@ -297,13 +297,13 @@ class Neural_Style_Transfer(object):
     return cost
 
   # IMAGE PROCESSING
-  def preprocess(self, img: Union[str, np.ndarray], target_size = None):
+  def preprocess(self, img: Union[str, np.ndarray], target_size = None) -> np.ndarray:
     """
     Preprocesses an image.
 
     :param img: image to preprocess. Can either be a pixel array or a string representing the path to an image.
     :param target_size: target size of the image. If is none, defaults to object attributes.
-    :return: preprocessed image.
+    :return: processed image.
     :raises NotImplementedError: data normalization for other nets is not supported yet
     """
     # because of pass-by-assignment properties, a copy must be made to prevent tampering with original img
@@ -320,7 +320,7 @@ class Neural_Style_Transfer(object):
     else:
       raise NotImplementedError("data normalization for other nets is not supported yet")
 
-  def deprocess(self, img_: np.ndarray):
+  def deprocess(self, img_: np.ndarray) -> np.ndarray:
     """
     Reverses effect of preprocess
 
@@ -329,7 +329,6 @@ class Neural_Style_Transfer(object):
     :raises NotImplementedError: data normalization for other nets is not supported yet
     """
     img = np.copy(img_).reshape(*self.generated.shape[1:])
-
     if self.net == "vgg19":
       means = self.get_hyperparams("means")
       for i in range(len(means)):
@@ -338,10 +337,15 @@ class Neural_Style_Transfer(object):
       img = np.clip(img, 0, 255).astype('uint8')
     else:
       raise NotImplementedError("data normalization for other nets is not supported yet")
-
     return img
 
   def display_img(self, img, title):
+    """
+    Displays image.
+
+    :param img: image to be displayed.
+    :param title: title of maptlotlib plot.
+    """
     try:
       img = self.deprocess(img)
     except np.core._exceptions.UFuncTypeError:
@@ -352,7 +356,13 @@ class Neural_Style_Transfer(object):
     plt.show()
 
   @staticmethod
-  def show_original(content_path, style_path):
+  def display_original(content_path, style_path):
+    """
+    DIsplays original images.
+
+    :param content_path: path to content image.
+    :param style_path: path to style image.
+    """
     images = [mpimg.imread(content_path), mpimg.imread(style_path)]
 
     fig, (content, style) = plt.subplots(1, 2)
