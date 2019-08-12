@@ -8,9 +8,11 @@ machine learning.
 
 """
 
+# BLANKET IMPORTS FOR ALL FILES
 import keras as K
 import tensorflow as tf
 import numpy as np
+import pandas as pd
 from time import time
 from typing import Union
 
@@ -302,132 +304,3 @@ class NN(object):
     :param filename: hdf5 file to save to.
     """
     self.k_model.save(filename)
-
-# APPLICATIONS OF NEURAL NETWORKS
-class Neural_Style_Transfer(object):
-  
-  CONTENT_LAYER = "block5_conv2"
-  STYLE_LAYERS = ["block1_conv1", "block2_conv1", "block3_conv1", "block4_conv1", "block5_conv1"]
-
-  def __init__(self, net: Union[str, NN] = None, num_rows = 400):
-    self.net = net if not (net is None) else "vgg19"
-    if isinstance(self.net, str):
-      assert self.net == "vgg19", "only the vgg19 pre-trained model is supported"
-    self.generated = None
-    self.img_tensor = None
-
-    self.num_rows = num_rows
-    self.num_cols = None
-
-  def net_init(self):
-    if self.net == "vgg19":
-      self.k_model = K.applications.vgg19.VGG19(input_tensor = self.img_tensor, weights = "imagenet",
-                                                include_top = False)
-    elif isinstance(self.net, NN):
-      self.k_model = self.net.k_model
-
-    self.k_model.trainable = False
-    self.outputs = dict([(layer.name, layer.output) for layer in self.k_model.layers])
-
-  def train(self, content_path: str, style_path: str, lr: float = 0.1, epochs: int = 1, verbose: bool = True):
-    content, style, generated = self.image_init(content_path, style_path)
-
-    self.img_tensor = K.backend.concatenate([content, style, generated], axis = 0)
-    self.img_order = ["content", "style", "generated"]
-    
-    self.net_init()
-    
-    if verbose:
-      print ("Loaded {0} model".format(self.net if isinstance(self.net, str) else type(self.net)))
-
-    for epoch in range(epochs):
-      start = time()
-
-      cost = self.get_cost(Neural_Style_Transfer.CONTENT_LAYER, Neural_Style_Transfer.STYLE_LAYERS)
-      grads = K.backend.gradients(cost, generated)
-
-      generated -= tf.scalar_mul(lr, K.backend.variable(grads))
-      K.preprocessing.image.save_img("home/ryan/PycharmProjects/easyai/result.png", self.deprocess(generated))
-
-      if verbose:
-        print ("Epoch {0}/{1}".format(epoch + 1, epochs))
-        print (" - {0}s - cost: {1}".format(round(time() - start), cost))
-
-  # COST CALCULATIONS
-  def get_cost(self, content_layer, style_layers, coef_C = 1.0, coef_S = 2.0):
-
-    def content_cost(layer):
-      layer_features = self.outputs[layer]
-
-      content_actvs = layer_features[self.img_order.index("content"), :, :, :]
-      generated_actvs = layer_features[self.img_order.index("generated"), :, :, :]
-
-      return K.backend.sum(K.backend.square(content_actvs - generated_actvs))
-
-    def layer_style_cost(a_G, a_S):
-
-      def gram_matrix(a):
-        a = K.backend.batch_flatten(K.backend.permute_dimensions(a, (2, 0, 1)))
-        return K.backend.dot(a, K.backend.transpose(a))
-
-      gram_s = gram_matrix(a_S)
-      gram_g = gram_matrix(a_G)
-
-      return K.backend.sum(K.backend.square(gram_s - gram_g)) * (1. / (2 * int(np.prod(a_S.shape))) ** 2)
-
-    cost = K.backend.variable(0.0)
-
-    cost += coef_C * content_cost(content_layer)
-
-    for layer in style_layers:
-      layer_features = self.outputs[layer]
-
-      generated_actvs = layer_features[self.img_order.index("generated"), :, :, :]
-      style_actvs = layer_features[self.img_order.index("style"), :, :, :]
-
-      cost += layer_style_cost(generated_actvs, style_actvs) * (coef_S / len(style_layers))
-
-    return cost
-
-  # IMAGE PROCESSING
-  def image_init(self, content_path: str, style_path: str) -> tuple:
-    content = self.preprocess(content_path)
-    style = self.preprocess(style_path)
-
-    self.gen_shape = (self.num_rows, self.num_cols, 3)
-    print ("Generated image shape: {0}".format(self.gen_shape))
-
-    if self.net == "vgg19":
-      content = K.applications.vgg19.preprocess_input(content)
-      style = K.applications.vgg19.preprocess_input(style)
-    else:
-      raise NotImplementedError("data normalization for other nets is not supported yet")
-
-    generated = K.backend.placeholder(shape = (1, *self.gen_shape))
-
-    return content, style, generated
-
-  def preprocess(self, img, target_size=None):
-    if target_size is None:
-      if self.num_cols is None:
-        width, height = K.preprocessing.image.load_img(img).size
-        self.num_cols = int(width * self.num_rows / height)
-      target_size = (self.num_rows, self.num_cols)
-    if isinstance(img, str):
-      img = K.preprocessing.image.load_img(img, target_size = target_size)
-    return K.backend.variable(np.expand_dims(K.preprocessing.image.img_to_array(img), axis = 0))
-
-  def deprocess(self, generated):
-    generated = generated.reshape((self.num_rows, self.num_cols, 3))
-
-    generated[:, :, 0] += 103.939
-    generated[:, :, 1] += 116.779
-    generated[:, :, 2] += 123.68
-
-    generated = generated[:, :, ::-1]
-    generated = np.clip(generated, 0, 255).astype('uint8')
-    return generated
-
-Error_Handling.suppress_tf_warnings()
-net = Neural_Style_Transfer("vgg19")
-net.train("/home/ryan/PycharmProjects/easyai/dog.jpg", "/home/ryan/PycharmProjects/easyai/picasso.jpg")
