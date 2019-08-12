@@ -313,4 +313,6 @@ class Neural_Style_Transfer(object):
 
 Error_Handling.suppress_tf_warnings()
 net = Neural_Style_Transfer("vgg19")
-net.train("/home/ryan/PycharmProjects/easyai/dog.jpg", "/home/ryan/PycharmProjects/easyai/picasso.jpg", epochs = 1000)
+net.train("/home/ryan/PycharmProjects/easyai/support/raw_datasets/neural_style_transfer/content/dog.jpg",
+          "/home/ryan/PycharmProjects/easyai/support/raw_datasets/neural_style_transfer/style/picasso.jpg",
+          epochs = 1000)
