@@ -8,7 +8,6 @@ Applications of core layers and networks in larger, more real-world-based algori
 """
 
 import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
 from PIL import Image
 from scipy.optimize import fmin_l_bfgs_b
 from easyai.core import *
@@ -124,7 +123,11 @@ class Neural_Style_Transfer(object):
     """
     self.image_init(content, style)
 
-    self.img_tensor = K.backend.concatenate([self.content, self.style, self.generated], axis = 0)
+    try:
+      self.img_tensor = K.backend.concatenate([self.content, self.style, self.generated], axis = 0)
+    except ValueError:
+      self.display_original(content, style)
+      raise ValueError("img_tensor could not be created")
     self.img_order = ["content", "style", "generated"]
 
     self.model_init()
@@ -209,6 +212,8 @@ class Neural_Style_Transfer(object):
       # updating pixel values using L-BFGS-B
       self.img, cost, throwaway = fmin_l_bfgs_b(func = self.evaluator.f_loss, x0 = self.img.flatten(),
                                                 fprime = self.evaluator.f_grads, maxfun = 20) # 20 iterations per epoch
+      plt.close()
+
       if verbose:
         print ("Epoch {0}/{1}".format(epoch + 1, epochs))
         print (" - {0}s - cost: {1} [broken]".format(round(time() - start), cost)) # cost is broken-- it's way too high
@@ -334,8 +339,8 @@ class Neural_Style_Transfer(object):
     if self.net == "vgg19":
       means = self.get_hyperparams("means")
       for i in range(len(means)):
-        img[:, :, i] += means[i]
-      img = img[:, :, ::-1]
+        img[:, :, i] += means[i] # adding mean pixel values
+      img = img[:, :, ::-1] #BGR -> RBG
       img = np.clip(img, 0, 255).astype('uint8')
     else:
       raise NotImplementedError("data normalization for other nets is not supported yet")
@@ -352,17 +357,20 @@ class Neural_Style_Transfer(object):
       img = self.deprocess(img)
     except np.core._exceptions.UFuncTypeError:
       pass
+
     fig = plt.gcf()
+
     fig.canvas.set_window_title("Training...")
-    fig.imshow(img.reshape(*self.generated.shape[1:]))
-    fig.title(title)
-    fig.axis("off")
-    plt.show()
+    fig.suptitle(title)
+    plt.axis("off")
+
+    plt.imshow(img.reshape(*self.generated.shape[1:]))
+    plt.show(block = False)
 
   @staticmethod
   def display_original(content: Image.Image, style: Image.Image):
     """
-    DIsplays original images.
+    Displays original images.
 
     :param content: path to content image.
     :param style: path to style image.
@@ -377,7 +385,7 @@ class Neural_Style_Transfer(object):
     style_ax.imshow(style)
     style_ax.axis("off")
 
-    plt.show()
+    plt.show(block = False)
 
   # MISCELLANEOUS
   def get_hyperparams(self, *hyperparams: str) -> Union[str, tuple, float]:
