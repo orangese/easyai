@@ -9,6 +9,7 @@ Applications of core layers and networks in larger, more real-world-based algori
 
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+from PIL import Image
 from scipy.optimize import fmin_l_bfgs_b
 from easyai.core import *
 
@@ -94,6 +95,7 @@ class Neural_Style_Transfer(object):
                    }
                  }
 
+  # INITS
   def __init__(self, net: Union[str, NN] = None, num_rows: int = 400):
     """
     Initializes Neural_Style_Transfer object.
@@ -101,7 +103,7 @@ class Neural_Style_Transfer(object):
     :param net: pre-trained model. Either a string (name of model, e.g., "vgg19") or a NN object (model itself).
     :param num_rows: number of rows that the image has. Is a pre-defined but editable hyperparameter.
     """
-    self.net = net if not (net is None) else "vgg19"
+    self.net = net if net is not None else "vgg19"
     if isinstance(self.net, str):
       assert self.net == "vgg19", "only the vgg19 pre-trained model is supported"
     self.generated = None
@@ -110,17 +112,17 @@ class Neural_Style_Transfer(object):
     self.num_rows = num_rows
     self.num_cols = None
 
-  def train_init(self, content_path: str, style_path: str, noise: float = 0.6, verbose: bool = True):
+  def train_init(self, content: Image.Image, style: Image.Image, noise: float = 0.6, verbose: bool = True):
     """
     Initializes processed images (content, style, generated) from paths as keras tensors in preparation for training.
     Also initializes the created image as a copy. All variables are object attributes.
 
-    :param content_path: path to content image.
-    :param style_path: path to style image.
+    :param content: content image as PIL Image.
+    :param style: style image as PIL Image.
     :param noise: amount of noise in initially generated image. 0. <= noise <= 1.
     :param verbose: if true, prints additional information.
     """
-    self.image_init(content_path, style_path)
+    self.image_init(content, style)
 
     self.img_tensor = K.backend.concatenate([self.content, self.style, self.generated], axis = 0)
     self.img_order = ["content", "style", "generated"]
@@ -131,7 +133,7 @@ class Neural_Style_Transfer(object):
       print("Loaded {0} model".format(self.net))
 
     noise_image = np.random.uniform(-20.0, 20.0, size = self.generated.shape)
-    self.img = noise_image * noise + self.preprocess(content_path) * (1.0 - noise)
+    self.img = noise_image * noise + self.preprocess(content) * (1.0 - noise)
 
   def model_init(self):
     """
@@ -147,15 +149,15 @@ class Neural_Style_Transfer(object):
     self.k_model.trainable = False
     self.outputs = dict([(layer.name, layer.output) for layer in self.k_model.layers])
 
-  def image_init(self, content_path: str, style_path: str):
+  def image_init(self, content: Image.Image, style: Image.Image):
     """
     Initializes preprocessed images (content, style, generated) as object attributes.
 
-    :param content_path: path to content image.
-    :param style_path: path to style image.
+    :param content: content image as PIL Image.
+    :param style: style image as PIL Image.
     """
-    self.content = K.backend.variable(self.preprocess(content_path))
-    self.style = K.backend.variable(self.preprocess(style_path))
+    self.content = K.backend.variable(self.preprocess(content))
+    self.style = K.backend.variable(self.preprocess(style))
 
     self.gen_shape = (self.num_rows, self.num_cols, 3)
     print ("Generated image shape: {0}".format(self.gen_shape))
@@ -178,14 +180,15 @@ class Neural_Style_Transfer(object):
     self.model_func = K.backend.function([self.generated], outputs)
     self.evaluator = Evaluator(self)
 
-  def train(self, content_path: str, style_path: str, epochs: int = 1, init_noise: float = 0.6, verbose: bool = True,
-            save_path: str = None) -> np.ndarray:
+  # TRAINING
+  def train(self, content: Image.Image, style: Image.Image, epochs: int = 1, init_noise: float = 0.6,
+            verbose: bool = True, save_path: str = None) -> np.ndarray:
     """
     Trains a Neural_Style_Transfer object. More precisely, the pixel values of the created image are optimized using
     scipy's implementation of L-BFGS-B.
 
-    :param content_path: path to content image.
-    :param style_path: path to style image.
+    :param content: content image as PIL Image.
+    :param style: style image as PIL Image.
     :param epochs: number of iterations or epochs.
     :param init_noise: amount of noise in initially generated image. Range is [0., 1.].
     :param verbose: if true, prints information about each epoch.
@@ -194,11 +197,11 @@ class Neural_Style_Transfer(object):
     """
     content_layer, style_layers = self.get_hyperparams("content_layer", "style_layers")
 
-    self.train_init(content_path, style_path, verbose = verbose, noise = init_noise)
+    self.train_init(content, style, verbose = verbose, noise = init_noise)
     self.func_init(content_layer, style_layers)
 
     if verbose:
-      Neural_Style_Transfer.display_original(content_path, style_path)
+      Neural_Style_Transfer.display_original(content, style)
 
     for epoch in range(epochs):
       start = time()
@@ -211,7 +214,7 @@ class Neural_Style_Transfer(object):
         print (" - {0}s - cost: {1} [broken]".format(round(time() - start), cost)) # cost is broken-- it's way too high
         self.display_img(self.img, "Epoch {0}/{1}".format(epoch + 1, epochs))
 
-      if not (save_path is None):
+      if save_path is not None:
         full_save_path = save_path + "/epoch{0}.png".format(epoch + 1)
         K.preprocessing.image.save_img(full_save_path, self.deprocess(self.img))
 
@@ -297,11 +300,11 @@ class Neural_Style_Transfer(object):
     return cost
 
   # IMAGE PROCESSING
-  def preprocess(self, img: Union[str, np.ndarray], target_size = None) -> np.ndarray:
+  def preprocess(self, img: Image.Image, target_size = None) -> np.ndarray:
     """
     Preprocesses an image.
 
-    :param img: image to preprocess. Can either be a pixel array or a string representing the path to an image.
+    :param img: image to preprocess. Should be a pixel numpy array.
     :param target_size: target size of the image. If is none, defaults to object attributes.
     :return: processed image.
     :raises NotImplementedError: data normalization for other nets is not supported yet
@@ -309,11 +312,10 @@ class Neural_Style_Transfer(object):
     # because of pass-by-assignment properties, a copy must be made to prevent tampering with original img
     if target_size is None:
       if self.num_cols is None:
-        width, height = K.preprocessing.image.load_img(img).size
+        width, height = reversed(np.asarray(img).shape[:-1])
         self.num_cols = int(width * self.num_rows / height)
       target_size = (self.num_rows, self.num_cols)
-    if isinstance(img, str):
-      img = K.preprocessing.image.load_img(img, target_size = target_size)
+    img = img.resize(reversed(target_size), Image.NEAREST) # resizing image with interpolation = NEAREST
     img = np.expand_dims(K.preprocessing.image.img_to_array(img), axis = 0)
     if self.net == "vgg19":
       return K.applications.vgg19.preprocess_input(img)
@@ -339,7 +341,7 @@ class Neural_Style_Transfer(object):
       raise NotImplementedError("data normalization for other nets is not supported yet")
     return img
 
-  def display_img(self, img, title):
+  def display_img(self, img: np.ndarray, title: str):
     """
     Displays image.
 
@@ -350,31 +352,30 @@ class Neural_Style_Transfer(object):
       img = self.deprocess(img)
     except np.core._exceptions.UFuncTypeError:
       pass
-    plt.imshow(img.reshape(*self.generated.shape[1:]))
-    plt.title(title)
-    plt.axis("off")
+    fig = plt.gcf()
+    fig.canvas.set_window_title("Training...")
+    fig.imshow(img.reshape(*self.generated.shape[1:]))
+    fig.title(title)
+    fig.axis("off")
     plt.show()
 
   @staticmethod
-  def display_original(content_path, style_path):
+  def display_original(content: Image.Image, style: Image.Image):
     """
     DIsplays original images.
 
-    :param content_path: path to content image.
-    :param style_path: path to style image.
+    :param content: path to content image.
+    :param style: path to style image.
     """
-    images = [mpimg.imread(content_path), mpimg.imread(style_path)]
-
-    fig, (content, style) = plt.subplots(1, 2)
+    fig, (content_ax, style_ax) = plt.subplots(1, 2)
     fig.suptitle("Original images")
+    fig.canvas.set_window_title("Pre-training")
 
-    content.imshow(images[0])
-    content.title.set_text([char for char in content_path.split("/")][-1])
-    content.axis("off")
+    content_ax.imshow(content)
+    content_ax.axis("off")
 
-    style.imshow(images[1])
-    style.title.set_text([char for char in style_path.split("/")][-1])
-    style.axis("off")
+    style_ax.imshow(style)
+    style_ax.axis("off")
 
     plt.show()
 

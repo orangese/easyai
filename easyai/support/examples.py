@@ -93,34 +93,33 @@ class Art(Static_Interface):
   """
 
   @staticmethod
-  def neural_style_transfer(path, content_image = None, style_image = None):
+  def neural_style_transfer(content = None, style = None):
     """
     Neural style transfer with art and photographs.
 
-    :param path: path to easyai project.
-    :param content_image: name of content image. Default is a random image from built-in datasets.
-    :param style_image: name of style image. Default is a random image from built-in datasets.
+    :param content: name of content image from dataset. Default is a random image from built-in datasets.
+    :param style: name of style image from dataset. Default is a random image from built-in datasets.
     :return: trained Neural_Style_Transfer object.
     """
+    def get_img(img_name, type_, images):
+      if img_name is None:
+        return random.choice(list(images[type_].items()))
+      else:
+        return img_name, images[type_][img_name]
+
     Error_Handling.suppress_tf_warnings()
 
-    if content_image is None or style_image is None:
-      content_path = path + "/support/raw_datasets/neural_style_transfer/content/"
-      content_path += random.choice(os.listdir(content_path))
+    images = Extras.load_nst_dataset()
+    print ("Loaded NST images")
 
-      style_path = path + "/support/raw_datasets/neural_style_transfer/style/"
-      style_path += random.choice(os.listdir(style_path))
-    else:
-      content_path = path + "/support/raw_datasets/neural_style_transfer/content/" + content_image
-      style_path = path + "/support/raw_datasets/neural_style_transfer/style/" + style_image
+    content_name, content_img = get_img(content, "content", images)
+    style_name, style_img = get_img(style, "style", images)
 
-    content_name = [char for char in content_path.split("/")][-1]
-    style_name = [char for char in style_path.split("/")][-1]
     print ("Using content image \"{0}\" and style image \"{1}\"".format(content_name, style_name))
 
     model = Neural_Style_Transfer()
 
-    final_img = model.train(content_path, style_path, epochs = 100, init_noise = 0.6)
+    final_img = model.train(content_img, style_img, epochs = 100, init_noise = 0.6)
 
     model.display_img(final_img, "Final result")
 
