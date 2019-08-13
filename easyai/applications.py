@@ -123,11 +123,7 @@ class Neural_Style_Transfer(object):
     """
     self.image_init(content, style)
 
-    try:
-      self.img_tensor = K.backend.concatenate([self.content, self.style, self.generated], axis = 0)
-    except ValueError:
-      self.display_original(content, style)
-      raise ValueError("img_tensor could not be created")
+    self.img_tensor = K.backend.concatenate([self.content, self.style, self.generated], axis = 0)
     self.img_order = ["content", "style", "generated"]
 
     self.model_init()
@@ -365,6 +361,7 @@ class Neural_Style_Transfer(object):
     plt.axis("off")
 
     plt.imshow(img.reshape(*self.generated.shape[1:]))
+    plt.pause(0.1)
     plt.show(block = False)
 
   @staticmethod
@@ -380,10 +377,12 @@ class Neural_Style_Transfer(object):
     fig.canvas.set_window_title("Pre-training")
 
     content_ax.imshow(content)
+    plt.pause(0.1)
     content_ax.axis("off")
 
     style_ax.imshow(style)
     style_ax.axis("off")
+    plt.pause(0.1)
 
     plt.show(block = False)
 
