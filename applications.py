@@ -74,17 +74,17 @@ class Neural_Style_Transfer(object):
                    },
                  "COEF_C":
                    {
-                     "vgg19": 10.0,
+                     "vgg19": 1.0,
                      "NN": None
                    },
                  "COEF_S":
                    {
-                     "vgg19": 1.0,
+                     "vgg19": 1e3,
                      "NN": None
                    },
                  "COEF_V":
                    {
-                     "vgg19": 0.1,
+                     "vgg19": 1.0,
                      "NN": None
                    },
                  "MEANS":
