@@ -39,7 +39,7 @@ class Links(Static_Interface):
              "starry_night_van_gogh":
                "https://drive.google.com/uc?export=download&id=18MpTOAt40ngCRpX1xcckwxUXNhOiBemJ",
              "shipwreck_of_the_minotaur_turner":
-               "https://drive.google.com/uc?export=download&id=1veUesQjxAt_1CDU9LD3a_wbhKf6saJeM",
+               "https://drive.google.com/uc?export=download&id=1yitUFvNuL7MS3BUUjow5bQfGBXdad0-M",
              "little_village_duncanson":
                "https://drive.google.com/uc?export=download&id=1ys1wrH6Glhfvr28kvgvLLwP5NoSL_0JS",
              "impression_soleil_levant_monet":

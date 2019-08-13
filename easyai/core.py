@@ -45,6 +45,7 @@ class Error_Handling(Static_Interface):
       tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
     except AttributeError:
       tf.logging.set_verbosity(tf.logging.ERROR)
+    # compatible with tensorflow == 1.14.0 and tensorflow-gpu == 1.8.0
 
 # CORE LAYERS
 class Abstract_Layer(Static_Interface):
