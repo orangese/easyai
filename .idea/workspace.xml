@@ -2,37 +2,14 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d61cf620-b9ab-4e65-b453-975546cf754a" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/easyai/support/load.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/easyai/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/easyai/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/easyai/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/easyai/applications.py" beforeDir="false" afterPath="$PROJECT_DIR$/easyai/applications.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/easyai/support/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/easyai/support/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/easyai/support/datasets.py" beforeDir="false" afterPath="$PROJECT_DIR$/easyai/support/datasets.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/easyai/support/examples.py" beforeDir="false" afterPath="$PROJECT_DIR$/easyai/support/examples.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/easyai/support/raw_datasets/lending_club_dataset.xlsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/easyai/support/raw_datasets/neural_style_transfer/content/arno_river_buildings.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/easyai/support/raw_datasets/neural_style_transfer/content/dog.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/easyai/support/raw_datasets/neural_style_transfer/content/einstein.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/easyai/support/raw_datasets/neural_style_transfer/content/flower.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/easyai/support/raw_datasets/neural_style_transfer/content/golden_gate_bridge.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/easyai/support/raw_datasets/neural_style_transfer/content/mark_zuckerberg.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/easyai/support/raw_datasets/neural_style_transfer/content/mona_lisa_da_vinci.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/easyai/support/raw_datasets/neural_style_transfer/content/mountain_painting.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/easyai/support/raw_datasets/neural_style_transfer/content/turtle.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/easyai/support/raw_datasets/neural_style_transfer/content/wwi_portrait.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/easyai/support/raw_datasets/neural_style_transfer/style/bottle_and_fishes_braque.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/easyai/support/raw_datasets/neural_style_transfer/style/cubist_karthik.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/easyai/support/raw_datasets/neural_style_transfer/style/femme_nue_assise_picasso.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/easyai/support/raw_datasets/neural_style_transfer/style/impression_soleil_levant_monet.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/easyai/support/raw_datasets/neural_style_transfer/style/little_village_duncanson.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/easyai/support/raw_datasets/neural_style_transfer/style/shipwreck_of_the_minotaur_turner.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/easyai/support/raw_datasets/neural_style_transfer/style/starry_night_van_gogh.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/easyai/support/raw_datasets/neural_style_transfer/style/the_scream_munch.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/easyai/support/raw_datasets/neural_style_transfer/style/water_lilies_monet.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/easyai/support/raw_datasets/neural_style_transfer/style/wheatfields_with_crows_van_gogh.jpg" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/setup.py" beforeDir="false" afterPath="$PROJECT_DIR$/setup.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -89,7 +66,7 @@
     <property name="node.js.selected.package.tslint" value="(autodetect)" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
-    <property name="settings.editor.selected.configurable" value="Errors" />
+    <property name="settings.editor.selected.configurable" value="preferences.keymap" />
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
@@ -190,7 +167,7 @@
       <workItem from="1565563185759" duration="25723000" />
       <workItem from="1565630263709" duration="20263000" />
       <workItem from="1565696060747" duration="1880000" />
-      <workItem from="1565698045115" duration="9697000" />
+      <workItem from="1565698045115" duration="10057000" />
     </task>
     <servers />
   </component>
