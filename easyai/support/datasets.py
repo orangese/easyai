@@ -7,10 +7,51 @@ Program that implements easyai.core and provides wrapper for keras data loaders.
 
 """
 
-from easyai.core import *
 import pandas as pd
+from PIL import Image
+import requests
+from io import BytesIO
+from glob import glob
+from easyai.core import *
 
-# CLASSES
+# DATASETS
+class Links(Static_Interface):
+
+  class NST(Static_Interface):
+
+    content = {"wwi_portrait": "https://drive.google.com/uc?export=download&id=1e9RdRiLOvMn9ZzqtRVdAX59Kf_NJaVAt",
+               "turtle": "https://drive.google.com/uc?export=download&id=1RINMB9dVe7ZIOon3V0ZO2Wpz4-9dPCbO",
+               "mountain_painting": "https://drive.google.com/uc?export=download&id=1_bmWZxTdE4cXvSiZZ_HQpzFsiytkZV5z",
+               "mona_lisa_da_vinci": "https://drive.google.com/uc?export=download&id=1nfJ0-200MkjbuQEWsmKeO0C-byrZSQRF",
+               "mark_zuckerberg": "https://drive.google.com/uc?export=download&id=1hiJUwf3cMnCFy_aSf0f0hvL25dfh7h-K",
+               "golden_gate_bridge": "https://drive.google.com/uc?export=download&id=1XH5vHXQfdKs4XOhWj4DN31Npwg6PVykb",
+               "flower": "https://drive.google.com/uc?export=download&id=1baUPRVEh82szkeQ0601O4gpj_mNNbpbe",
+               "einstein": "https://drive.google.com/uc?export=download&id=1FKNW8QYoAQ6y7V6sPss-YsmmOMAUUWZS",
+               "dog": "https://drive.google.com/uc?export=download&id=1f8aNYIJqBrMqYEYYSMPOmzgVmS_9C969",
+               "arno_river_buildings":
+                 "https://drive.google.com/uc?export=download&id=1ynBPvxuUOUo4upgTNE4KCab4F26leSLi"
+               }
+
+    style = {"wheatfields_with_crows_van_gogh":
+               "https://drive.google.com/uc?export=download&id=1YH2IE42KcwxOzu3C_xs6F_cLT4VJqpAW",
+             "water_lilies_monet": "https://drive.google.com/uc?export=download&id=1I8hkXBpwEq_tuOsnDcEWt8naMCLnXiDZ",
+             "the_scream_munch": "https://drive.google.com/uc?export=download&id=1kUybhXBJF8NfWm8A1-Ry7KksbG3jx8hb",
+             "starry_night_van_gogh":
+               "https://drive.google.com/uc?export=download&id=18MpTOAt40ngCRpX1xcckwxUXNhOiBemJ",
+             "shipwreck_of_the_minotaur_turner":
+               "https://drive.google.com/uc?export=download&id=1veUesQjxAt_1CDU9LD3a_wbhKf6saJeM",
+             "little_village_duncanson":
+               "https://drive.google.com/uc?export=download&id=1ys1wrH6Glhfvr28kvgvLLwP5NoSL_0JS",
+             "impression_soleil_levant_monet":
+               "https://drive.google.com/uc?export=download&id=1DSh4O6htoLvsUnXRF5eacXG12FdrIBuM",
+             "femme_nue_assise_picasso":
+               "https://drive.google.com/uc?export=download&id=1UCXxpJymtC4ddvEpx6ulkbkwL0dDm8Co",
+             "cubist_karthik": "https://drive.google.com/uc?export=download&id=19AKRyeJxNHWg8w50xE0VWyI33r-VMZTe",
+             "bottle_and_fishes_braque":
+               "https://drive.google.com/uc?export=download&id=1JfBSd7CHIUIEKI7Zyl4XKX4Wy8W6X4e-"
+             }
+
+# DATA LOADERS
 class Builtins(Static_Interface):
   """
   Data loaders (including preprocessing) for built-in keras datasets. These include: MNIST, Fashion-MNIST,
@@ -85,9 +126,38 @@ class Builtins(Static_Interface):
 class Extras(Static_Interface):
   """
   Data loaders (including pre-processing) for other datasets, including user-importd ones and native easyai
-  datasets. These include: LendingClub (credit rating) dataset.
+  datasets. These include: LendingClub (credit rating) dataset and neural style transfer images.
   """
 
+  @staticmethod
+  def load_nst_dataset() -> dict:
+    """
+    Method to load images used as examples for neural style transfer.
+
+    :return: a dictionary of two dictionaries. The first dictionary contains the names of the content images mapped to
+             the content images (Image objects), and the second contains the names of the style images mapped to the
+              style images.
+    """
+    # helper variables and lambdas
+    urls_to_imgs = lambda urls: [Image.open(BytesIO(requests.get(url).content)) for url in urls]
+    dict_from_lists = lambda keys, values: dict(zip(keys, values))
+    content_dict = Links.NST.content
+    style_dict = Links.NST.style
+
+    images = {"content": None, "styles": None}
+
+    #retrieving names of images and values and mapping them
+    content_keys = list(content_dict.keys())
+    content_imgs = urls_to_imgs(list(content_dict.values()))
+    images["content"] = dict_from_lists(content_keys, content_imgs)
+
+    style_keys = list(style_dict.keys())
+    style_imgs = urls_to_imgs(list(style_dict.values()))
+    images["style"] = dict_from_lists(style_keys, style_imgs)
+
+    return images
+
+  # BROKEN
   @staticmethod
   def load_lending_club() -> tuple:
     """
@@ -167,7 +237,7 @@ class Extras(Static_Interface):
 
     def load_file(filestream):
       """Reads a specific excel file and prepares it for data processing."""
-      data = pd.read_excel(filestream)
+      data = pd.ExcelFile(filestream, engine = "xlrd")
       del data["loan_status"]
       del data["funded_amnt"]
       del data["sub_grade"]
@@ -206,9 +276,9 @@ class Extras(Static_Interface):
 
       return data.values.reshape(len(data.index), len(data.columns), 1), np.array(labels)
 
-    def load_data(file_name, ratio = 0.8):
+    def load_data(file, ratio = 0.8):
       """Data processer (essentially a wrapper for load_file). Ratio is the fraction of data that is training data."""
-      inputs, labels = load_file(file_name)
+      inputs, labels = load_file(file)
 
       big_data = unison_shuffle(inputs.reshape(len(inputs), len(inputs[0])),
                                 labels.reshape(len(labels), len(labels[0])))
@@ -216,4 +286,5 @@ class Extras(Static_Interface):
 
       return (big_data[0][:num_train], big_data[1][:num_train]), (big_data[0][num_train:], big_data[1][num_train:])
 
-    return load_data("/Users/Ryan/PycharmProjects/easyai/easyai/support/raw_datasets/lending_club_dataset.xlsx")
+    return load_data(
+      "https://drive.google.com/uc?export=download&id=1HYE7qIgAjdYve_sS1ixZH8TJTE5wB-sv")
