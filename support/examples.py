@@ -120,11 +120,9 @@ class Art(Static_Interface):
 
     model = Neural_Style_Transfer()
 
-    final_img = model.train(content_path, style_path, epochs = 100, init_noise = 0.8)
+    final_img = model.train(content_path, style_path, epochs = 100, init_noise = 0.6)
 
     model.display_img(final_img, "Final result")
-
-Art.neural_style_transfer("/home/ryan/PycharmProjects/easyai", "flower.jpg", "the_scream_munch.jpg")
 
 #--BELOW NOT SUPPORTED--
 from tkinter import *
