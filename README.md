@@ -20,7 +20,8 @@ The most basic EasyAI model is the `NN` object:
 
 ```python
 
-from easyai.core import NN, Input, Dense
+from easyai import NN
+from easyai.core import Input, Dense
 
 neural_network = NN([Input(100), Dense(200), Dense(5)])
 
