@@ -64,4 +64,6 @@ EasyAI is a Python package and can therefore be installed with Python's installa
 
 If you have a CUDA-capable GPU and CUDA software (if you don't know what that means, you don't have it), install EasyAI via the command `pip3 install git+https://github.com/orangese/easyai.git#egg=easyai[gpu]`.
 
-Otherwise, install EasyAI via the command `pip3 install git+https://github.com/orangese/easyai.git#egg=easyai[cpu]`.
+Otherwise, install EasyAI via the command 
+
+`pip3 install git+https://github.com/orangese/easyai.git#egg=easyai[cpu]`.
