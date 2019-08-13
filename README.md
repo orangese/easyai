@@ -70,8 +70,7 @@ Otherwise, use: `pip3 install git+https://github.com/orangese/easyai.git#egg=eas
 
 ### Upgrade
 
-If you have a CUDA-capable GPU and CUDA software: upgrade EasyAI using this command:
+If you have a CUDA-capable GPU and CUDA software, upgrade EasyAI by using the below command:  
 `pip3 install --upgrade git+https://github.com/orangese/easyai.git#egg=easyai[gpu]`.
 
-Otherwise, use: 
-`pip3 install --upgrade git+https://github.com/orangese/easyai.git#egg=easyai[cpu]`.
+Otherwise, use: `pip3 install --upgrade git+https://github.com/orangese/easyai.git#egg=easyai[cpu]`.
