@@ -7,7 +7,7 @@ Program that implements easyai.core and provides wrapper for keras data loaders.
 
 """
 
-from core import *
+from easyai.core import *
 import pandas as pd
 
 # CLASSES

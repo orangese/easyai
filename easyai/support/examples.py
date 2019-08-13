@@ -9,8 +9,8 @@ Program that implements easyai.support.datasets and easyai.core in examples like
 
 import os
 import random
-from support.datasets import *
-from applications import *
+from easyai.support.datasets import *
+from easyai.applications import *
 
 # CLASSES
 class MNIST(Static_Interface):

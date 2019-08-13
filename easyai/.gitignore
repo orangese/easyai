@@ -3,9 +3,8 @@ __pycache__/
 *.pyc
 
 # Pycharm
-.idea/
+../.idea/
 .DS_Store
 
 # Testing files
 /_tests/
-\_*

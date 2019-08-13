@@ -10,7 +10,7 @@ Applications of core layers and networks in larger, more real-world-based algori
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from scipy.optimize import fmin_l_bfgs_b
-from core import *
+from easyai.core import *
 
 # SUPPORT
 class Evaluator(object):
