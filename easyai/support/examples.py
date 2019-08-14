@@ -7,7 +7,6 @@ Program that implements easyai.support.datasets and easyai.core in examples like
 
 """
 
-import os
 import random
 from easyai.support.datasets import *
 from easyai.applications import *
@@ -93,7 +92,7 @@ class Art(Static_Interface):
   """
 
   @staticmethod
-  def neural_style_transfer(content = None, style = None):
+  def neural_style_transfer(content = None, style = None, save_path = None):
     """
     Neural style transfer with art and photographs.
 
@@ -105,7 +104,10 @@ class Art(Static_Interface):
       if img_name is None:
         return random.choice(list(images[type_].items()))
       else:
-        return img_name, images[type_][img_name]
+        try:
+          return img_name, images[type_][img_name]
+        except KeyError:
+          raise ValueError("supported {0} images are {1}".format(type_, list(images[type_].keys())))
 
     Error_Handling.suppress_tf_warnings()
 
@@ -119,9 +121,14 @@ class Art(Static_Interface):
 
     model = Neural_Style_Transfer()
 
-    final_img = model.train(content_img, style_img, epochs = 100, init_noise = 0.6)
+    final_img = model.train(content_img, style_img, epochs = 25, init_noise = 0.6)
 
     model.display_img(final_img, "Final result")
+
+    if save_path is not None:
+      full_save_path = save_path + "/{0}_{1}.jpg".format(content_name, style_name)
+      K.preprocessing.image.save_img(full_save_path, final_img)
+      print ("Saved image at \"{0}\"".format(full_save_path))
 
 #--BELOW NOT SUPPORTED--
 from tkinter import *
@@ -212,7 +219,11 @@ class Unsupported(Static_Interface):
     plt.imshow(pixels, cmap="gray")
     plt.show()
 
-# filename = "test.png"
-# Unsupported.draw("test.png")
-# activation = Unsupported.getActivation(filename)
-# Unsupported.display_image(activation)
+if __name__ == "__main__":
+  # filename = "test.png"
+  # Unsupported.draw("test.png")
+  # activation = Unsupported.getActivation(filename)
+  # Unsupported.display_image(activation)
+
+  Art.neural_style_transfer("nyc", "blue_green_stained_glass",
+                            save_path = "/home/ryan/Pictures/nst_generated")
