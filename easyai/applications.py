@@ -75,18 +75,9 @@ class Neural_Style_Transfer(object):
                  "MEANS": {"other": [103.939, 116.779, 123.68]} # not a hp-- don't edit
                  }
 
-  MODELS = {"densenet": "DenseNet201",
-            "inception_resnet_v2": "InceptionResNetV2",
-            "inception_v3": "InceptionV3",
-            "mobilenet": "MobileNet",
-            "mobilenet_v2": "MobileNetV2",
-            "nasnet": "NASNetMobile",
-            "resnet": "ResNet152",
-            "resnet50": "ResNet50",
-            "resnet_v2": "ResNet152V2",
-            "vgg16": "VGG16",
-            "vgg19": "VGG19",
-            "xception": "Xception"}
+  MODELS = {"vgg16": "VGG16",
+            "vgg19": "VGG19"
+            }
 
   # INITS
   def __init__(self, net: str = None, num_rows: int = 400):
