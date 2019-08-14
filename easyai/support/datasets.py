@@ -44,13 +44,14 @@ class Links(Static_Interface):
                "https://drive.google.com/uc?export=download&id=1LxjKiXAiPM1OFg2s9c-cbFEqIwHp2ffN",
              "little_village_duncanson":
                "https://drive.google.com/uc?export=download&id=1ys1wrH6Glhfvr28kvgvLLwP5NoSL_0JS",
-             "impression_soleil_levant_monet":
-               "https://drive.google.com/uc?export=download&id=1DSh4O6htoLvsUnXRF5eacXG12FdrIBuM",
+             "udnie_picabia": "https://drive.google.com/uc?export=download&id=1sFVDVyWgNle7La5sgz9vks42uNAUYIVv",
              "femme_nue_assise_picasso":
                "https://drive.google.com/uc?export=download&id=1IACcGYMY0kYS9K5Ng-mTPQc3USCEu7Or",
              "cubist_karthik": "https://drive.google.com/uc?export=download&id=19AKRyeJxNHWg8w50xE0VWyI33r-VMZTe",
              "bottle_and_fishes_braque":
-               "https://drive.google.com/uc?export=download&id=1JfBSd7CHIUIEKI7Zyl4XKX4Wy8W6X4e-"
+               "https://drive.google.com/uc?export=download&id=1JfBSd7CHIUIEKI7Zyl4XKX4Wy8W6X4e-",
+             "great_wave_off_kanagawa_hokusai":
+               "https://drive.google.com/uc?export=download&id=104dqfFU4z3ul-hGgbNYAvLUP4OuD2GBw"
              }
 
 # DATA LOADERS
