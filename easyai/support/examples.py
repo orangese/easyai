@@ -26,7 +26,7 @@ class MNIST(Static_Interface):
     :param version: "digits" for MNIST dataset or "fashion" for Fashion-MNIST dataset.
     :return: trained NN model.
     """
-    Error_Handling.suppress_tf_warnings()
+    suppress_tf_warnings()
 
     (x_train, y_train), (x_test, y_test) = Builtins.load_mnist(version = version, mode = "mlp")
     print ("Loaded MNIST data\n")
@@ -47,7 +47,7 @@ class MNIST(Static_Interface):
     :param version: "digits" for MNIST dataset or "fashion" for Fashion-MNIST dataset.
     :return: trained NN model.
     """
-    Error_Handling.suppress_tf_warnings()
+    suppress_tf_warnings()
 
     (x_train, y_train), (x_test, y_test) = Builtins.load_mnist(version = version, mode = "conv")
     print ("Loaded MNIST data")
@@ -73,7 +73,7 @@ class Lending_Club(Static_Interface):
 
     :return: trained NN model.
     """
-    Error_Handling.suppress_tf_warnings()
+    suppress_tf_warnings()
 
     (x_train, y_train), (x_test, y_test) = Extras.load_lending_club()
     print("Loaded LendingClub data")
@@ -111,7 +111,7 @@ class Art(Static_Interface):
         except KeyError:
           raise ValueError("supported {0} images are {1}".format(type_, list(images[type_].keys())))
 
-    Error_Handling.suppress_tf_warnings()
+    suppress_tf_warnings()
 
     images = Extras.load_nst_dataset()
     print ("Loaded NST images")
@@ -206,7 +206,7 @@ class Unsupported(Static_Interface):
 
     :return: trained NN model.
     """
-    Error_Handling.suppress_tf_warnings()
+    suppress_tf_warnings()
 
   @staticmethod
   def display_image(pixels, label=None):
