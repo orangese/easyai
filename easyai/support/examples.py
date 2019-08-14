@@ -8,8 +8,9 @@ Program that implements easyai.support.datasets and easyai.core in examples like
 """
 
 import random
-from easyai.support.datasets import *
+
 from easyai.applications import *
+from easyai.support.datasets import *
 
 # CLASSES
 class MNIST(Static_Interface):
@@ -98,6 +99,7 @@ class Art(Static_Interface):
 
     :param content: name of content image from dataset. Default is a random image from built-in datasets.
     :param style: name of style image from dataset. Default is a random image from built-in datasets.
+    :param save_path: path to which to save final result. Default is None.
     :return: trained Neural_Style_Transfer object.
     """
     def get_img(img_name, type_, images):
@@ -119,7 +121,7 @@ class Art(Static_Interface):
 
     print ("Using content image \"{0}\" and style image \"{1}\"".format(content_name, style_name))
 
-    model = Neural_Style_Transfer()
+    model = Neural_Style_Transfer("inception_resnet_v2")
 
     final_img = model.train(content_img, style_img, epochs = 25, init_noise = 0.6)
 
@@ -224,6 +226,5 @@ if __name__ == "__main__":
   # Unsupported.draw("test.png")
   # activation = Unsupported.getActivation(filename)
   # Unsupported.display_image(activation)
-
   Art.neural_style_transfer("nyc", "blue_green_stained_glass",
                             save_path = "/home/ryan/Pictures/nst_generated")

@@ -1,7 +1,7 @@
-from . import support
 from . import applications
 from . import core
+from . import support
 
 # Importable from root
-from .core import NN
 from .core import Error_Handling
+from .core import NN

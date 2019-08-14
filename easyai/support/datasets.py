@@ -7,11 +7,12 @@ Program that implements easyai.core and provides wrapper for keras data loaders.
 
 """
 
-import pandas as pd
-from PIL import Image
-import requests
 from io import BytesIO
-from glob import glob
+
+import pandas as pd
+import requests
+from PIL import Image
+
 from easyai.core import *
 
 # DATASETS

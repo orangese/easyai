@@ -8,11 +8,11 @@ machine learning.
 
 """
 
-# BLANKET IMPORTS FOR ALL FILES
-import keras as K
-import numpy as np
 from time import time
 from typing import Union
+
+import keras as K
+import numpy as np
 
 # SUPPORT
 class Static_Interface(object):

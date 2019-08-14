@@ -7,10 +7,10 @@ Loads new, user-supplied data.
 
 """
 
-from PIL import Image
 from glob import glob
 from typing import Tuple
-from easyai.core import *
+
+from PIL import Image
 
 def load_nst_images(content_path: str, style_path: str) -> Tuple[Image.Image, Image.Image]:
   """
