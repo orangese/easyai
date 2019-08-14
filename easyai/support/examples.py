@@ -121,7 +121,7 @@ class Art(Static_Interface):
 
     print ("Using content image \"{0}\" and style image \"{1}\"".format(content_name, style_name))
 
-    model = Neural_Style_Transfer("inception_resnet_v2")
+    model = Neural_Style_Transfer("vgg19")
 
     final_img = model.train(content_img, style_img, epochs = 25, init_noise = 0.6)
 
@@ -226,5 +226,10 @@ if __name__ == "__main__":
   # Unsupported.draw("test.png")
   # activation = Unsupported.getActivation(filename)
   # Unsupported.display_image(activation)
-  Art.neural_style_transfer("nyc", "blue_green_stained_glass",
-                            save_path = "/home/ryan/Pictures/nst_generated")
+
+  styles = list(Links.NST.style.keys())
+  contents = list(Links.NST.content.keys())
+
+  for style in styles:
+    for content in contents:
+      Art.neural_style_transfer(content, style, save_path = "/home/ryan/Documents")

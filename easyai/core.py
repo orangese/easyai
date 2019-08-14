@@ -25,6 +25,8 @@ def suppress_tf_warnings():
     tf.logging.set_verbosity(tf.logging.ERROR)
   # compatible with tensorflow == 1.14.0 and tensorflow-gpu == 1.8.0
 
+suppress_tf_warnings()
+
 from time import time
 from typing import Union
 
