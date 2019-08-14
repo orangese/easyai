@@ -66,32 +66,13 @@ class Neural_Style_Transfer(object):
   from the keras implementation of neural style transfer.
   """
 
-  HYPERPARAMS = {"CONTENT_LAYER":
-                   {
-                     "vgg19": "block5_conv2",
-                     "other": None
-                   },
+  HYPERPARAMS = {"CONTENT_LAYER": {"other": "block5_conv2"},
                  "STYLE_LAYERS":
-                   {
-                     "vgg19": ["block1_conv1", "block2_conv1", "block3_conv1", "block4_conv1", "block5_conv1"],
-                     "other": None
-                   },
-                 "COEF_C":
-                   {
-                     "other": 1e0,
-                   },
-                 "COEF_S":
-                   {
-                     "other": 1e3,
-                   },
-                 "COEF_V":
-                   {
-                     "other": 1e1,
-                   },
-                 "MEANS": # not a hp-- don't edit
-                   {
-                     "other": [103.939, 116.779, 123.68],
-                   }
+                   {"other": ["block1_conv1", "block2_conv1", "block3_conv1", "block4_conv1", "block5_conv1"]},
+                 "COEF_C": {"other": 1e0},
+                 "COEF_S": {"other": 1e3},
+                 "COEF_V": {"other": 1e1},
+                 "MEANS": {"other": [103.939, 116.779, 123.68]} # not a hp-- don't edit
                  }
 
   MODELS = {"densenet": "DenseNet201",
@@ -211,9 +192,6 @@ class Neural_Style_Transfer(object):
     self.train_init(content, style, verbose = verbose, noise = init_noise)
 
     content_layer, style_layers = self.get_hyperparams("content_layer", "style_layers")
-    if content_layer is None or style_layers is None:
-      content_layer, style_layers = self.generate_layers()
-    print (content_layer, style_layers)
 
     self.tensor_init(content_layer, style_layers)
 
@@ -410,12 +388,3 @@ class Neural_Style_Transfer(object):
     except KeyError:
       fetched = tuple(Neural_Style_Transfer.HYPERPARAMS[hp.upper()]["other"] for hp in hyperparams)
     return fetched[0] if len(fetched) == 1 else fetched
-
-  def generate_layers(self) -> tuple:
-    possible_layers = [layer.name for layer in self.k_model.layers if "conv" in layer.name]
-    num_layers = len(possible_layers)
-
-    content_layer = possible_layers[int(0.9 * num_layers)]
-    style_layers = [possible_layers[style_layer] for style_layer in range(1, num_layers, int(num_layers / 4))]
-
-    return content_layer, style_layers
