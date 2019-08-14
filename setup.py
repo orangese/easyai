@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name = "easyai",
-      version = "0.1b1",
+      version = "0.0a",
       description = "AI made easy.",
       long_description = open("README.md").read(),
       url = "https://github.com/orangese/easyai",
