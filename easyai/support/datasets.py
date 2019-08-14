@@ -20,10 +20,11 @@ class Links(Static_Interface):
   class NST(Static_Interface):
 
     content = {"wwi_portrait": "https://drive.google.com/uc?export=download&id=1e9RdRiLOvMn9ZzqtRVdAX59Kf_NJaVAt",
-               "turtle": "https://drive.google.com/uc?export=download&id=1RINMB9dVe7ZIOon3V0ZO2Wpz4-9dPCbO",
+               "girl_with_balloon_banksy":
+                 "https://drive.google.com/uc?export=download&id=1FnhuYsx2sjSqI5qwZQxd7cmh8A5z74tj",
                "mountain_painting": "https://drive.google.com/uc?export=download&id=1_bmWZxTdE4cXvSiZZ_HQpzFsiytkZV5z",
                "mona_lisa_da_vinci": "https://drive.google.com/uc?export=download&id=1nfJ0-200MkjbuQEWsmKeO0C-byrZSQRF",
-               "mark_zuckerberg": "https://drive.google.com/uc?export=download&id=1hiJUwf3cMnCFy_aSf0f0hvL25dfh7h-K",
+               "nyc": "https://drive.google.com/uc?export=download&id=1EZiItOnGA8LuetejrW5HYMzk6sGYTlqN",
                "golden_gate_bridge": "https://drive.google.com/uc?export=download&id=1XH5vHXQfdKs4XOhWj4DN31Npwg6PVykb",
                "flower": "https://drive.google.com/uc?export=download&id=1baUPRVEh82szkeQ0601O4gpj_mNNbpbe",
                "einstein": "https://drive.google.com/uc?export=download&id=1FKNW8QYoAQ6y7V6sPss-YsmmOMAUUWZS",
@@ -38,14 +39,14 @@ class Links(Static_Interface):
              "the_scream_munch": "https://drive.google.com/uc?export=download&id=1kUybhXBJF8NfWm8A1-Ry7KksbG3jx8hb",
              "starry_night_van_gogh":
                "https://drive.google.com/uc?export=download&id=18MpTOAt40ngCRpX1xcckwxUXNhOiBemJ",
-             "shipwreck_of_the_minotaur_turner":
-               "https://drive.google.com/uc?export=download&id=1yitUFvNuL7MS3BUUjow5bQfGBXdad0-M",
+             "blue_green_stained_glass":
+               "https://drive.google.com/uc?export=download&id=1LxjKiXAiPM1OFg2s9c-cbFEqIwHp2ffN",
              "little_village_duncanson":
                "https://drive.google.com/uc?export=download&id=1ys1wrH6Glhfvr28kvgvLLwP5NoSL_0JS",
              "impression_soleil_levant_monet":
                "https://drive.google.com/uc?export=download&id=1DSh4O6htoLvsUnXRF5eacXG12FdrIBuM",
              "femme_nue_assise_picasso":
-               "https://drive.google.com/uc?export=download&id=1UCXxpJymtC4ddvEpx6ulkbkwL0dDm8Co",
+               "https://drive.google.com/uc?export=download&id=1IACcGYMY0kYS9K5Ng-mTPQc3USCEu7Or",
              "cubist_karthik": "https://drive.google.com/uc?export=download&id=19AKRyeJxNHWg8w50xE0VWyI33r-VMZTe",
              "bottle_and_fishes_braque":
                "https://drive.google.com/uc?export=download&id=1JfBSd7CHIUIEKI7Zyl4XKX4Wy8W6X4e-"
