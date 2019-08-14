@@ -20,15 +20,13 @@ class Links(Static_Interface):
 
   class NST(Static_Interface):
 
-    content = {"wwi_portrait": "https://drive.google.com/uc?export=download&id=1e9RdRiLOvMn9ZzqtRVdAX59Kf_NJaVAt",
-               "girl_with_balloon_banksy":
+    content = {"girl_with_balloon_banksy":
                  "https://drive.google.com/uc?export=download&id=1FnhuYsx2sjSqI5qwZQxd7cmh8A5z74tj",
                "mountain_painting": "https://drive.google.com/uc?export=download&id=1_bmWZxTdE4cXvSiZZ_HQpzFsiytkZV5z",
                "mona_lisa_da_vinci": "https://drive.google.com/uc?export=download&id=1nfJ0-200MkjbuQEWsmKeO0C-byrZSQRF",
                "nyc": "https://drive.google.com/uc?export=download&id=1EZiItOnGA8LuetejrW5HYMzk6sGYTlqN",
                "golden_gate_bridge": "https://drive.google.com/uc?export=download&id=1XH5vHXQfdKs4XOhWj4DN31Npwg6PVykb",
                "flower": "https://drive.google.com/uc?export=download&id=1baUPRVEh82szkeQ0601O4gpj_mNNbpbe",
-               "einstein": "https://drive.google.com/uc?export=download&id=1FKNW8QYoAQ6y7V6sPss-YsmmOMAUUWZS",
                "dog": "https://drive.google.com/uc?export=download&id=1f8aNYIJqBrMqYEYYSMPOmzgVmS_9C969",
                "arno_river_buildings":
                  "https://drive.google.com/uc?export=download&id=1ynBPvxuUOUo4upgTNE4KCab4F26leSLi"
@@ -36,7 +34,6 @@ class Links(Static_Interface):
 
     style = {"wheatfields_with_crows_van_gogh":
                "https://drive.google.com/uc?export=download&id=1YH2IE42KcwxOzu3C_xs6F_cLT4VJqpAW",
-             "water_lilies_monet": "https://drive.google.com/uc?export=download&id=1I8hkXBpwEq_tuOsnDcEWt8naMCLnXiDZ",
              "the_scream_munch": "https://drive.google.com/uc?export=download&id=1kUybhXBJF8NfWm8A1-Ry7KksbG3jx8hb",
              "starry_night_van_gogh":
                "https://drive.google.com/uc?export=download&id=18MpTOAt40ngCRpX1xcckwxUXNhOiBemJ",

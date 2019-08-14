@@ -230,6 +230,6 @@ if __name__ == "__main__":
   styles = list(Links.NST.style.keys())
   contents = list(Links.NST.content.keys())
 
-  for style in styles:
-    for content in contents:
+  for content in reversed(contents):
+    for style in styles:
       Art.neural_style_transfer(content, style, save_path = "/home/ryan/Documents")
