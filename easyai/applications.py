@@ -7,9 +7,12 @@ Applications of core layers and networks in larger, more real-world-based algori
 
 """
 
+import importlib
+
 import matplotlib.pyplot as plt
 from PIL import Image
 from scipy.optimize import fmin_l_bfgs_b
+
 from easyai.core import *
 
 # SUPPORT
@@ -63,48 +66,37 @@ class Neural_Style_Transfer(object):
   from the keras implementation of neural style transfer.
   """
 
-  HYPERPARAMS = {"CONTENT_LAYER":
-                   {
-                     "vgg19": "block5_conv2",
-                     "NN": ""},
+  HYPERPARAMS = {"CONTENT_LAYER": {"other": "block5_conv2"},
                  "STYLE_LAYERS":
-                   {
-                     "vgg19": ["block1_conv1", "block2_conv1", "block3_conv1", "block4_conv1", "block5_conv1"],
-                     "NN": ""
-                   },
-                 "COEF_C":
-                   {
-                     "vgg19": 1e0,
-                     "NN": None
-                   },
-                 "COEF_S":
-                   {
-                     "vgg19": 1e3,
-                     "NN": None
-                   },
-                 "COEF_V":
-                   {
-                     "vgg19": 1e1,
-                     "NN": None
-                   },
-                 "MEANS":
-                   {
-                     "vgg19": [103.939, 116.779, 123.68],
-                     "NN": None
-                   }
+                   {"other": ["block1_conv1", "block2_conv1", "block3_conv1", "block4_conv1", "block5_conv1"]},
+                 "COEF_C": {"other": 1e0},
+                 "COEF_S": {"other": 1e3},
+                 "COEF_V": {"other": 1e1},
+                 "MEANS": {"other": [103.939, 116.779, 123.68]} # not a hp-- don't edit
                  }
 
+  MODELS = {"densenet": "DenseNet201",
+            "inception_resnet_v2": "InceptionResNetV2",
+            "inception_v3": "InceptionV3",
+            "mobilenet": "MobileNet",
+            "mobilenet_v2": "MobileNetV2",
+            "nasnet": "NASNetMobile",
+            "resnet": "ResNet152",
+            "resnet50": "ResNet50",
+            "resnet_v2": "ResNet152V2",
+            "vgg16": "VGG16",
+            "vgg19": "VGG19",
+            "xception": "Xception"}
+
   # INITS
-  def __init__(self, net: Union[str, NN] = None, num_rows: int = 400):
+  def __init__(self, net: str = None, num_rows: int = 400):
     """
     Initializes Neural_Style_Transfer object.
 
-    :param net: pre-trained model. Either a string (name of model, e.g., "vgg19") or a NN object (model itself).
+    :param net: pre-trained model. Should be a string represeting the name of model, e.g., "vgg19".
     :param num_rows: number of rows that the image has. Is a pre-defined but editable hyperparameter.
     """
     self.net = net if net is not None else "vgg19"
-    if isinstance(self.net, str):
-      assert self.net == "vgg19", "only the vgg19 pre-trained model is supported"
     self.generated = None
     self.img_tensor = None
 
@@ -121,6 +113,8 @@ class Neural_Style_Transfer(object):
     :param noise: amount of noise in initially generated image. 0. <= noise <= 1.
     :param verbose: if true, prints additional information.
     """
+    self.k_net_module = importlib.import_module("keras.applications.{0}".format(self.net))
+
     self.image_init(content, style)
 
     self.img_tensor = K.backend.concatenate([self.content, self.style, self.generated], axis = 0)
@@ -138,12 +132,13 @@ class Neural_Style_Transfer(object):
     """
     Initializes model based on net type provided in __init__.
     """
-    if self.net == "vgg19":
-      self.k_model = K.applications.vgg19.VGG19(input_tensor = self.img_tensor, weights = "imagenet",
-                                                include_top = False) # no need for FC layers since no predictions occur
-    elif isinstance(self.net, NN):
-      self.k_model = self.net.k_model
-      self.net = "NN"
+    try:
+      net_name = getattr(self.k_net_module, Neural_Style_Transfer.MODELS[self.net])
+    except KeyError:
+      raise ModuleNotFoundError("{0} is not currently supported for neural style transfer".format(self.net))
+
+    self.k_model = net_name(input_tensor = self.img_tensor, weights = "imagenet",
+                            include_top = False) # no need for FC layers since no predictions occur
 
     self.k_model.trainable = False
     self.outputs = dict([(layer.name, layer.output) for layer in self.k_model.layers])
@@ -163,7 +158,7 @@ class Neural_Style_Transfer(object):
 
     self.generated = K.backend.placeholder(shape = (1, *self.gen_shape)) # 1 is number of images in batch
 
-  def func_init(self, content_layer: str, style_layers: list):
+  def tensor_init(self, content_layer: str, style_layers: list):
     """
     Initializes the keras function that will be used to calculate gradients and loss. Also initializes Evaluator object.
 
@@ -194,10 +189,11 @@ class Neural_Style_Transfer(object):
     :param save_path: (optional) path at which to save the created image at each iteration.
     :return: final created image.
     """
+    self.train_init(content, style, verbose = verbose, noise = init_noise)
+
     content_layer, style_layers = self.get_hyperparams("content_layer", "style_layers")
 
-    self.train_init(content, style, verbose = verbose, noise = init_noise)
-    self.func_init(content_layer, style_layers)
+    self.tensor_init(content_layer, style_layers)
 
     if verbose:
       Neural_Style_Transfer.display_original(content, style)
@@ -224,7 +220,7 @@ class Neural_Style_Transfer(object):
   # COST CALCULATIONS
   def loss_and_grads(self, img: np.ndarray) -> tuple:
     """
-    Computes loss and gradients using img. Utilizes the keras function created in func_init().
+    Computes loss and gradients using img. Utilizes the keras function created in tensor_init().
 
     :param img: image used to calculate loss and gradients w.r.t. the loss.
     :return: cost, gradients.
@@ -308,7 +304,6 @@ class Neural_Style_Transfer(object):
     :param img: image to preprocess. Should be a pixel numpy array.
     :param target_size: target size of the image. If is none, defaults to object attributes.
     :return: processed image.
-    :raises NotImplementedError: data normalization for other nets is not supported yet
     """
     # because of pass-by-assignment properties, a copy must be made to prevent tampering with original img
     if target_size is None:
@@ -318,10 +313,8 @@ class Neural_Style_Transfer(object):
       target_size = (self.num_rows, self.num_cols)
     img = img.resize(reversed(target_size), Image.NEAREST) # resizing image with interpolation = NEAREST
     img = np.expand_dims(K.preprocessing.image.img_to_array(img), axis = 0)
-    if self.net == "vgg19":
-      return K.applications.vgg19.preprocess_input(img)
-    else:
-      raise NotImplementedError("data normalization for other nets is not supported yet")
+
+    return self.k_net_module.preprocess_input(img)
 
   def deprocess(self, img_: np.ndarray) -> np.ndarray:
     """
@@ -329,17 +322,13 @@ class Neural_Style_Transfer(object):
 
     :param img_: image to deprocess.
     :return: deprocessed image.
-    :raises NotImplementedError: data normalization for other nets is not supported yet
     """
     img = np.copy(img_).reshape(*self.generated.shape[1:])
-    if self.net == "vgg19":
-      means = self.get_hyperparams("means")
-      for i in range(len(means)):
-        img[:, :, i] += means[i] # adding mean pixel values
-      img = img[:, :, ::-1] #BGR -> RBG
-      img = np.clip(img, 0, 255).astype('uint8')
-    else:
-      raise NotImplementedError("data normalization for other nets is not supported yet")
+    means = self.get_hyperparams("means")
+    for i in range(len(means)):
+      img[:, :, i] += means[i] # adding mean pixel values
+    img = img[:, :, ::-1] #BGR -> RBG
+    img = np.clip(img, 0, 255).astype('uint8')
     return img
 
   def display_img(self, img: np.ndarray, title: str):
@@ -394,5 +383,8 @@ class Neural_Style_Transfer(object):
     :param hyperparams: any number of hyperparameters to fetch.
     :return: feched hyperparameters.
     """
-    fetched = tuple(Neural_Style_Transfer.HYPERPARAMS[hp.upper()][self.net] for hp in hyperparams)
+    try:
+      fetched = tuple(Neural_Style_Transfer.HYPERPARAMS[hp.upper()][self.net] for hp in hyperparams)
+    except KeyError:
+      fetched = tuple(Neural_Style_Transfer.HYPERPARAMS[hp.upper()]["other"] for hp in hyperparams)
     return fetched[0] if len(fetched) == 1 else fetched

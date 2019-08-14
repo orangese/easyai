@@ -8,8 +8,9 @@ Program that implements easyai.support.datasets and easyai.core in examples like
 """
 
 import random
-from easyai.support.datasets import *
+
 from easyai.applications import *
+from easyai.support.datasets import *
 
 # CLASSES
 class MNIST(Static_Interface):
@@ -25,7 +26,7 @@ class MNIST(Static_Interface):
     :param version: "digits" for MNIST dataset or "fashion" for Fashion-MNIST dataset.
     :return: trained NN model.
     """
-    Error_Handling.suppress_tf_warnings()
+    suppress_tf_warnings()
 
     (x_train, y_train), (x_test, y_test) = Builtins.load_mnist(version = version, mode = "mlp")
     print ("Loaded MNIST data\n")
@@ -46,7 +47,7 @@ class MNIST(Static_Interface):
     :param version: "digits" for MNIST dataset or "fashion" for Fashion-MNIST dataset.
     :return: trained NN model.
     """
-    Error_Handling.suppress_tf_warnings()
+    suppress_tf_warnings()
 
     (x_train, y_train), (x_test, y_test) = Builtins.load_mnist(version = version, mode = "conv")
     print ("Loaded MNIST data")
@@ -72,7 +73,7 @@ class Lending_Club(Static_Interface):
 
     :return: trained NN model.
     """
-    Error_Handling.suppress_tf_warnings()
+    suppress_tf_warnings()
 
     (x_train, y_train), (x_test, y_test) = Extras.load_lending_club()
     print("Loaded LendingClub data")
@@ -98,6 +99,7 @@ class Art(Static_Interface):
 
     :param content: name of content image from dataset. Default is a random image from built-in datasets.
     :param style: name of style image from dataset. Default is a random image from built-in datasets.
+    :param save_path: path to which to save final result. Default is None.
     :return: trained Neural_Style_Transfer object.
     """
     def get_img(img_name, type_, images):
@@ -109,7 +111,7 @@ class Art(Static_Interface):
         except KeyError:
           raise ValueError("supported {0} images are {1}".format(type_, list(images[type_].keys())))
 
-    Error_Handling.suppress_tf_warnings()
+    suppress_tf_warnings()
 
     images = Extras.load_nst_dataset()
     print ("Loaded NST images")
@@ -119,7 +121,7 @@ class Art(Static_Interface):
 
     print ("Using content image \"{0}\" and style image \"{1}\"".format(content_name, style_name))
 
-    model = Neural_Style_Transfer()
+    model = Neural_Style_Transfer("vgg19")
 
     final_img = model.train(content_img, style_img, epochs = 25, init_noise = 0.6)
 
@@ -204,7 +206,7 @@ class Unsupported(Static_Interface):
 
     :return: trained NN model.
     """
-    Error_Handling.suppress_tf_warnings()
+    suppress_tf_warnings()
 
   @staticmethod
   def display_image(pixels, label=None):
@@ -225,5 +227,9 @@ if __name__ == "__main__":
   # activation = Unsupported.getActivation(filename)
   # Unsupported.display_image(activation)
 
-  Art.neural_style_transfer("nyc", "blue_green_stained_glass",
-                            save_path = "/home/ryan/Pictures/nst_generated")
+  styles = list(Links.NST.style.keys())
+  contents = list(Links.NST.content.keys())
+
+  for style in styles:
+    for content in contents:
+      Art.neural_style_transfer(content, style, save_path = "/home/ryan/Documents")

@@ -8,11 +8,30 @@ machine learning.
 
 """
 
-# BLANKET IMPORTS FOR ALL FILES
-import keras as K
-import numpy as np
+def suppress_tf_warnings():
+  """
+  Suppresses tensorflow warnings. Does not work if tensorflow is outdated.
+  """
+  import os
+  os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+
+  import warnings
+  warnings.simplefilter(action = "ignore", category = FutureWarning)
+
+  import tensorflow as tf
+  try:
+    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+  except AttributeError:
+    tf.logging.set_verbosity(tf.logging.ERROR)
+  # compatible with tensorflow == 1.14.0 and tensorflow-gpu == 1.8.0
+
+suppress_tf_warnings()
+
 from time import time
 from typing import Union
+
+import keras as K
+import numpy as np
 
 # SUPPORT
 class Static_Interface(object):
@@ -27,25 +46,6 @@ class Static_Interface(object):
     :raises NotImplementedError
     """
     raise NotImplementedError("class is static")
-
-class Error_Handling(Static_Interface):
-  """
-  Static class for error handling.
-  """
-
-  @staticmethod
-  def suppress_tf_warnings():
-    """
-    Suppresses tensorflow warnings. Does not work if tensorflow is outdated.
-    """
-    import os
-    os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-    import tensorflow as tf
-    try:
-      tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
-    except AttributeError:
-      tf.logging.set_verbosity(tf.logging.ERROR)
-    # compatible with tensorflow == 1.14.0 and tensorflow-gpu == 1.8.0
 
 # CORE LAYERS
 class Abstract_Layer(Static_Interface):
