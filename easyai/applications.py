@@ -74,7 +74,7 @@ class Neural_Style_Transfer(object):
                    },
                  "COEF_C":
                    {
-                     "vgg19": 1.0,
+                     "vgg19": 1e0,
                      "NN": None
                    },
                  "COEF_S":
@@ -84,7 +84,7 @@ class Neural_Style_Transfer(object):
                    },
                  "COEF_V":
                    {
-                     "vgg19": 1.0,
+                     "vgg19": 1e1,
                      "NN": None
                    },
                  "MEANS":
@@ -362,6 +362,7 @@ class Neural_Style_Transfer(object):
 
     plt.imshow(img.reshape(*self.generated.shape[1:]))
     plt.pause(0.1)
+
     plt.show(block = False)
 
   @staticmethod
@@ -377,7 +378,6 @@ class Neural_Style_Transfer(object):
     fig.canvas.set_window_title("Pre-training")
 
     content_ax.imshow(content)
-    plt.pause(0.1)
     content_ax.axis("off")
 
     style_ax.imshow(style)
