@@ -27,11 +27,11 @@ class Evaluator(object):
     """
     Initializes Evaluator object.
 
-    :param obj: obj that has some function used to evaluate loss and gradients, called "cost_and_grads"
-    :raises AssertionError: obj must have cost_and_grads function
+    :param obj: obj that has some function used to evaluate loss and gradients, called "loss_and_grads"
+    :raises AssertionError: obj must have loss_and_grads function
     """
     self.obj = obj
-    assert hasattr(obj, "cost_and_grads"), "obj must have cost_and_grads function"
+    assert hasattr(obj, "loss_and_grads"), "obj must have loss_and_grads function"
     self.reset()
 
   def f_loss(self, img: np.ndarray):
@@ -41,7 +41,7 @@ class Evaluator(object):
     :param img: image (array) used to calculate loss.
     :return: loss.
     """
-    loss, grads = self.obj.cost_and_grads(img)
+    loss, grads = self.obj.loss_and_grads(img)
     self.loss = loss
     self.grads = grads
     return self.loss
@@ -73,7 +73,8 @@ class Slow_NST(Network_Interface):
                  "COEF_C": 1e0,
                  "COEF_S": 1e3,
                  "COEF_V": 1e1,
-                 "MEANS": [103.939, 116.779, 123.68] # not a hp-- don't edit
+                 "MEANS": [103.939, 116.779, 123.68], # not a hp-- don't edit
+                 "IMG_ORDER": ["content", "style", "generated"]
                  }
 
   MODELS = {"vgg16": "VGG16",
@@ -109,8 +110,7 @@ class Slow_NST(Network_Interface):
 
     self.image_init(content, style, gen_tensor = gen_tensor)
 
-    self.img_tensor = K.backend.concatenate([self.content, self.style, self.generated], axis = 0)
-    self.img_order = ["content", "style", "generated"]
+    self.img_tensor = K.backend.concatenate([getattr(self, img) for img in Slow_NST.get_hps("img_order")], axis = 0)
 
     self.model_init()
 
@@ -158,14 +158,14 @@ class Slow_NST(Network_Interface):
     """
     Initializes the keras function that will be used to calculate gradients and loss. Also initializes Evaluator object.
 
-    :param content_layer: layer at which content cost will be evaluated. Is a pre-defined hyperparameter.
-    :param style_layers: layer(s) at which style cost will be evaluated. Is a pre-defined hyperparameter.
+    :param content_layer: layer at which content loss will be evaluated. Is a pre-defined hyperparameter.
+    :param style_layers: layer(s) at which style loss will be evaluated. Is a pre-defined hyperparameter.
     """
-    coef_c, coef_s, coef_v = Slow_NST.get_hyperparams("coef_c", "coef_s", "coef_v")
+    coef_c, coef_s, coef_v = Slow_NST.get_hps("coef_c", "coef_s", "coef_v")
     
-    cost = self.cost_tensor(content_layer, style_layers, coef_c, coef_s, coef_v)
-    grads = K.backend.gradients(cost, self.generated)
-    outputs = [cost, *grads] if isinstance(grads, (list, tuple)) else [cost, grads]
+    loss = self.loss_tensor(content_layer, style_layers, coef_c, coef_s, coef_v)
+    grads = K.backend.gradients(loss, self.generated)
+    outputs = [loss, *grads] if isinstance(grads, (list, tuple)) else [loss, grads]
 
     self.model_func = K.backend.function([self.generated], outputs)
     self.evaluator = Evaluator(self)
@@ -187,7 +187,7 @@ class Slow_NST(Network_Interface):
     """
     self.train_init(content, style, verbose = verbose, noise = init_noise)
 
-    content_layer, style_layers = Slow_NST.get_hyperparams("content_layer", "style_layers")
+    content_layer, style_layers = Slow_NST.get_hps("content_layer", "style_layers")
 
     self.tensor_init(content_layer, style_layers)
 
@@ -198,13 +198,13 @@ class Slow_NST(Network_Interface):
       start = time()
 
       # updating pixel values using L-BFGS-B
-      self.img, cost, info = fmin_l_bfgs_b(func = self.evaluator.f_loss, x0 = self.img.flatten(),
+      self.img, loss, info = fmin_l_bfgs_b(func = self.evaluator.f_loss, x0 = self.img.flatten(),
                                            fprime = self.evaluator.f_grads, maxfun = 20) # 20 iterations per epoch
       plt.close()
 
       if verbose:
         print ("Epoch {0}/{1}".format(epoch + 1, epochs))
-        print (" - {0}s - cost: {1} [broken]".format(round(time() - start), cost)) # cost is broken-- it's way too high
+        print (" - {0}s - loss: {1} [broken]".format(round(time() - start), loss)) # loss is broken-- it's way too high
         self.display_img(self.img, "Epoch {0}/{1}".format(epoch + 1, epochs))
 
       if save_path is not None:
@@ -213,48 +213,48 @@ class Slow_NST(Network_Interface):
 
     return self.deprocess(self.img)
 
-  # COST CALCULATIONS
-  def cost_and_grads(self, img: np.ndarray) -> tuple:
+  # loss CALCULATIONS
+  def loss_and_grads(self, img: np.ndarray) -> tuple:
     """
     Computes loss and gradients using img. Utilizes the keras function created in tensor_init().
 
     :param img: image used to calculate loss and gradients w.r.t. the loss.
-    :return: cost, gradients.
+    :return: loss, gradients.
     """
-    img = img.reshape(self.generated.shape)
+    img = img.reshape(self.gen_shape)
     outputs = self.model_func([img]) # gets output of self.model_func evaluated at img
-    cost = outputs[0]
+    loss = outputs[0]
     if len(outputs[1:]) == 1:
       grads = outputs[1].flatten().astype(np.float64)
       # scipy's L-BFGS-B function requires that the dtype of these variables be float64
     else:
       grads = np.array(outputs[1:]).flatten().astype(np.float64)
-    return cost, grads
+    return loss, grads
 
-  def cost_tensor(self, content_layer: str, style_layers: list, coef_c: float, coef_s: float, coef_v: float):
+  def loss_tensor(self, content_layer: str, style_layers: list, coef_c: float, coef_s: float, coef_v: float):
     """
-    Gets the symbolic cost tensor as a keras tensor. This tensor will be used to calculate cost and
-    the gradients of cost. Is broken but training still works.
+    Gets the symbolic loss tensor as a keras tensor. This tensor will be used to calculate loss and
+    the gradients of loss. Is broken but training still works.
 
-    :param content_layer: layer at which content cost will be evaluated. Is a pre-defined hyperparameter.
-    :param style_layers: layer(s) at which style cost will be evaluated. Is a pre-defined hyperparameter.
+    :param content_layer: layer at which content loss will be evaluated. Is a pre-defined hyperparameter.
+    :param style_layers: layer(s) at which style loss will be evaluated. Is a pre-defined hyperparameter.
     :param coef_c: content weight. Is a pre-defined hyperparameter.
     :param coef_s: stye weight. Is a pre-defined hyperparameter.
     :param coef_v: total variation weight.Is a pre-defined hyperparameter.
-    :return: cost tensor.
+    :return: loss tensor.
     """
 
-    def content_cost(layer):
-      """Computes the content cost at layer "layer"."""
-      layer_features = self.outputs[layer]
+    def content_loss(layer, outputs):
+      """Computes the content loss at layer "layer"."""
+      layer_features = outputs[layer]
 
-      content_actvs = layer_features[self.img_order.index("content"), :, :, :]
-      generated_actvs = layer_features[self.img_order.index("generated"), :, :, :]
+      content_actvs = layer_features[Slow_NST.get_hps("img_order").index("content"), :, :, :]
+      generated_actvs = layer_features[Slow_NST.get_hps("img_order").index("generated"), :, :, :]
 
       return K.backend.sum(K.backend.square(generated_actvs - content_actvs)) # i.e., squared norm
 
-    def layer_style_cost(a_G, a_S):
-      """Computes the style cost at layer "layer". Is broken but training still works."""
+    def layer_style_loss(a_G, a_S):
+      """Computes the style loss at layer "layer". Is broken but training still works."""
 
       def gram_matrix(a):
         """Computes the gram matrix of a."""
@@ -274,23 +274,23 @@ class Slow_NST(Network_Interface):
 
       return K.backend.sum(K.backend.pow(a + b, 1.25))
 
-    cost = K.backend.variable(0.0) # it is necessary to initialize cost like this
+    loss = K.backend.variable(0.0) # it is necessary to initialize loss like this
 
-    cost += coef_c * content_cost(content_layer) # content cost
+    loss += coef_c * content_loss(content_layer, self.outputs) # content loss
 
-    # this loop is probably broken (and/or the computation of layer_style_cost)
-    for layer in style_layers: # style cost
+    # this loop is probably broken (and/or the computation of layer_style_loss)
+    for layer in style_layers: # style loss
       layer_features = self.outputs[layer]
 
-      generated_actvs = layer_features[self.img_order.index("generated"), :, :, :]
-      style_actvs = layer_features[self.img_order.index("style"), :, :, :]
+      generated_actvs = layer_features[Slow_NST.get_hps("img_order").index("generated"), :, :, :]
+      style_actvs = layer_features[Slow_NST.get_hps("img_order").index("style"), :, :, :]
 
-      cost += (coef_s / len(style_layers)) * layer_style_cost(generated_actvs, style_actvs) / \
-              (4.0 * (int(self.generated.shape[-1]) ** 2) * ((self.num_rows * self.num_cols) ** 2)) # normalization
+      loss += (coef_s / len(style_layers)) * layer_style_loss(generated_actvs, style_actvs) / \
+              (4.0 * (int(self.gen_shape[-1]) ** 2) * ((self.num_rows * self.num_cols) ** 2)) # normalization
 
-    cost += coef_v * total_variation_loss(self.generated, self.num_rows, self.num_cols)
+    loss += coef_v * total_variation_loss(self.generated, self.num_rows, self.num_cols)
 
-    return cost
+    return loss
 
   # IMAGE PROCESSING
   def preprocess(self, img: Image.Image, target_size = None) -> np.ndarray:
@@ -304,7 +304,7 @@ class Slow_NST(Network_Interface):
     # because of pass-by-assignment properties, a copy must be made to prevent tampering with original img
     if target_size is None:
       if self.num_cols is None:
-        width, height = img.size #reversed(np.asarray(img).shape[:-1])
+        width, height = img.size
         self.num_cols = int(width * self.num_rows / height)
       target_size = (self.num_rows, self.num_cols)
     img = img.resize(reversed(target_size), Image.NEAREST) # resizing image with interpolation = NEAREST
@@ -319,8 +319,8 @@ class Slow_NST(Network_Interface):
     :param img_: image to deprocess.
     :return: deprocessed image.
     """
-    img = np.copy(img_).reshape(*self.generated.shape[1:])
-    means = Slow_NST.get_hyperparams("means")
+    img = np.copy(img_).reshape(*self.gen_shape[1:])
+    means = Slow_NST.get_hps("means")
     for i in range(len(means)):
       img[:, :, i] += means[i] # adding mean pixel values
     img = img[:, :, ::-1] #BGR -> RBG
@@ -345,7 +345,7 @@ class Slow_NST(Network_Interface):
     fig.suptitle(title)
     plt.axis("off")
 
-    plt.imshow(img.reshape(*self.generated.shape[1:]))
+    plt.imshow(img.reshape(*self.gen_shape[1:]))
     plt.pause(0.1)
 
     plt.show(block = False)
@@ -373,7 +373,7 @@ class Slow_NST(Network_Interface):
 
   # MISCELLANEOUS
   @staticmethod
-  def get_hyperparams(*hyperparams: str) -> Union[str, tuple, float]:
+  def get_hps(*hyperparams: str) -> Union[str, tuple, float]:
     """
     Fetches hyperparameters. Merely a syntax simplification tool.
 
@@ -386,9 +386,10 @@ class Slow_NST(Network_Interface):
 class Fast_NST(Slow_NST):
 
   def __init__(self, img_transform_net: Network_Interface = NST_Transform_Net(),
-               loss_net: Network_Interface = Slow_NST()):
+               loss_net: Network_Interface = Slow_NST(), num_rows: int = 512):
     self.img_transform_net = img_transform_net
     self.loss_net = loss_net
+    self.num_rows = num_rows
 
   def train_init(self, content: Image.Image, style: Image.Image, noise = 0.6, verbose: bool = True):
     """
@@ -400,17 +401,39 @@ class Fast_NST(Slow_NST):
     :param noise: amount of noise in initially generated image. 0. ≤ noise ≤ 1.
     :param verbose: if true, prints additional information.
     """
+    # target shape init
+    width, height = content.size
+    self.num_cols = int(width * self.num_rows / height)
+
+    # partial train init
     self.img_transform_net.train_init(content, noise = noise)
     self.loss_net.train_init(content, style, noise = noise, verbose = verbose,
                              gen_tensor = self.img_transform_net.k_model.output)
+    self.generated = self.img_transform_net.k_model.layers[-1].output # aka, output of the image transform net
+    self.gen_shape = self.generated.shape[1:]
 
-    outs = self.loss_net.k_model(self.img_transform_net.k_model.layers[-1].output)
-    self.k_model = K.Model(self.img_transform_net.k_model.input, outs)
-    self.k_model.summary()
+    # concatenating models
+    # outs = self.loss_net.k_model(self.img_transform_net.k_model.layers[-1].output)
+    # self.k_model = K.Model(self.img_transform_net.k_model.input, outs)
+
+    # getting dict for loss net loss calculation
+    self.outputs = dict([(layer.name, layer.output) for layer in self.loss_net.k_model.layers])
+    # wanted to name self.outputs as self.loss_outputs but it is inconvenient due to implementation of Slow_NST methods
+
+    # loss net as a loss function
+    self.bleeb = K.backend.placeholder(shape = self.loss_net.k_model.layers[0].output_shape)
+    outs = [self.loss_tensor(*Slow_NST.get_hps("content_layer", "style_layers", "coef_c", "coef_s", "coef_v"))]
+    self.loss_func = K.backend.function([self.bleeb], outs)
+
+    # compiling model
+    self.img_transform_net.k_model.compile(optimizer = K.optimizers.Adam(), loss = self.loss)
+
+  def loss(self, y_true, y_pred):
+    return self.loss_func([y_true])[0]
 
   def train(self, content_imgs: Image.Image, style_imgs: Image.Image, epochs: int = 1,
               init_noise: float = 0.6, verbose: bool = True):
-      self.train_init(content_imgs, style_imgs, noise = init_noise, verbose = verbose)
+    self.train_init(content_imgs, style_imgs, noise = init_noise, verbose = verbose)
 
 from easyai.support.load import load_nst_imgs
 content, style = load_nst_imgs("/home/ryan/Pictures/nst_generated/dog_blue_green_stained_glass.jpg",
