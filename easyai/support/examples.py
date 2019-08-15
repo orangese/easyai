@@ -9,6 +9,7 @@ Program that implements easyai.support.datasets and easyai.core in examples like
 
 import random
 
+from easyai.layers import *
 from easyai.applications import *
 from easyai.support.datasets import *
 
@@ -26,12 +27,10 @@ class MNIST(Static_Interface):
     :param version: "digits" for MNIST dataset or "fashion" for Fashion-MNIST dataset.
     :return: trained NN model.
     """
-    suppress_tf_warnings()
-
     (x_train, y_train), (x_test, y_test) = Builtins.load_mnist(version = version, mode = "mlp")
     print ("Loaded MNIST data\n")
 
-    mlp = NN([Input(784), Dense(100), Dense(10, actv = "softmax")], cost = "categorical_crossentropy")
+    mlp = NN(Input(784), Dense(100), Dense(10, actv = "softmax"), loss = "categorical_crossentropy")
     print (mlp.summary())
 
     mlp.train(x_train, y_train, lr = 3.0, epochs = 1)
@@ -47,13 +46,11 @@ class MNIST(Static_Interface):
     :param version: "digits" for MNIST dataset or "fashion" for Fashion-MNIST dataset.
     :return: trained NN model.
     """
-    suppress_tf_warnings()
-
     (x_train, y_train), (x_test, y_test) = Builtins.load_mnist(version = version, mode = "conv")
     print ("Loaded MNIST data")
 
-    conv_nn = NN([Input((28, 28)), Conv((5, 5), 20), Pooling((2, 2)), Dense(100), Dense(10, actv = "softmax")],
-                 cost = "categorical_crossentropy")
+    conv_nn = NN(Input(28, 28), Conv((5, 5), 20), Pooling(2, 2), Dense(100), Dense(10, actv = "softmax"),
+                 loss = "categorical_crossentropy")
     print (conv_nn.summary())
 
     conv_nn.train(x_train, y_train, lr = 0.1, epochs = 60)
@@ -73,13 +70,11 @@ class Lending_Club(Static_Interface):
 
     :return: trained NN model.
     """
-    suppress_tf_warnings()
-
     (x_train, y_train), (x_test, y_test) = Extras.load_lending_club()
     print("Loaded LendingClub data")
 
-    mlp = NN([Input(9), Dense(200, actv = "relu"), Dense(200, actv = "relu"), Dense(7, actv = "softmax")],
-             cost = "categorical_crossentropy")
+    mlp = NN(Input(9), Dense(200, actv = "relu"), Dense(200, actv = "relu"), Dense(7, actv = "softmax"),
+             loss = "categorical_crossentropy")
     print (mlp.summary())
 
     mlp.train(x_train, y_train, lr = 0.01, epochs = 50)
@@ -93,14 +88,14 @@ class Art(Static_Interface):
   """
 
   @staticmethod
-  def neural_style_transfer(content = None, style = None, save_path = None):
+  def slow_nst(content = None, style = None, save_path = None):
     """
     Neural style transfer with art and photographs.
 
     :param content: name of content image from dataset. Default is a random image from built-in datasets.
     :param style: name of style image from dataset. Default is a random image from built-in datasets.
     :param save_path: path to which to save final result. Default is None.
-    :return: trained Neural_Style_Transfer object.
+    :return: trained Slow_NST object.
     """
     def get_img(img_name, type_, images):
       if img_name is None:
@@ -111,8 +106,6 @@ class Art(Static_Interface):
         except KeyError:
           raise ValueError("supported {0} images are {1}".format(type_, list(images[type_].keys())))
 
-    suppress_tf_warnings()
-
     images = Extras.load_nst_dataset()
     print ("Loaded NST images")
 
@@ -121,7 +114,7 @@ class Art(Static_Interface):
 
     print ("Using content image \"{0}\" and style image \"{1}\"".format(content_name, style_name))
 
-    model = Neural_Style_Transfer("vgg19")
+    model = Slow_NST("vgg19")
 
     final_img = model.train(content_img, style_img, epochs = 25, init_noise = 0.6)
 
@@ -206,8 +199,6 @@ class Unsupported(Static_Interface):
 
     :return: trained NN model.
     """
-    suppress_tf_warnings()
-
   @staticmethod
   def display_image(pixels, label=None):
     # function that displays an image using matplotlib-- not really necessary for the digit classifier
@@ -230,6 +221,6 @@ if __name__ == "__main__":
   styles = list(Links.NST.style.keys())
   contents = list(Links.NST.content.keys())
 
-  for content in reversed(contents):
-    for style in styles:
+  for style in styles:
+    for content in contents:
       Art.neural_style_transfer(content, style, save_path = "/home/ryan/Documents")

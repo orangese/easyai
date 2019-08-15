@@ -3,37 +3,18 @@
 
 "easyai.core.py"
 
-Wrapper program for easy use of keras. Targeted towards those with little to no experience with Python and
-machine learning.
+Contains core functionality for easyai: the NN class.
 
 """
 
-def suppress_tf_warnings():
-  """
-  Suppresses tensorflow warnings. Does not work if tensorflow is outdated.
-  """
-  import os
-  os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-
-  import warnings
-  warnings.simplefilter(action = "ignore", category = FutureWarning)
-
-  import tensorflow as tf
-  try:
-    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
-  except AttributeError:
-    tf.logging.set_verbosity(tf.logging.ERROR)
-  # compatible with tensorflow == 1.14.0 and tensorflow-gpu == 1.8.0
-
-suppress_tf_warnings()
-
+# IMPORTS
+from typing import Union, List
 from time import time
-from typing import Union
 
 import keras as K
 import numpy as np
 
-# SUPPORT
+# FRAMEWORK
 class Static_Interface(object):
   """
   Static interface for other programs. An object of this class cannot be created.
@@ -47,7 +28,6 @@ class Static_Interface(object):
     """
     raise NotImplementedError("class is static")
 
-# CORE LAYERS
 class Abstract_Layer(Static_Interface):
   """
   Abstract class that acts as the base for all layer classes. Should not be implemented.
@@ -62,7 +42,7 @@ class Abstract_Layer(Static_Interface):
     self.num_neurons = num_neurons
     self.actv = actv
     self.prev = None
-    self.k_mask = None
+    self.k_model = None
     raise NotImplementedError("abstract class should not be implemented")
 
   def __str__(self):
@@ -83,139 +63,36 @@ class Abstract_Layer(Static_Interface):
     assert self.prev, "self.prev must be initialized"
     raise NotImplementedError("cannot be implemented. How did you even call this function?")
 
-class Input(Abstract_Layer):
-  """
-  MLP input layer with no activation, bias, or weights of its own.  No keras mask.
-  """
+class Network_Interface(object):
+  """Interface for all network-like classes."""
 
-  def __init__(self, neurons: Union[int, tuple]):
+  def __init__(self):
     """
-    Initializes Input object. Please flatten data before using this object.
+    Initialization for interfaces should not be used.
 
-    :param neurons: number of neurons in input layer. Should be of type int if NN is MLP;
-                    if NN is ConvNN, it should be a tuple of ints in the format (num_cols, num_rows, num_channels)
-                    or (num_cols, num_rows) if num_channels == 1.
+    :raises NotImplementedError: class is an interface
     """
-    self.num_neurons = neurons
-    if isinstance(self.num_neurons, tuple):
-      if len(self.num_neurons) == 2:
-        self.is_3d = False
-        self.num_neurons = (*self.num_neurons, 1) # if user only gives two dimensions, assume num_channels = 1
-      else:
-        self.is_3d = True
-    else:
-      self.is_3d = False
-    self.k_mask = None # just to be explicit
-
-class Dense(Abstract_Layer):
-  """
-  MLP layer (aka a dense layer).  Has a keras mask.
-  """
-
-  def __init__(self, num_neurons: int , actv: str = "sigmoid"):
-    """
-    Initializes Dense object.
-
-    :param num_neurons: number of neurons in this layer.
-    :param actv: activation function of this layer. Default is sigmoid.
-    """
-    self.num_neurons = num_neurons
-    self.actv = actv
-    self.prev = None # previous layer-- used to link layers together to create keras sequential object in NN
-    self.k_mask = None
-
-  def update_mask(self):
-    assert self.prev, "self.prev must be initialized"
-    if hasattr(self.prev, "is_3d") and not isinstance(self.prev, Input):
-      self.k_mask = [K.layers.Flatten(), K.layers.Dense(units = self.num_neurons, activation = self.actv)]
-    else:
-      self.k_mask = K.layers.Dense(units = self.num_neurons, activation = self.actv,
-                                   input_shape = (self.prev.num_neurons, ),)
-
-# CONV NET LAYERS
-class Conv(Abstract_Layer):
-  """
-  Convolutional layer.  Has a keras mask, stride = 1, padding = "valid".
-  """
-
-  def __init__(self, filter_size: tuple, num_filters: int, actv: str = "sigmoid"):
-    """
-    Initializes Conv object.  No padding and a stride of 1 is assumed.
-
-    :param filter_size: size of the local receptive field (filter).
-    :param num_filters: number of filters used. Other sources call this parameter "number of feature maps".
-    :param actv: activation function of this layer. Default is sigmoid.
-    """
-    self.filter_size = filter_size
-    self.num_filters = num_filters
-    self.actv = actv
-    self.prev = None
-    self.k_mask = None
-    self.is_3d = False # default, will be changed in update_mask
-
-  def __str__(self):
-    return "Conv {0} layer: {1} filters, filter size of {2}".format(self.actv, self.num_filters, self.filter_size)
-
-  def __repr__(self):
-    return self.__str__()
-
-  def update_mask(self):
-    assert self.prev, "self.prev must be initialized"
-    self.is_3d = self.prev.is_3d
-    if self.is_3d:
-      self.k_mask = K.layers.Conv3D(filters = self.num_filters, kernel_size = self.filter_size,
-                                    activation = self.actv, input_shape = self.prev.num_neurons)
-
-    else:
-      self.k_mask = K.layers.Conv2D(filters = self.num_filters, kernel_size = self.filter_size,
-                                    activation = self.actv, input_shape = self.prev.num_neurons)
-
-class Pooling(Abstract_Layer):
-  """
-  Pooling layer.  Has a keras mask, stride = 1, pooling type = "max pooling".
-  """
-
-  def __init__(self, pool_size: tuple):
-    """
-    Initializes Pooling object.  Only max pooling is implemented, stride = None.
-
-    :param pool_size: size of pool.
-    """
-    self.pool_size = pool_size
-    self.prev = None
-    self.k_mask = None
-    self.is_3d = False # default, will be changed in other functions
-
-  def __str__(self):
-    return "(Max) pooling layer: pool size of {0}".format(self.pool_size)
-
-  def update_mask(self):
-    assert self.prev, "self.prev must be initialized"
-    self.is_3d = self.prev.is_3d
-    if self.is_3d:
-      self.k_mask = K.layers.MaxPool3D(pool_size = self.pool_size)
-    else:
-      self.k_mask = K.layers.MaxPool2D(pool_size = self.pool_size)
+    raise NotImplementedError("class is an interface")
 
 # NEURAL NETWORK IMPLEMENTATION
-class NN(object):
+class NN(Network_Interface):
   """
   Uses easyai layer objects to create a functional keras model.
   """
 
-  def __init__(self, layers: list = None, cost: str = "binary_crossentropy"):
+  def __init__(self, *layers, loss: str = "binary_crossentropy"):
     """
     Initializes NN (neural network) object.
 
     :param layers: layers of the network. Expects easyai core layer objects.
-    :param cost: cost used by the neural network. Default is categorical_crossentropy.
+    :param loss: loss used by the neural network. Default is categorical_crossentropy.
     """
     if layers is None:
       layers = []
-    self.layers = tuple(layers)
+    self.layers = layers
     self.link_layers()
 
-    self.cost = cost
+    self.loss = loss
     self.is_trained = False
 
   def link_layers(self):
@@ -224,11 +101,11 @@ class NN(object):
     for prev, layer in zip(self.layers, self.layers[1:]):
       layer.prev = prev
       layer.update_mask()
-      if isinstance(layer.k_mask, list):
-        for mask in layer.k_mask:
+      if isinstance(layer.k_model, list):
+        for mask in layer.k_model:
           self.k_layers.append(mask)
       else:
-        self.k_layers.append(layer.k_mask)
+        self.k_layers.append(layer.k_model)
     self.k_model = K.Sequential(self.k_layers)
 
   def add_layer(self, layer: Abstract_Layer, position: int = None):
@@ -270,7 +147,7 @@ class NN(object):
     optimizer = K.optimizers.SGD(lr = lr)
     metrics = ["categorical_accuracy"] if self.layers[-1].num_neurons > 2 else ["binary_accuracy"]
     # fixes weird keras feature in which "accuracy" metric causes unexpected results if using "binary_crossentropy"
-    self.k_model.compile(optimizer = optimizer, loss = self.cost, metrics = metrics)
+    self.k_model.compile(optimizer = optimizer, loss = self.loss, metrics = metrics)
     self.k_model.fit(x, y, epochs = epochs, batch_size = batch_size, validation_split = 0.2, verbose = 2)
     self.is_trained = True
 
@@ -314,7 +191,7 @@ class NN(object):
     result += "  2. Trained: {0}\n".format(self.is_trained)
     if advanced and self.is_trained:
       result += "Advanced: \n"
-      result += "    1. Cost function: {0}\n".format(self.cost)
+      result += "    1. loss function: {0}\n".format(self.loss)
     return result
 
   def save(self, filename: str):

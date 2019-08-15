@@ -12,8 +12,10 @@ import importlib
 import matplotlib.pyplot as plt
 from PIL import Image
 from scipy.optimize import fmin_l_bfgs_b
+import tensorflow as tf
 
 from easyai.core import *
+from easyai.advanced import *
 
 # SUPPORT
 class Evaluator(object):
@@ -60,7 +62,7 @@ class Evaluator(object):
     self.grads = None
 
 # NEURAL NETWORK APPLICATION
-class Neural_Style_Transfer(object):
+class Slow_NST(Network_Interface):
   """
   Class implementation of neural style transfer learning. As of August 2019, only VGG19 and VGG16 is supported.
   Borrowed heavily from the keras implementation of neural style transfer.
@@ -71,7 +73,8 @@ class Neural_Style_Transfer(object):
                  "COEF_C": 1e0,
                  "COEF_S": 1e3,
                  "COEF_V": 1e1,
-                 "MEANS": [103.939, 116.779, 123.68] # not a hp-- don't edit
+                 "MEANS": [103.939, 116.779, 123.68], # not a hp-- don't edit
+                 "IMG_ORDER": ["content", "style", "generated"]
                  }
 
   MODELS = {"vgg16": "VGG16",
@@ -79,66 +82,68 @@ class Neural_Style_Transfer(object):
             }
 
   # INITS
-  def __init__(self, net: str = None, num_rows: int = 400):
+  def __init__(self, net: str = None, num_rows: int = 512):
     """
-    Initializes Neural_Style_Transfer object.
+    Initializes Slow_NST object.
 
     :param net: pre-trained model. Should be a string represeting the name of model, e.g., "vgg19".
     :param num_rows: number of rows that the image has. Is a pre-defined but editable hyperparameter.
     """
     self.net = net if net is not None else "vgg19"
-    self.generated = None
-    self.img_tensor = None
 
     self.num_rows = num_rows
     self.num_cols = None
 
-  def train_init(self, content: Image.Image, style: Image.Image, noise: float = 0.6, verbose: bool = True):
+  def train_init(self, content: Image.Image, style: Image.Image, noise: float = 0.6, verbose: bool = True,
+                 gen_tensor: tf.Tensor = None):
     """
     Initializes processed images (content, style, generated) from paths as keras tensors in preparation for training.
     Also initializes the created image as a copy. All variables are object attributes.
 
     :param content: content image as PIL Image.
     :param style: style image as PIL Image.
-    :param noise: amount of noise in initially generated image. 0. <= noise <= 1.
+    :param noise: amount of noise in initially generated image. 0. ≤ noise ≤ 1.
     :param verbose: if true, prints additional information.
+    :param gen_tensor: support for fast NST.
     """
     self.k_net_module = importlib.import_module("keras.applications.{0}".format(self.net))
 
-    self.image_init(content, style)
+    self.image_init(content, style, gen_tensor = gen_tensor)
 
-    self.img_tensor = K.backend.concatenate([self.content, self.style, self.generated], axis = 0)
-    self.img_order = ["content", "style", "generated"]
+    self.img_tensor = K.backend.concatenate([getattr(self, img) for img in Slow_NST.get_hps("img_order")], axis = 0)
 
     self.model_init()
 
     if verbose:
       print("Loaded {0} model".format(self.net))
 
-    noise_image = np.random.uniform(-20.0, 20.0, size = self.generated.shape)
-    self.img = noise_image * noise + self.preprocess(content) * (1.0 - noise)
+    if gen_tensor is None:
+      noise_image = np.random.uniform(-20.0, 20.0, size = K.backend.int_shape(self.generated)[1])
+      self.img = noise_image * noise + self.preprocess(content) * (1.0 - noise)
 
   def model_init(self):
     """
     Initializes model based on net type provided in __init__.
     """
     try:
-      net_name = getattr(self.k_net_module, Neural_Style_Transfer.MODELS[self.net])
+      net_name = getattr(self.k_net_module, Slow_NST.MODELS[self.net])
     except KeyError:
       raise ModuleNotFoundError("{0} is not currently supported for neural style transfer".format(self.net))
 
     self.k_model = net_name(input_tensor = self.img_tensor, weights = "imagenet",
                             include_top = False) # no need for FC layers since no predictions occur
 
-    self.k_model.trainable = False
+    for layer in self.k_model.layers:
+      layer.trainable = False
     self.outputs = dict([(layer.name, layer.output) for layer in self.k_model.layers])
 
-  def image_init(self, content: Image.Image, style: Image.Image):
+  def image_init(self, content: Image.Image, style: Image.Image, gen_tensor: tf.Tensor = None):
     """
     Initializes preprocessed images (content, style, generated) as object attributes.
 
     :param content: content image as PIL Image.
     :param style: style image as PIL Image.
+    :param gen_tensor: support for fast NST.
     """
     self.content = K.backend.variable(self.preprocess(content))
     self.style = K.backend.variable(self.preprocess(style))
@@ -146,20 +151,21 @@ class Neural_Style_Transfer(object):
     self.gen_shape = (self.num_rows, self.num_cols, 3)
     print ("Generated image shape: {0}".format(self.gen_shape))
 
-    self.generated = K.backend.placeholder(shape = (1, *self.gen_shape)) # 1 is number of images in batch
+    self.generated = gen_tensor if gen_tensor is not None else K.backend.placeholder(shape = (1, *self.gen_shape))
+    # 1 is number of images in batch
 
   def tensor_init(self, content_layer: str, style_layers: list):
     """
     Initializes the keras function that will be used to calculate gradients and loss. Also initializes Evaluator object.
 
-    :param content_layer: layer at which content cost will be evaluated. Is a pre-defined hyperparameter.
-    :param style_layers: layer(s) at which style cost will be evaluated. Is a pre-defined hyperparameter.
+    :param content_layer: layer at which content loss will be evaluated. Is a pre-defined hyperparameter.
+    :param style_layers: layer(s) at which style loss will be evaluated. Is a pre-defined hyperparameter.
     """
-    coef_C, coef_S, coef_V = Neural_Style_Transfer.get_hyperparams("coef_C", "coef_S", "coef_V")
+    coef_C, coef_S, coef_V = self.get_hyperparams("coef_C", "coef_S", "coef_V")
     
-    cost = self.cost_tensor(content_layer, style_layers, coef_C, coef_S, coef_V)
-    grads = K.backend.gradients(cost, self.generated)
-    outputs = [cost, *grads] if isinstance(grads, (list, tuple)) else [cost, grads]
+    loss = self.loss_tensor(content_layer, style_layers, coef_c, coef_s, coef_v)
+    grads = K.backend.gradients(loss, self.generated)
+    outputs = [loss, *grads] if isinstance(grads, (list, tuple)) else [loss, grads]
 
     self.model_func = K.backend.function([self.generated], outputs)
     self.evaluator = Evaluator(self)
@@ -168,7 +174,7 @@ class Neural_Style_Transfer(object):
   def train(self, content: Image.Image, style: Image.Image, epochs: int = 1, init_noise: float = 0.6,
             verbose: bool = True, save_path: str = None) -> np.ndarray:
     """
-    Trains a Neural_Style_Transfer object. More precisely, the pixel values of the created image are optimized using
+    Trains a Slow_NST object. More precisely, the pixel values of the created image are optimized using
     scipy's implementation of L-BFGS-B.
 
     :param content: content image as PIL Image.
@@ -181,24 +187,24 @@ class Neural_Style_Transfer(object):
     """
     self.train_init(content, style, verbose = verbose, noise = init_noise)
 
-    content_layer, style_layers = Neural_Style_Transfer.get_hyperparams("content_layer", "style_layers")
+    content_layer, style_layers = self.get_hyperparams("content_layer", "style_layers")
 
     self.tensor_init(content_layer, style_layers)
 
     if verbose:
-      Neural_Style_Transfer.display_original(content, style)
+      Slow_NST.display_original(content, style)
 
     for epoch in range(epochs):
       start = time()
 
       # updating pixel values using L-BFGS-B
-      self.img, cost, throwaway = fmin_l_bfgs_b(func = self.evaluator.f_loss, x0 = self.img.flatten(),
-                                                fprime = self.evaluator.f_grads, maxfun = 20) # 20 iterations per epoch
+      self.img, loss, info = fmin_l_bfgs_b(func = self.evaluator.f_loss, x0 = self.img.flatten(),
+                                           fprime = self.evaluator.f_grads, maxfun = 20) # 20 iterations per epoch
       plt.close()
 
       if verbose:
         print ("Epoch {0}/{1}".format(epoch + 1, epochs))
-        print (" - {0}s - cost: {1} [broken]".format(round(time() - start), cost)) # cost is broken-- it's way too high
+        print (" - {0}s - loss: {1} [broken]".format(round(time() - start), loss)) # loss is broken-- it's way too high
         self.display_img(self.img, "Epoch {0}/{1}".format(epoch + 1, epochs))
 
       if save_path is not None:
@@ -207,48 +213,48 @@ class Neural_Style_Transfer(object):
 
     return self.deprocess(self.img)
 
-  # COST CALCULATIONS
+  # loss CALCULATIONS
   def loss_and_grads(self, img: np.ndarray) -> tuple:
     """
     Computes loss and gradients using img. Utilizes the keras function created in tensor_init().
 
     :param img: image used to calculate loss and gradients w.r.t. the loss.
-    :return: cost, gradients.
+    :return: loss, gradients.
     """
-    img = img.reshape(self.generated.shape)
+    img = img.reshape(self.gen_shape)
     outputs = self.model_func([img]) # gets output of self.model_func evaluated at img
-    cost = outputs[0]
+    loss = outputs[0]
     if len(outputs[1:]) == 1:
       grads = outputs[1].flatten().astype(np.float64)
       # scipy's L-BFGS-B function requires that the dtype of these variables be float64
     else:
       grads = np.array(outputs[1:]).flatten().astype(np.float64)
-    return cost, grads
+    return loss, grads
 
-  def cost_tensor(self, content_layer: str, style_layers: list, coef_C: float, coef_S: float, coef_V: float):
+  def loss_tensor(self, content_layer: str, style_layers: list, coef_c: float, coef_s: float, coef_v: float):
     """
-    Gets the symbolic cost tensor as a keras tensor. This tensor will be used to calculate cost and
-    the gradients of cost. Is broken but training still works.
+    Gets the symbolic loss tensor as a keras tensor. This tensor will be used to calculate loss and
+    the gradients of loss. Is broken but training still works.
 
-    :param content_layer: layer at which content cost will be evaluated. Is a pre-defined hyperparameter.
-    :param style_layers: layer(s) at which style cost will be evaluated. Is a pre-defined hyperparameter.
-    :param coef_C: content weight. Is a pre-defined hyperparameter.
-    :param coef_S: stye weight. Is a pre-defined hyperparameter.
-    :param coef_V: total variation weight.Is a pre-defined hyperparameter.
-    :return: cost tensor.
+    :param content_layer: layer at which content loss will be evaluated. Is a pre-defined hyperparameter.
+    :param style_layers: layer(s) at which style loss will be evaluated. Is a pre-defined hyperparameter.
+    :param coef_c: content weight. Is a pre-defined hyperparameter.
+    :param coef_s: stye weight. Is a pre-defined hyperparameter.
+    :param coef_v: total variation weight.Is a pre-defined hyperparameter.
+    :return: loss tensor.
     """
 
-    def content_cost(layer):
-      """Computes the content cost at layer "layer"."""
-      layer_features = self.outputs[layer]
+    def content_loss(layer, outputs):
+      """Computes the content loss at layer "layer"."""
+      layer_features = outputs[layer]
 
-      content_actvs = layer_features[self.img_order.index("content"), :, :, :]
-      generated_actvs = layer_features[self.img_order.index("generated"), :, :, :]
+      content_actvs = layer_features[Slow_NST.get_hps("img_order").index("content"), :, :, :]
+      generated_actvs = layer_features[Slow_NST.get_hps("img_order").index("generated"), :, :, :]
 
       return K.backend.sum(K.backend.square(generated_actvs - content_actvs)) # i.e., squared norm
 
-    def layer_style_cost(a_G, a_S):
-      """Computes the style cost at layer "layer". Is broken but training still works."""
+    def layer_style_loss(a_G, a_S):
+      """Computes the style loss at layer "layer". Is broken but training still works."""
 
       def gram_matrix(a):
         """Computes the gram matrix of a."""
@@ -268,37 +274,37 @@ class Neural_Style_Transfer(object):
 
       return K.backend.sum(K.backend.pow(a + b, 1.25))
 
-    cost = K.backend.variable(0.0) # it is necessary to initialize cost like this
+    loss = K.backend.variable(0.0) # it is necessary to initialize loss like this
 
-    cost += coef_C * content_cost(content_layer) # content cost
+    loss += coef_c * content_loss(content_layer, self.outputs) # content loss
 
-    # this loop is probably broken (and/or the computation of layer_style_cost)
-    for layer in style_layers: # style cost
+    # this loop is probably broken (and/or the computation of layer_style_loss)
+    for layer in style_layers: # style loss
       layer_features = self.outputs[layer]
 
-      generated_actvs = layer_features[self.img_order.index("generated"), :, :, :]
-      style_actvs = layer_features[self.img_order.index("style"), :, :, :]
+      generated_actvs = layer_features[Slow_NST.get_hps("img_order").index("generated"), :, :, :]
+      style_actvs = layer_features[Slow_NST.get_hps("img_order").index("style"), :, :, :]
 
-      cost += (coef_S / len(style_layers)) * layer_style_cost(generated_actvs, style_actvs) / \
-              (4.0 * (int(self.generated.shape[-1]) ** 2) * ((self.num_rows * self.num_cols) ** 2)) # normalization
+      loss += (coef_s / len(style_layers)) * layer_style_loss(generated_actvs, style_actvs) / \
+              (4.0 * (int(self.gen_shape[-1]) ** 2) * ((self.num_rows * self.num_cols) ** 2)) # normalization
 
-    cost += coef_V * total_variation_loss(self.generated, self.num_rows, self.num_cols)
+    loss += coef_v * total_variation_loss(self.generated, self.num_rows, self.num_cols)
 
-    return cost
+    return loss
 
   # IMAGE PROCESSING
   def preprocess(self, img: Image.Image, target_size = None) -> np.ndarray:
     """
     Preprocesses an image.
 
-    :param img: image to preprocess. Should be a pixel numpy array.
+    :param img: image to preprocess.
     :param target_size: target size of the image. If is none, defaults to object attributes.
     :return: processed image.
     """
     # because of pass-by-assignment properties, a copy must be made to prevent tampering with original img
     if target_size is None:
       if self.num_cols is None:
-        width, height = reversed(np.asarray(img).shape[:-1])
+        width, height = img.size
         self.num_cols = int(width * self.num_rows / height)
       target_size = (self.num_rows, self.num_cols)
     img = img.resize(reversed(target_size), Image.NEAREST) # resizing image with interpolation = NEAREST
@@ -314,7 +320,7 @@ class Neural_Style_Transfer(object):
     :return: deprocessed image.
     """
     img = np.copy(img_).reshape(*self.generated.shape[1:])
-    means = Neural_Style_Transfer.get_hyperparams("means")
+    means = self.get_hyperparams("means")
     for i in range(len(means)):
       img[:, :, i] += means[i] # adding mean pixel values
     img = img[:, :, ::-1] #BGR -> RBG
@@ -339,7 +345,7 @@ class Neural_Style_Transfer(object):
     fig.suptitle(title)
     plt.axis("off")
 
-    plt.imshow(img.reshape(*self.generated.shape[1:]))
+    plt.imshow(img.reshape(*self.gen_shape[1:]))
     plt.pause(0.1)
 
     plt.show(block = False)
@@ -366,13 +372,15 @@ class Neural_Style_Transfer(object):
     plt.show(block = False)
 
   # MISCELLANEOUS
-  @staticmethod
-  def get_hyperparams(*hyperparams: str) -> Union[str, tuple, float]:
+  def get_hyperparams(self, *hyperparams: str) -> Union[str, tuple, float]:
     """
     Fetches hyperparameters. Merely a syntax simplification tool.
 
     :param hyperparams: any number of hyperparameters to fetch.
     :return: feched hyperparameters.
     """
-    fetched = tuple(Neural_Style_Transfer.HYPERPARAMS[hp.upper()] for hp in hyperparams)
+    try:
+      fetched = tuple(Neural_Style_Transfer.HYPERPARAMS[hp.upper()][self.net] for hp in hyperparams)
+    except KeyError:
+      fetched = tuple(Neural_Style_Transfer.HYPERPARAMS[hp.upper()]["other"] for hp in hyperparams)
     return fetched[0] if len(fetched) == 1 else fetched
