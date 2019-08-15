@@ -9,6 +9,7 @@ Program that implements easyai.support.datasets and easyai.core in examples like
 
 import random
 
+from easyai.layers import *
 from easyai.applications import *
 from easyai.support.datasets import *
 
@@ -31,7 +32,7 @@ class MNIST(Static_Interface):
     (x_train, y_train), (x_test, y_test) = Builtins.load_mnist(version = version, mode = "mlp")
     print ("Loaded MNIST data\n")
 
-    mlp = NN([Input(784), Dense(100), Dense(10, actv = "softmax")], cost = "categorical_crossentropy")
+    mlp = NN(Input(784), Dense(100), Dense(10, actv = "softmax"), cost = "categorical_crossentropy")
     print (mlp.summary())
 
     mlp.train(x_train, y_train, lr = 3.0, epochs = 1)
@@ -52,7 +53,7 @@ class MNIST(Static_Interface):
     (x_train, y_train), (x_test, y_test) = Builtins.load_mnist(version = version, mode = "conv")
     print ("Loaded MNIST data")
 
-    conv_nn = NN([Input((28, 28)), Conv((5, 5), 20), Pooling((2, 2)), Dense(100), Dense(10, actv = "softmax")],
+    conv_nn = NN(Input(28, 28), Conv((5, 5), 20), Pooling(2, 2), Dense(100), Dense(10, actv = "softmax"),
                  cost = "categorical_crossentropy")
     print (conv_nn.summary())
 
@@ -78,7 +79,7 @@ class Lending_Club(Static_Interface):
     (x_train, y_train), (x_test, y_test) = Extras.load_lending_club()
     print("Loaded LendingClub data")
 
-    mlp = NN([Input(9), Dense(200, actv = "relu"), Dense(200, actv = "relu"), Dense(7, actv = "softmax")],
+    mlp = NN(Input(9), Dense(200, actv = "relu"), Dense(200, actv = "relu"), Dense(7, actv = "softmax"),
              cost = "categorical_crossentropy")
     print (mlp.summary())
 
@@ -93,14 +94,14 @@ class Art(Static_Interface):
   """
 
   @staticmethod
-  def neural_style_transfer(content = None, style = None, save_path = None):
+  def slow_nst(content = None, style = None, save_path = None):
     """
     Neural style transfer with art and photographs.
 
     :param content: name of content image from dataset. Default is a random image from built-in datasets.
     :param style: name of style image from dataset. Default is a random image from built-in datasets.
     :param save_path: path to which to save final result. Default is None.
-    :return: trained Neural_Style_Transfer object.
+    :return: trained Slow_NST object.
     """
     def get_img(img_name, type_, images):
       if img_name is None:
@@ -121,7 +122,7 @@ class Art(Static_Interface):
 
     print ("Using content image \"{0}\" and style image \"{1}\"".format(content_name, style_name))
 
-    model = Neural_Style_Transfer("vgg19")
+    model = Slow_NST("vgg19")
 
     final_img = model.train(content_img, style_img, epochs = 25, init_noise = 0.6)
 
@@ -232,4 +233,4 @@ if __name__ == "__main__":
 
   for content in reversed(contents):
     for style in styles:
-      Art.neural_style_transfer(content, style, save_path = "/home/ryan/Documents")
+      Art.slow_nst(content, style, save_path = "/home/ryan/Documents")

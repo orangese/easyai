@@ -16,23 +16,18 @@ class Input(Abstract_Layer):
   MLP input layer with no activation, bias, or weights of its own.  No keras mask.
   """
 
-  def __init__(self, input_shape: Union[int, tuple]):
+  def __init__(self, *input_shape):
     """
     Initializes Input object. Please flatten data before using this object.
 
-    :param input_shape: number of neurons in input layer. Should be of type int if NN is MLP;
-                        if NN is ConvNN, it should be a tuple of ints in the format (num_cols, num_rows, num_channels)
-                        or (num_cols, num_rows) if num_channels == 1.
+    :param input_shape: shape of the input. Either an int (for MLP networks) or a tuple (for conv networks).
     """
-    self.output_shape = input_shape
-    if isinstance(self.output_shape, tuple):
-      if len(self.output_shape) == 2:
-        self.is_3d = False
-        self.output_shape = (*self.output_shape, 1) # if user only gives two dimensions, assume num_channels = 1
-      else:
-        self.is_3d = True
+    if len(input_shape) > 2:
+      self.is_3d = True
+      self.output_shape = input_shape
     else:
       self.is_3d = False
+      self.output_shape = (input_shape, 1)
     self.k_model = None # just to be explicit
 
 class Dense(Abstract_Layer):
@@ -99,13 +94,14 @@ class Pooling(Abstract_Layer):
   Pooling layer.  Has a keras mask, stride = 1, pooling type = "max pooling".
   """
 
-  def __init__(self, pool_size: tuple):
+  def __init__(self, pool_width, pool_height):
     """
     Initializes Pooling object.  Only max pooling is implemented, stride = None.
 
-    :param pool_size: size of pool.
+    :param pool_width: width of pool.
+    :param pool_height: height of pool.
     """
-    self.pool_size = pool_size
+    self.pool_size = (pool_width, pool_height)
     self.prev = None
     self.k_model = None
     self.is_3d = False # default, will be changed in other functions

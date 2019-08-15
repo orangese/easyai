@@ -28,13 +28,13 @@ def suppress_tf_warnings():
 suppress_tf_warnings()
 
 # IMPORTS
-from typing import Union
+from typing import Union, List
 from time import time
 
 import keras as K
 import numpy as np
 
-# SUPPORT
+# FRAMEWORK
 class Static_Interface(object):
   """
   Static interface for other programs. An object of this class cannot be created.
@@ -83,8 +83,19 @@ class Abstract_Layer(Static_Interface):
     assert self.prev, "self.prev must be initialized"
     raise NotImplementedError("cannot be implemented. How did you even call this function?")
 
+class Network_Interface(object):
+  """Interface for all network-like classes."""
+
+  def __init__(self):
+    """
+    Initialization for interfaces should not be used.
+
+    :raises NotImplementedError: class is an interface
+    """
+    raise NotImplementedError("class is an interface")
+
 # NEURAL NETWORK IMPLEMENTATION
-class NN(object):
+class NN(Network_Interface):
   """
   Uses easyai layer objects to create a functional keras model.
   """
