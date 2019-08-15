@@ -62,17 +62,16 @@ class Evaluator(object):
 # NEURAL NETWORK APPLICATION
 class Neural_Style_Transfer(object):
   """
-  Class implementation of neural style transfer learning. As of August 2019, only VGG19 is supported. Borrowed heavily
-  from the keras implementation of neural style transfer.
+  Class implementation of neural style transfer learning. As of August 2019, only VGG19 and VGG16 is supported.
+  Borrowed heavily from the keras implementation of neural style transfer.
   """
 
-  HYPERPARAMS = {"CONTENT_LAYER": {"other": "block5_conv2"},
-                 "STYLE_LAYERS":
-                   {"other": ["block1_conv1", "block2_conv1", "block3_conv1", "block4_conv1", "block5_conv1"]},
-                 "COEF_C": {"other": 1e0},
-                 "COEF_S": {"other": 1e3},
-                 "COEF_V": {"other": 1e1},
-                 "MEANS": {"other": [103.939, 116.779, 123.68]} # not a hp-- don't edit
+  HYPERPARAMS = {"CONTENT_LAYER": "block5_conv2",
+                 "STYLE_LAYERS": ["block1_conv1", "block2_conv1", "block3_conv1", "block4_conv1", "block5_conv1"],
+                 "COEF_C": 1e0,
+                 "COEF_S": 1e3,
+                 "COEF_V": 1e1,
+                 "MEANS": [103.939, 116.779, 123.68] # not a hp-- don't edit
                  }
 
   MODELS = {"vgg16": "VGG16",
@@ -156,7 +155,7 @@ class Neural_Style_Transfer(object):
     :param content_layer: layer at which content cost will be evaluated. Is a pre-defined hyperparameter.
     :param style_layers: layer(s) at which style cost will be evaluated. Is a pre-defined hyperparameter.
     """
-    coef_C, coef_S, coef_V = self.get_hyperparams("coef_C", "coef_S", "coef_V")
+    coef_C, coef_S, coef_V = Neural_Style_Transfer.get_hyperparams("coef_C", "coef_S", "coef_V")
     
     cost = self.cost_tensor(content_layer, style_layers, coef_C, coef_S, coef_V)
     grads = K.backend.gradients(cost, self.generated)
@@ -182,7 +181,7 @@ class Neural_Style_Transfer(object):
     """
     self.train_init(content, style, verbose = verbose, noise = init_noise)
 
-    content_layer, style_layers = self.get_hyperparams("content_layer", "style_layers")
+    content_layer, style_layers = Neural_Style_Transfer.get_hyperparams("content_layer", "style_layers")
 
     self.tensor_init(content_layer, style_layers)
 
@@ -315,7 +314,7 @@ class Neural_Style_Transfer(object):
     :return: deprocessed image.
     """
     img = np.copy(img_).reshape(*self.generated.shape[1:])
-    means = self.get_hyperparams("means")
+    means = Neural_Style_Transfer.get_hyperparams("means")
     for i in range(len(means)):
       img[:, :, i] += means[i] # adding mean pixel values
     img = img[:, :, ::-1] #BGR -> RBG
@@ -367,15 +366,13 @@ class Neural_Style_Transfer(object):
     plt.show(block = False)
 
   # MISCELLANEOUS
-  def get_hyperparams(self, *hyperparams: str) -> Union[str, tuple, float]:
+  @staticmethod
+  def get_hyperparams(*hyperparams: str) -> Union[str, tuple, float]:
     """
     Fetches hyperparameters. Merely a syntax simplification tool.
 
     :param hyperparams: any number of hyperparameters to fetch.
     :return: feched hyperparameters.
     """
-    try:
-      fetched = tuple(Neural_Style_Transfer.HYPERPARAMS[hp.upper()][self.net] for hp in hyperparams)
-    except KeyError:
-      fetched = tuple(Neural_Style_Transfer.HYPERPARAMS[hp.upper()]["other"] for hp in hyperparams)
+    fetched = tuple(Neural_Style_Transfer.HYPERPARAMS[hp.upper()] for hp in hyperparams)
     return fetched[0] if len(fetched) == 1 else fetched
