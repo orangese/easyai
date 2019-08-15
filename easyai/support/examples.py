@@ -27,12 +27,10 @@ class MNIST(Static_Interface):
     :param version: "digits" for MNIST dataset or "fashion" for Fashion-MNIST dataset.
     :return: trained NN model.
     """
-    suppress_tf_warnings()
-
     (x_train, y_train), (x_test, y_test) = Builtins.load_mnist(version = version, mode = "mlp")
     print ("Loaded MNIST data\n")
 
-    mlp = NN(Input(784), Dense(100), Dense(10, actv = "softmax"), cost = "categorical_crossentropy")
+    mlp = NN(Input(784), Dense(100), Dense(10, actv = "softmax"), loss = "categorical_crossentropy")
     print (mlp.summary())
 
     mlp.train(x_train, y_train, lr = 3.0, epochs = 1)
@@ -48,13 +46,11 @@ class MNIST(Static_Interface):
     :param version: "digits" for MNIST dataset or "fashion" for Fashion-MNIST dataset.
     :return: trained NN model.
     """
-    suppress_tf_warnings()
-
     (x_train, y_train), (x_test, y_test) = Builtins.load_mnist(version = version, mode = "conv")
     print ("Loaded MNIST data")
 
     conv_nn = NN(Input(28, 28), Conv((5, 5), 20), Pooling(2, 2), Dense(100), Dense(10, actv = "softmax"),
-                 cost = "categorical_crossentropy")
+                 loss = "categorical_crossentropy")
     print (conv_nn.summary())
 
     conv_nn.train(x_train, y_train, lr = 0.1, epochs = 60)
@@ -74,13 +70,11 @@ class Lending_Club(Static_Interface):
 
     :return: trained NN model.
     """
-    suppress_tf_warnings()
-
     (x_train, y_train), (x_test, y_test) = Extras.load_lending_club()
     print("Loaded LendingClub data")
 
     mlp = NN(Input(9), Dense(200, actv = "relu"), Dense(200, actv = "relu"), Dense(7, actv = "softmax"),
-             cost = "categorical_crossentropy")
+             loss = "categorical_crossentropy")
     print (mlp.summary())
 
     mlp.train(x_train, y_train, lr = 0.01, epochs = 50)
@@ -111,8 +105,6 @@ class Art(Static_Interface):
           return img_name, images[type_][img_name]
         except KeyError:
           raise ValueError("supported {0} images are {1}".format(type_, list(images[type_].keys())))
-
-    suppress_tf_warnings()
 
     images = Extras.load_nst_dataset()
     print ("Loaded NST images")
@@ -207,8 +199,6 @@ class Unsupported(Static_Interface):
 
     :return: trained NN model.
     """
-    suppress_tf_warnings()
-
   @staticmethod
   def display_image(pixels, label=None):
     # function that displays an image using matplotlib-- not really necessary for the digit classifier

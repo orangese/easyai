@@ -7,26 +7,6 @@ Contains core functionality for easyai: the NN class.
 
 """
 
-# ERROR HANDLING
-def suppress_tf_warnings():
-  """
-  Suppresses tensorflow warnings. Does not work if tensorflow is outdated.
-  """
-  import os
-  os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-
-  import warnings
-  warnings.simplefilter(action = "ignore", category = FutureWarning)
-
-  import tensorflow as tf
-  try:
-    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
-  except AttributeError:
-    tf.logging.set_verbosity(tf.logging.ERROR)
-  # compatible with tensorflow == 1.14.0 and tensorflow-gpu == 1.8.0
-
-suppress_tf_warnings()
-
 # IMPORTS
 from typing import Union, List
 from time import time
@@ -100,19 +80,19 @@ class NN(Network_Interface):
   Uses easyai layer objects to create a functional keras model.
   """
 
-  def __init__(self, *layers, cost: str = "binary_crossentropy"):
+  def __init__(self, *layers, loss: str = "binary_crossentropy"):
     """
     Initializes NN (neural network) object.
 
     :param layers: layers of the network. Expects easyai core layer objects.
-    :param cost: cost used by the neural network. Default is categorical_crossentropy.
+    :param loss: loss used by the neural network. Default is categorical_crossentropy.
     """
     if layers is None:
       layers = []
     self.layers = layers
     self.link_layers()
 
-    self.cost = cost
+    self.loss = loss
     self.is_trained = False
 
   def link_layers(self):
@@ -167,7 +147,7 @@ class NN(Network_Interface):
     optimizer = K.optimizers.SGD(lr = lr)
     metrics = ["categorical_accuracy"] if self.layers[-1].num_neurons > 2 else ["binary_accuracy"]
     # fixes weird keras feature in which "accuracy" metric causes unexpected results if using "binary_crossentropy"
-    self.k_model.compile(optimizer = optimizer, loss = self.cost, metrics = metrics)
+    self.k_model.compile(optimizer = optimizer, loss = self.loss, metrics = metrics)
     self.k_model.fit(x, y, epochs = epochs, batch_size = batch_size, validation_split = 0.2, verbose = 2)
     self.is_trained = True
 
@@ -211,7 +191,7 @@ class NN(Network_Interface):
     result += "  2. Trained: {0}\n".format(self.is_trained)
     if advanced and self.is_trained:
       result += "Advanced: \n"
-      result += "    1. Cost function: {0}\n".format(self.cost)
+      result += "    1. loss function: {0}\n".format(self.loss)
     return result
 
   def save(self, filename: str):
