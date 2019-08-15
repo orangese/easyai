@@ -62,6 +62,8 @@ MNIST.mlp() # creates and runs a standard neural network on the digit classifyin
 
 EasyAI is a Python package and can therefore be installed with Python's installation tool, `pip`. In order to install EasyAI, you must have Python >= 3.6.0.
 
+Mac users: you may need to run the Python certificate script before using EasyAI. In order to do so, locate the `Python 3.x` folder in your `Applications` folder in Finder and run `Install Certificate.command` and `Update Shell Profile.command`.
+
 ### Installation
 
 If you have a CUDA-capable GPU and CUDA software (if you don't know what that means, you don't have it), install EasyAI using this command: `pip3 install git+https://github.com/orangese/easyai.git#egg=easyai[gpu]`.
