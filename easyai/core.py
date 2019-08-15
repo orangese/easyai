@@ -3,8 +3,7 @@
 
 "easyai.core.py"
 
-Wrapper program for easy use of keras. Targeted towards those with little to no experience with Python and
-machine learning.
+Contains core functionality for easyai: the NN class.
 
 """
 
@@ -29,13 +28,11 @@ def suppress_tf_warnings():
 suppress_tf_warnings()
 
 # IMPORTS
-
 from typing import Union
+from time import time
 
 import keras as K
 import numpy as np
-
-from easyai.layers import *
 
 # SUPPORT
 class Static_Interface(object):
@@ -51,13 +48,48 @@ class Static_Interface(object):
     """
     raise NotImplementedError("class is static")
 
+class Abstract_Layer(Static_Interface):
+  """
+  Abstract class that acts as the base for all layer classes. Should not be implemented.
+  """
+
+  def __init__(self, num_neurons: int , actv: str):
+    """
+    As Abstract_Layer objects should not be created, __init__ throws a NotImplementedError.
+
+    :raises NotImplementedError
+    """
+    self.num_neurons = num_neurons
+    self.actv = actv
+    self.prev = None
+    self.k_model = None
+    raise NotImplementedError("abstract class should not be implemented")
+
+  def __str__(self):
+    try:
+      return "{0} {1} layer: {2} neurons".format(self.__class__.__name__, self.actv, self.num_neurons)
+    except AttributeError:
+      return "{0} layer: {1} neurons".format(self.__class__.__name__, self.num_neurons)
+
+  def __repr__(self):
+    return self.__str__()
+
+  def update_mask(self):
+    """
+     Creates keras mask. This mask will be used for training and all computations.
+
+    :raises AssertionError if self.prev is not initialized.
+    """
+    assert self.prev, "self.prev must be initialized"
+    raise NotImplementedError("cannot be implemented. How did you even call this function?")
+
 # NEURAL NETWORK IMPLEMENTATION
 class NN(object):
   """
   Uses easyai layer objects to create a functional keras model.
   """
 
-  def __init__(self, layers: list = None, cost: str = "binary_crossentropy"):
+  def __init__(self, *layers, cost: str = "binary_crossentropy"):
     """
     Initializes NN (neural network) object.
 
@@ -66,7 +98,7 @@ class NN(object):
     """
     if layers is None:
       layers = []
-    self.layers = tuple(layers)
+    self.layers = layers
     self.link_layers()
 
     self.cost = cost
@@ -78,11 +110,11 @@ class NN(object):
     for prev, layer in zip(self.layers, self.layers[1:]):
       layer.prev = prev
       layer.update_mask()
-      if isinstance(layer.k_mask, list):
-        for mask in layer.k_mask:
+      if isinstance(layer.k_model, list):
+        for mask in layer.k_model:
           self.k_layers.append(mask)
       else:
-        self.k_layers.append(layer.k_mask)
+        self.k_layers.append(layer.k_model)
     self.k_model = K.Sequential(self.k_layers)
 
   def add_layer(self, layer: Abstract_Layer, position: int = None):
