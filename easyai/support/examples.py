@@ -3,7 +3,7 @@
 
 "easyai.support.examples.py"
 
-Program that implements easyai.support.datasets and easyai.core in examples like MNIST.
+Program that implements easyai.support.datasets.datasets and easyai.core in examples like MNIST.
 
 """
 
@@ -11,7 +11,7 @@ import random
 
 from easyai.layers import *
 from easyai.applications import *
-from easyai.support.datasets import *
+from easyai.support.datasets.datasets import *
 
 # CLASSES
 class MNIST(Static_Interface):
@@ -106,7 +106,7 @@ class Art(Static_Interface):
         except KeyError:
           raise ValueError("supported {0} images are {1}".format(type_, list(images[type_].keys())))
 
-    images = Extras.load_nst_dataset()
+    images = Extras.load_nstset()
     print ("Loaded NST images")
 
     content_name, content_img = get_img(content, "content", images)

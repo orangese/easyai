@@ -1,7 +1,7 @@
 
 """
 
-"easyai.support.datasets.py"
+"easyai.support.datasets.datasets.py"
 
 Program that implements easyai.core and provides wrapper for keras data loaders.
 
@@ -16,6 +16,7 @@ import pandas as pd
 import requests
 from PIL import Image
 
+import easyai
 from easyai.core import *
 
 # DATASETS
@@ -54,8 +55,11 @@ class NST(Static_Interface):
 
   @staticmethod
   def load_coco():
-    subprocess.call("download_coco.sh")
-    print ("Downloaded COCO")
+    sh_path = os.path.abspath(easyai.__file__).replace("/__init__.py", "/support/datasets/download_coco.sh")
+    subprocess.run([sh_path])
+
+    coco_path = os.getenv("HOME") + "/coco"
+    # do stuff with coco
 
 NST.load_coco()
 
@@ -139,7 +143,7 @@ class Extras(Static_Interface):
   """
 
   @staticmethod
-  def load_nst_dataset() -> dict:
+  def load_nst() -> dict:
     """
     Method to load images used as examples for neural style transfer.
 

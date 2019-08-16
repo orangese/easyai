@@ -8,6 +8,7 @@ Applications of core layers and networks in larger, more real-world-based algori
 """
 
 import importlib
+import os
 
 import matplotlib.pyplot as plt
 from PIL import Image
@@ -437,9 +438,25 @@ class Fast_NST(Slow_NST):
               init_noise: float = 0.6, verbose: bool = True):
     self.train_init(content_imgs, style_imgs, noise = init_noise, verbose = verbose)
 
+  # TRAINING
+  def train(self, style: Image.Image, epochs: int = 1, init_noise: float = 0.6, verbose: bool = True) -> np.ndarray:
+    """
+    Trains the image transform network on the MS COCO dataset (https://cocodataset.org/#download) to match a certain
+    style. This dataset does not come preinstalled with easyai and takes a while to download (~4 hours).
+    If you start training without COCO installed, you will be prompted to run easyai's COCO installer script.
+
+    :param style: style image as PIL Image.
+    :param epochs: number of iterations or epochs.
+    :param init_noise: amount of noise in initially generated image. Range is [0., 1.].
+    :param verbose: if true, prints additional training information.
+    :return: final cost
+    """
+    self.train_init(style, noise = init_noise, verbose = verbose)
+    return np.array([])
+
 from easyai.support.load import load_nst_imgs
 content, style = load_nst_imgs("/home/ryan/Pictures/nst_generated/dog_blue_green_stained_glass.jpg",
                                "/home/ryan/Pictures/nst_generated/dog_blue_green_stained_glass.jpg")
 
 test = Fast_NST()
-test.train(content, style)
+test.train(style)
