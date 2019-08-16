@@ -97,12 +97,12 @@ class Slow_NST(Network_Interface):
   def train_init(self, content: Image.Image, style: Image.Image, noise: float = 0.6, verbose: bool = True,
                  gen_tensor: tf.Tensor = None):
     """
-    Initializes processed images (content, style, generated) from paths as keras tensors in preparation for training.
+    Initializes processed images (content, style, generated) as keras tensors in preparation for training.
     Also initializes the created image as a copy. All variables are object attributes.
 
     :param content: content image as PIL Image.
     :param style: style image as PIL Image.
-    :param noise: amount of noise in initially generated image. 0. ≤ noise ≤ 1.
+    :param noise: amount of noise in initially generated image. Range is [0., 1.].
     :param verbose: if true, prints additional information.
     :param gen_tensor: support for fast NST.
     """
@@ -384,26 +384,43 @@ class Slow_NST(Network_Interface):
     return fetched[0] if len(fetched) == 1 else fetched
 
 class Fast_NST(Slow_NST):
+  """
+  Fast neural style transfer, uses implementation of slow neural style transfer.
 
+  Paper: https://cs.stanford.edu/people/jcjohns/papers/eccv16/JohnsonECCV16.pdf
+  Supplementary material: https://cs.stanford.edu/people/jcjohns/papers/eccv16/JohnsonECCV16Supplementary.pdf
+
+  Fast NST trains on the COCO dataset (~4 hours) and then can stylize images 1e3 times faster than slow NST. However,
+  each unique style requires another round of training on the COCO dataset.
+  """
+
+  # INITS
   def __init__(self, img_transform_net: Network_Interface = NST_Transform_Net(),
                loss_net: Network_Interface = Slow_NST(), num_rows: int = 512):
+    """
+    Initializes fast NST object. This network has two parts: a trainable network (img_transform_net) and a fixed
+    network (loss_net).
+
+    :param img_transform_net: image transform network. Will be trained.
+    :param loss_net: fixed network, either "vgg16" or "vgg19". Is pre-trained.
+    :param num_rows: number of rows in the target image.
+    """
     self.img_transform_net = img_transform_net
     self.loss_net = loss_net
     self.num_rows = num_rows
 
-  def train_init(self, content: Image.Image, style: Image.Image, noise = 0.6, verbose: bool = True):
+  def train_init(self, style: Image.Image, target_shape: tuple = (256, 256), noise = 0.6, verbose: bool = True):
     """
-    Initializes processed images (content, style, generated) from paths as keras tensors in preparation for training.
-    Also initializes the created image as a copy. All variables are object attributes.
+    Initializes processed images (style and generated) as keras tensors in preparation for training.
+    Also initializes the function and models that will be used for training.
 
-    :param content: content image as PIL Image.
     :param style: style image as PIL Image.
-    :param noise: amount of noise in initially generated image. 0. ≤ noise ≤ 1.
+    :param target_shape: all training images will be reshaped to target_shape.
+    :param noise: amount of noise in initially generated image. Range is [0., 1.].
     :param verbose: if true, prints additional information.
     """
     # target shape init
-    width, height = content.size
-    self.num_cols = int(width * self.num_rows / height)
+    self.num_cols = int(target_shape[0] * self.num_rows / target_shape[1])
 
     # partial train init
     self.img_transform_net.train_init(content, noise = noise)
@@ -421,19 +438,39 @@ class Fast_NST(Slow_NST):
     # wanted to name self.outputs as self.loss_outputs but it is inconvenient due to implementation of Slow_NST methods
 
     # loss net as a loss function
-    self.bleeb = K.backend.placeholder(shape = self.loss_net.k_model.layers[0].output_shape)
     outs = [self.loss_tensor(*Slow_NST.get_hps("content_layer", "style_layers", "coef_c", "coef_s", "coef_v"))]
-    self.loss_func = K.backend.function([self.bleeb], outs)
+    self.loss_func = K.backend.function([self.generated], outs)
 
     # compiling model
     self.img_transform_net.k_model.compile(optimizer = K.optimizers.Adam(), loss = self.loss)
 
   def loss(self, y_true, y_pred):
-    return self.loss_func([y_true])[0]
+    """
+    Custom loss function.
 
-  def train(self, content_imgs: Image.Image, style_imgs: Image.Image, epochs: int = 1,
-              init_noise: float = 0.6, verbose: bool = True):
-    self.train_init(content_imgs, style_imgs, noise = init_noise, verbose = verbose)
+    :param y_true: target label.
+    :param y_pred: prediction
+    :return: cost, evaluated by passing y_pred through the loss net and sampling outputs from various layers.
+    """
+    if tf.placeholder("float", []).op.type == "Placeholder":
+      return tf.fill(tf.shape(y_true), np.inf) # for compile time, when y_true and y_pred are still placeholders
+    return self.loss_func([y_true])[0] # keras function cannot accept placeholder tensors as input
+
+  # TRAINING
+  def train(self, style: Image.Image, epochs: int = 1, init_noise: float = 0.6, verbose: bool = True) -> np.ndarray:
+    """
+    Trains the image transform network on the MS COCO dataset (https://cocodataset.org/#download) to match a certain
+    style. This dataset does not come preinstalled with easyai and takes a while to download (~4 hours).
+    If you start training without COCO installed, you will be prompted to run easyai's COCO installer script.
+
+    :param style: style image as PIL Image.
+    :param epochs: number of iterations or epochs.
+    :param init_noise: amount of noise in initially generated image. Range is [0., 1.].
+    :param verbose: if true, prints additional training information.
+    :return: final cost
+    """
+    self.train_init(style, noise = init_noise, verbose = verbose)
+    return np.array([])
 
 from easyai.support.load import load_nst_imgs
 content, style = load_nst_imgs("/home/ryan/Pictures/nst_generated/dog_blue_green_stained_glass.jpg",

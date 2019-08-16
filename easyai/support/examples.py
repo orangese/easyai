@@ -218,8 +218,8 @@ if __name__ == "__main__":
   # activation = Unsupported.getActivation(filename)
   # Unsupported.display_image(activation)
 
-  styles = list(Links.NST.style.keys())
-  contents = list(Links.NST.content.keys())
+  styles = list(NST.style.keys())
+  contents = list(NST.content.keys())
 
   for content in reversed(contents):
     for style in styles:

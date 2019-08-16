@@ -15,7 +15,7 @@ from easyai.core import *
 
 # CONV LAYERS
 class Noisy_Normalize(K.layers.Layer):
-  """Noisy image-normalizing input layer."""
+  """Noisy image-normalizing input layer. Used for Fast NST."""
 
   def __init__(self, noise, **kwargs):
     self.noise = noise
