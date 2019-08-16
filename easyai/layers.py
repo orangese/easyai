@@ -52,9 +52,9 @@ class Dense(Abstract_Layer):
   def update_mask(self):
     assert self.prev is not None, "self.prev must be initialized"
     if isinstance(self.prev, Conv):
-      self.k_model = [K.layers.Flatten(), K.layers.Dense(units = self.num_neurons, activation = self.actv)]
+      self.k_model = [keras.layers.Flatten(), keras.layers.Dense(units = self.num_neurons, activation = self.actv)]
     else:
-      self.k_model = K.layers.Dense(units = self.num_neurons, activation = self.actv)
+      self.k_model = keras.layers.Dense(units = self.num_neurons, activation = self.actv)
 
 # CONV NET LAYERS
 class Conv(Abstract_Layer):
@@ -86,7 +86,7 @@ class Conv(Abstract_Layer):
 
   def update_mask(self):
     assert self.prev is not None, "self.prev must be initialized"
-    self.k_model = K.layers.Conv2D(filters = self.num_filters, strides = (self.strides, self.strides),
+    self.k_model = keras.layers.Conv2D(filters = self.num_filters, strides = (self.strides, self.strides),
                                    kernel_size = self.filter_size, activation = self.actv)
 
 class Pooling(Abstract_Layer):
@@ -111,4 +111,4 @@ class Pooling(Abstract_Layer):
 
   def update_mask(self):
     assert self.prev is not None, "self.prev must be initialized"
-    self.k_model = K.layers.MaxPool2D(pool_size = self.pool_size)
+    self.k_model = keras.layers.MaxPool2D(pool_size = self.pool_size)
