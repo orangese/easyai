@@ -380,10 +380,7 @@ class Slow_NST(Network_Interface):
     :param hyperparams: any number of hyperparameters to fetch.
     :return: feched hyperparameters.
     """
-    try:
-      fetched = tuple(Neural_Style_Transfer.HYPERPARAMS[hp.upper()][self.net] for hp in hyperparams)
-    except KeyError:
-      fetched = tuple(Neural_Style_Transfer.HYPERPARAMS[hp.upper()]["other"] for hp in hyperparams)
+    fetched = tuple(Slow_NST.HYPERPARAMS[hp.upper()] for hp in hyperparams)
     return fetched[0] if len(fetched) == 1 else fetched
 
 class Fast_NST(Slow_NST):
