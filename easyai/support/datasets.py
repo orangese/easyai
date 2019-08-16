@@ -8,6 +8,9 @@ Program that implements easyai.core and provides wrapper for keras data loaders.
 """
 
 from io import BytesIO
+from typing import Tuple
+import os
+import subprocess
 
 import pandas as pd
 import requests
@@ -16,40 +19,45 @@ from PIL import Image
 from easyai.core import *
 
 # DATASETS
-class Links(Static_Interface):
+class NST(Static_Interface):
 
-  class NST(Static_Interface):
-
-    content = {"girl_with_balloon_banksy":
-                 "https://drive.google.com/uc?export=download&id=1FnhuYsx2sjSqI5qwZQxd7cmh8A5z74tj",
-               "mountain_painting": "https://drive.google.com/uc?export=download&id=1_bmWZxTdE4cXvSiZZ_HQpzFsiytkZV5z",
-               "mona_lisa_da_vinci": "https://drive.google.com/uc?export=download&id=1nfJ0-200MkjbuQEWsmKeO0C-byrZSQRF",
-               "nyc": "https://drive.google.com/uc?export=download&id=1EZiItOnGA8LuetejrW5HYMzk6sGYTlqN",
-               "golden_gate_bridge": "https://drive.google.com/uc?export=download&id=1XH5vHXQfdKs4XOhWj4DN31Npwg6PVykb",
-               "flower": "https://drive.google.com/uc?export=download&id=1baUPRVEh82szkeQ0601O4gpj_mNNbpbe",
-               "dog": "https://drive.google.com/uc?export=download&id=1f8aNYIJqBrMqYEYYSMPOmzgVmS_9C969",
-               "arno_river_buildings":
-                 "https://drive.google.com/uc?export=download&id=1ynBPvxuUOUo4upgTNE4KCab4F26leSLi"
-               }
-
-    style = {"wheatfields_with_crows_van_gogh":
-               "https://drive.google.com/uc?export=download&id=1YH2IE42KcwxOzu3C_xs6F_cLT4VJqpAW",
-             "the_scream_munch": "https://drive.google.com/uc?export=download&id=1kUybhXBJF8NfWm8A1-Ry7KksbG3jx8hb",
-             "starry_night_van_gogh":
-               "https://drive.google.com/uc?export=download&id=18MpTOAt40ngCRpX1xcckwxUXNhOiBemJ",
-             "blue_green_stained_glass":
-               "https://drive.google.com/uc?export=download&id=1LxjKiXAiPM1OFg2s9c-cbFEqIwHp2ffN",
-             "little_village_duncanson":
-               "https://drive.google.com/uc?export=download&id=1ys1wrH6Glhfvr28kvgvLLwP5NoSL_0JS",
-             "udnie_picabia": "https://drive.google.com/uc?export=download&id=1sFVDVyWgNle7La5sgz9vks42uNAUYIVv",
-             "femme_nue_assise_picasso":
-               "https://drive.google.com/uc?export=download&id=1IACcGYMY0kYS9K5Ng-mTPQc3USCEu7Or",
-             "cubist_karthik": "https://drive.google.com/uc?export=download&id=19AKRyeJxNHWg8w50xE0VWyI33r-VMZTe",
-             "bottle_and_fishes_braque":
-               "https://drive.google.com/uc?export=download&id=1JfBSd7CHIUIEKI7Zyl4XKX4Wy8W6X4e-",
-             "great_wave_off_kanagawa_hokusai":
-               "https://drive.google.com/uc?export=download&id=104dqfFU4z3ul-hGgbNYAvLUP4OuD2GBw"
+  content = {"girl_with_balloon_banksy":
+               "https://drive.google.com/uc?export=download&id=1FnhuYsx2sjSqI5qwZQxd7cmh8A5z74tj",
+             "mountain_painting": "https://drive.google.com/uc?export=download&id=1_bmWZxTdE4cXvSiZZ_HQpzFsiytkZV5z",
+             "mona_lisa_da_vinci": "https://drive.google.com/uc?export=download&id=1nfJ0-200MkjbuQEWsmKeO0C-byrZSQRF",
+             "nyc": "https://drive.google.com/uc?export=download&id=1EZiItOnGA8LuetejrW5HYMzk6sGYTlqN",
+             "golden_gate_bridge": "https://drive.google.com/uc?export=download&id=1XH5vHXQfdKs4XOhWj4DN31Npwg6PVykb",
+             "flower": "https://drive.google.com/uc?export=download&id=1baUPRVEh82szkeQ0601O4gpj_mNNbpbe",
+             "dog": "https://drive.google.com/uc?export=download&id=1f8aNYIJqBrMqYEYYSMPOmzgVmS_9C969",
+             "arno_river_buildings":
+               "https://drive.google.com/uc?export=download&id=1ynBPvxuUOUo4upgTNE4KCab4F26leSLi"
              }
+
+  style = {"wheatfields_with_crows_van_gogh":
+             "https://drive.google.com/uc?export=download&id=1YH2IE42KcwxOzu3C_xs6F_cLT4VJqpAW",
+           "the_scream_munch": "https://drive.google.com/uc?export=download&id=1kUybhXBJF8NfWm8A1-Ry7KksbG3jx8hb",
+           "starry_night_van_gogh":
+             "https://drive.google.com/uc?export=download&id=18MpTOAt40ngCRpX1xcckwxUXNhOiBemJ",
+           "blue_green_stained_glass":
+             "https://drive.google.com/uc?export=download&id=1LxjKiXAiPM1OFg2s9c-cbFEqIwHp2ffN",
+           "little_village_duncanson":
+             "https://drive.google.com/uc?export=download&id=1ys1wrH6Glhfvr28kvgvLLwP5NoSL_0JS",
+           "udnie_picabia": "https://drive.google.com/uc?export=download&id=1sFVDVyWgNle7La5sgz9vks42uNAUYIVv",
+           "femme_nue_assise_picasso":
+             "https://drive.google.com/uc?export=download&id=1IACcGYMY0kYS9K5Ng-mTPQc3USCEu7Or",
+           "cubist_karthik": "https://drive.google.com/uc?export=download&id=19AKRyeJxNHWg8w50xE0VWyI33r-VMZTe",
+           "bottle_and_fishes_braque":
+             "https://drive.google.com/uc?export=download&id=1JfBSd7CHIUIEKI7Zyl4XKX4Wy8W6X4e-",
+           "great_wave_off_kanagawa_hokusai":
+             "https://drive.google.com/uc?export=download&id=104dqfFU4z3ul-hGgbNYAvLUP4OuD2GBw"
+           }
+
+  @staticmethod
+  def load_coco():
+    subprocess.call("download_coco.sh")
+    print ("Downloaded COCO")
+
+NST.load_coco()
 
 # DATA LOADERS
 class Builtins(Static_Interface):
@@ -59,7 +67,8 @@ class Builtins(Static_Interface):
   """
 
   @staticmethod
-  def load_mnist(version: str = "digits", mode: str = "mlp") -> tuple:
+  def load_mnist(version: str = "digits", mode: str = "mlp") -> Tuple[Tuple[np.ndarray, np.ndarray],
+                                                                      Tuple[np.ndarray, np.ndarray]]:
     """
     Loads MNIST or Fashion-MNIST data. These two datasets are combined into one method because they are so similar.
 
@@ -94,7 +103,7 @@ class Builtins(Static_Interface):
     return (x_train, y_train), (x_test, y_test)
 
   @staticmethod
-  def load_cifar(version: int) -> tuple:
+  def load_cifar(version: int) -> Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray]]:
     """
     Loads CIFAR-10 or CIFAR-100 data.
 
@@ -141,8 +150,8 @@ class Extras(Static_Interface):
     # helper variables and lambdas
     urls_to_imgs = lambda urls: [Image.open(BytesIO(requests.get(url).content)) for url in urls]
     dict_from_lists = lambda keys, values: dict(zip(keys, values))
-    content_dict = Links.NST.content
-    style_dict = Links.NST.style
+    content_dict = NST.content
+    style_dict = NST.style
 
     images = {"content": None, "styles": None}
 
@@ -159,7 +168,7 @@ class Extras(Static_Interface):
 
   # BROKEN
   @staticmethod
-  def load_lending_club() -> tuple:
+  def load_lending_club() -> Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray]]:
     """
     Loads LendingClub credit rating dataset.
 
