@@ -8,6 +8,7 @@ Applications of core layers and networks in larger, more real-world-based algori
 """
 
 import importlib
+import os
 
 import matplotlib.pyplot as plt
 from PIL import Image
@@ -470,6 +471,11 @@ class Fast_NST(Slow_NST):
     :return: final cost
     """
     self.train_init(style, noise = init_noise, verbose = verbose)
+
+    path_to_coco = os.getenv("HOME") + "/coco"
+
+    self.img_transform_net.k_model.fit()
+
     return np.array([])
 
 from easyai.support.load import load_nst_imgs
@@ -477,4 +483,4 @@ content, style = load_nst_imgs("/home/ryan/Pictures/nst_generated/dog_blue_green
                                "/home/ryan/Pictures/nst_generated/dog_blue_green_stained_glass.jpg")
 
 test = Fast_NST()
-test.train(content, style)
+test.train(style)

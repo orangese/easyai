@@ -16,6 +16,7 @@ import pandas as pd
 import requests
 from PIL import Image
 
+import easyai
 from easyai.core import *
 
 # DATASETS
@@ -54,8 +55,11 @@ class NST(Static_Interface):
 
   @staticmethod
   def load_coco():
-    subprocess.call("download_coco.sh")
-    print ("Downloaded COCO")
+    sh_path = os.path.abspath(easyai.__file__).replace("/__init__.py", "/support/download_coco.sh")
+    subprocess.run([sh_path])
+
+    coco_path = os.getenv("HOME") + "/coco"
+    # do stuff with coco
 
 NST.load_coco()
 

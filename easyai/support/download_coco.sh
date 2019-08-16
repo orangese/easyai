@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-if [ ! -d $~/coco ]; then
+if [ ! -d "$HOME/coco" ] ; then
   echo "Preparing to download COCO. When prompted, please select all default options"
   mkdir coco
   cd coco || exit
@@ -9,5 +9,5 @@ if [ ! -d $~/coco ]; then
   gsutil -m rsync gs://images.cocodataset.org/train2017 train2017
   echo "Downloaded COCO to ~/coco"
 else
-  :
+  echo "COCO residing at ~/coco"
 fi
