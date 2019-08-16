@@ -19,7 +19,7 @@ from PIL import Image
 import easyai
 from easyai.core import *
 
-# DATASETS
+# LINK DATASETS
 class NST(Static_Interface):
 
   content = {"girl_with_balloon_banksy":
@@ -53,16 +53,6 @@ class NST(Static_Interface):
              "https://drive.google.com/uc?export=download&id=104dqfFU4z3ul-hGgbNYAvLUP4OuD2GBw"
            }
 
-  @staticmethod
-  def load_coco():
-    sh_path = os.path.abspath(easyai.__file__).replace("/__init__.py", "/support/datasets/download_coco.sh")
-    subprocess.run([sh_path])
-
-    coco_path = os.getenv("HOME") + "/coco"
-    # do stuff with coco
-
-NST.load_coco()
-
 # DATA LOADERS
 class Builtins(Static_Interface):
   """
@@ -83,9 +73,9 @@ class Builtins(Static_Interface):
     assert version == "digits" or version == "fashion", "only MNIST or Fashion-MNIST are available"
 
     if version == "digits":
-      (x_train, y_train), (x_test, y_test) = K.datasets.mnist.load_data()
+      (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
     else:
-      (x_train, y_train), (x_test, y_test) = K.datasets.fashion_mnist.load_data()
+      (x_train, y_train), (x_test, y_test) = keras.datasets.fashion_mnist.load_data()
 
     x_train = (x_train / 255).astype("float32")
     x_test = (x_test / 255).astype("float32")
@@ -101,8 +91,8 @@ class Builtins(Static_Interface):
       x_test.resize(*x_test.shape, 1)
 
     num_classes = 10
-    y_train = K.utils.to_categorical(y_train, num_classes)
-    y_test = K.utils.to_categorical(y_test, num_classes)
+    y_train = keras.utils.to_categorical(y_train, num_classes)
+    y_test = keras.utils.to_categorical(y_test, num_classes)
 
     return (x_train, y_train), (x_test, y_test)
 
@@ -116,11 +106,11 @@ class Builtins(Static_Interface):
     """
     assert version == 10 or version == 100, "only CIFAR-10 and CIFAR-100 are available"
 
-    (x_train, y_train), (x_test, y_test) = K.datasets.cifar10.load_data()
+    (x_train, y_train), (x_test, y_test) = keras.datasets.cifar10.load_data()
 
     num_classes = version
-    y_train = K.utils.to_categorical(y_train, num_classes)
-    y_test = K.utils.to_categorical(y_test, num_classes)
+    y_train = keras.utils.to_categorical(y_train, num_classes)
+    y_test = keras.utils.to_categorical(y_test, num_classes)
 
     return (x_train, y_train), (x_test, y_test)
 
@@ -169,6 +159,14 @@ class Extras(Static_Interface):
     images["style"] = dict_from_lists(style_keys, style_imgs)
 
     return images
+
+  @staticmethod
+  def load_coco():
+    """
+    Runs bash script "download_coco.sh" to download MS-COCO if it is not already downloaded. Used for fast NST.
+    """
+    sh_path = os.path.abspath(easyai.__file__).replace("/__init__.py", "/support/datasets/download_coco.sh")
+    subprocess.run([sh_path])
 
   # BROKEN
   @staticmethod

@@ -106,7 +106,7 @@ class Art(Static_Interface):
         except KeyError:
           raise ValueError("supported {0} images are {1}".format(type_, list(images[type_].keys())))
 
-    images = Extras.load_nstset()
+    images = Extras.load_nst()
     print ("Loaded NST images")
 
     content_name, content_img = get_img(content, "content", images)
@@ -122,7 +122,7 @@ class Art(Static_Interface):
 
     if save_path is not None:
       full_save_path = save_path + "/{0}_{1}.jpg".format(content_name, style_name)
-      K.preprocessing.image.save_img(full_save_path, final_img)
+      keras.preprocessing.image.save_img(full_save_path, final_img)
       print ("Saved image at \"{0}\"".format(full_save_path))
 
 #--BELOW NOT SUPPORTED--
@@ -130,8 +130,6 @@ from tkinter import *
 from PIL import Image, ImageDraw
 import PIL
 import numpy as np
-
-import keras as K
 
 class Unsupported(Static_Interface):
 
@@ -182,7 +180,7 @@ class Unsupported(Static_Interface):
       h5_model = "h5_model.h5"
       nn.save(h5_model)
 
-    model = K.models.load_model("h5_model")
+    model = keras.models.load_model("h5_model")
     write("Test evalaution: {0}%".format(model.evaluate()[-1] * 100))
 
     digit = get_user_draw()

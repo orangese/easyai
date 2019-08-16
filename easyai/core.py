@@ -11,7 +11,8 @@ Contains core functionality for easyai: the NN class.
 from typing import Union, List
 from time import time
 
-import keras as K
+import keras
+import keras.backend as K
 import numpy as np
 
 # FRAMEWORK
@@ -106,7 +107,7 @@ class NN(Network_Interface):
           self.k_layers.append(mask)
       else:
         self.k_layers.append(layer.k_model)
-    self.k_model = K.Sequential(self.k_layers)
+    self.k_model = keras.Sequential(self.k_layers)
 
   def add_layer(self, layer: Abstract_Layer, position: int = None):
     """Adds a layer and creates a new keras object.
@@ -144,7 +145,7 @@ class NN(Network_Interface):
     :param epochs: number of epochs. Default is 1.
     :param batch_size:  minibatch size. Default is 10.
     """
-    optimizer = K.optimizers.SGD(lr = lr)
+    optimizer = keras.optimizers.SGD(lr = lr)
     metrics = ["categorical_accuracy"] if self.layers[-1].num_neurons > 2 else ["binary_accuracy"]
     # fixes weird keras feature in which "accuracy" metric causes unexpected results if using "binary_crossentropy"
     self.k_model.compile(optimizer = optimizer, loss = self.loss, metrics = metrics)

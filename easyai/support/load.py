@@ -7,17 +7,25 @@ Loads new, user-supplied data.
 
 """
 
-from typing import Tuple
+from typing import Union, List
+from io import BytesIO
 
 from PIL import Image
+import requests
 
-def load_nst_imgs(content_path: str, style_path: str) -> Tuple[Image.Image, Image.Image]:
+def load_imgs(*paths) -> Union[List[Image.Image], Image.Image]:
   """
-  Loads new images for neural style transfer. Images will be of shape (width, height, 3) and will have pixel values
+  Loads new images from paths or links. Images will be of shape (width, height, 3) and will have pixel values
   ranging from 0 to 255.
 
-  :param content_path: path to content image.
-  :param style_path: path to style image.
-  :return: tuple of images as numpy arrays.
+  :param paths: any number of paths or downloadable image links.
+  :return: tuple of lists of images as numpy arrays.
   """
-  return Image.open(content_path), Image.open(style_path)
+  result = []
+  for path in paths:
+    try:
+      result.append(Image.open(path))
+    except FileNotFoundError:
+      result.append(Image.open(BytesIO(requests.get(path).content)))
+  return result[0] if len(result) == 1 else result
+

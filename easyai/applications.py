@@ -95,8 +95,7 @@ class Slow_NST(Network_Interface):
     self.num_rows = num_rows
     self.num_cols = None
 
-  def train_init(self, content: Image.Image, style: Image.Image, noise: float = 0.6, verbose: bool = True,
-                 gen_tensor: tf.Tensor = None):
+  def train_init(self, content: Image.Image, style: Image.Image, noise: float = 0.6, verbose: bool = True):
     """
     Initializes processed images (content, style, generated) as keras tensors in preparation for training.
     Also initializes the created image as a copy. All variables are object attributes.
@@ -105,22 +104,20 @@ class Slow_NST(Network_Interface):
     :param style: style image as PIL Image.
     :param noise: amount of noise in initially generated image. Range is [0., 1.].
     :param verbose: if true, prints additional information.
-    :param gen_tensor: support for fast NST.
     """
     self.k_net_module = importlib.import_module("keras.applications.{0}".format(self.net))
 
-    self.image_init(content, style, gen_tensor = gen_tensor)
+    self.image_init(content, style)
 
-    self.img_tensor = K.backend.concatenate([getattr(self, img) for img in Slow_NST.get_hps("img_order")], axis = 0)
+    self.img_tensor = K.concatenate([getattr(self, img) for img in Slow_NST.get_hps("img_order")], axis = 0)
 
     self.model_init()
 
+    noise_image = np.random.uniform(-20.0, 20.0, size = K.int_shape(self.generated)[1])
+    self.img = noise_image * noise + self.preprocess(content) * (1.0 - noise)
+
     if verbose:
       print("Loaded {0} model".format(self.net))
-
-    if gen_tensor is None:
-      noise_image = np.random.uniform(-20.0, 20.0, size = K.backend.int_shape(self.generated)[1])
-      self.img = noise_image * noise + self.preprocess(content) * (1.0 - noise)
 
   def model_init(self):
     """
@@ -138,22 +135,20 @@ class Slow_NST(Network_Interface):
       layer.trainable = False
     self.outputs = dict([(layer.name, layer.output) for layer in self.k_model.layers])
 
-  def image_init(self, content: Image.Image, style: Image.Image, gen_tensor: tf.Tensor = None):
+  def image_init(self, content: Image.Image, style: Image.Image):
     """
     Initializes preprocessed images (content, style, generated) as object attributes.
 
     :param content: content image as PIL Image.
     :param style: style image as PIL Image.
-    :param gen_tensor: support for fast NST.
     """
-    self.content = K.backend.variable(self.preprocess(content))
-    self.style = K.backend.variable(self.preprocess(style))
+    self.content = K.variable(self.preprocess(content))
+    self.style = K.variable(self.preprocess(style))
 
-    self.gen_shape = (self.num_rows, self.num_cols, 3)
-    print ("Generated image shape: {0}".format(self.gen_shape))
-
-    self.generated = gen_tensor if gen_tensor is not None else K.backend.placeholder(shape = (1, *self.gen_shape))
+    self.generated = K.placeholder(shape = (1, self.num_rows, self.num_cols, 3))
     # 1 is number of images in batch
+
+    print ("Generated image shape: {0}".format(self.generated.shape[1:]))
 
   def tensor_init(self, content_layer: str, style_layers: list):
     """
@@ -163,12 +158,12 @@ class Slow_NST(Network_Interface):
     :param style_layers: layer(s) at which style loss will be evaluated. Is a pre-defined hyperparameter.
     """
     coef_c, coef_s, coef_v = Slow_NST.get_hps("coef_c", "coef_s", "coef_v")
-    
+
     loss = self.loss_tensor(content_layer, style_layers, coef_c, coef_s, coef_v)
-    grads = K.backend.gradients(loss, self.generated)
+    grads = K.gradients(loss, self.generated)
     outputs = [loss, *grads] if isinstance(grads, (list, tuple)) else [loss, grads]
 
-    self.model_func = K.backend.function([self.generated], outputs)
+    self.model_func = K.function([self.generated], outputs)
     self.evaluator = Evaluator(self)
 
   # TRAINING
@@ -210,11 +205,11 @@ class Slow_NST(Network_Interface):
 
       if save_path is not None:
         full_save_path = save_path + "/epoch{0}.png".format(epoch + 1)
-        K.preprocessing.image.save_img(full_save_path, self.deprocess(self.img))
+        keras.preprocessing.image.save_img(full_save_path, self.deprocess(self.img))
 
     return self.deprocess(self.img)
 
-  # loss CALCULATIONS
+  # LOSS CALCULATIONS
   def loss_and_grads(self, img: np.ndarray) -> tuple:
     """
     Computes loss and gradients using img. Utilizes the keras function created in tensor_init().
@@ -222,7 +217,7 @@ class Slow_NST(Network_Interface):
     :param img: image used to calculate loss and gradients w.r.t. the loss.
     :return: loss, gradients.
     """
-    img = img.reshape(self.gen_shape)
+    img = img.reshape(self.generated.shape[1:])
     outputs = self.model_func([img]) # gets output of self.model_func evaluated at img
     loss = outputs[0]
     if len(outputs[1:]) == 1:
@@ -252,30 +247,30 @@ class Slow_NST(Network_Interface):
       content_actvs = layer_features[Slow_NST.get_hps("img_order").index("content"), :, :, :]
       generated_actvs = layer_features[Slow_NST.get_hps("img_order").index("generated"), :, :, :]
 
-      return K.backend.sum(K.backend.square(generated_actvs - content_actvs)) # i.e., squared norm
+      return K.sum(K.square(generated_actvs - content_actvs)) # i.e., squared norm
 
     def layer_style_loss(a_G, a_S):
       """Computes the style loss at layer "layer". Is broken but training still works."""
 
       def gram_matrix(a):
         """Computes the gram matrix of a."""
-        a = K.backend.batch_flatten(K.backend.permute_dimensions(a, (2, 0, 1)))
-        return K.backend.dot(a, K.backend.transpose(a))
+        a = K.batch_flatten(K.permute_dimensions(a, (2, 0, 1)))
+        return K.dot(a, K.transpose(a))
 
       gram_s = gram_matrix(a_S)
       gram_g = gram_matrix(a_G)
 
-      return K.backend.sum(K.backend.square(gram_s - gram_g))
+      return K.sum(K.square(gram_s - gram_g))
 
     def total_variation_loss(a_G, num_rows, num_cols):
       """Computes the total variation loss of the generated image. According to keras, it is designed to keep
       the generated image locally coherent."""
-      a = K.backend.square(a_G[:, :num_rows - 1, :num_cols - 1, :] - a_G[:, 1:, :num_cols - 1, :])
-      b = K.backend.square(a_G[:, :num_rows - 1, :num_cols - 1, :] - a_G[:, :num_rows - 1, 1:, :])
+      a = K.square(a_G[:, :num_rows - 1, :num_cols - 1, :] - a_G[:, 1:, :num_cols - 1, :])
+      b = K.square(a_G[:, :num_rows - 1, :num_cols - 1, :] - a_G[:, :num_rows - 1, 1:, :])
 
-      return K.backend.sum(K.backend.pow(a + b, 1.25))
+      return K.sum(K.pow(a + b, 1.25))
 
-    loss = K.backend.variable(0.0) # it is necessary to initialize loss like this
+    loss = K.variable(0.0) # it is necessary to initialize loss like this
 
     loss += coef_c * content_loss(content_layer, self.outputs) # content loss
 
@@ -287,7 +282,7 @@ class Slow_NST(Network_Interface):
       style_actvs = layer_features[Slow_NST.get_hps("img_order").index("style"), :, :, :]
 
       loss += (coef_s / len(style_layers)) * layer_style_loss(generated_actvs, style_actvs) / \
-              (4.0 * (int(self.gen_shape[-1]) ** 2) * ((self.num_rows * self.num_cols) ** 2)) # normalization
+              (4.0 * (int(self.generated.shape[-1]) ** 2) * ((self.num_rows * self.num_cols) ** 2)) # normalization
 
     loss += coef_v * total_variation_loss(self.generated, self.num_rows, self.num_cols)
 
@@ -309,7 +304,7 @@ class Slow_NST(Network_Interface):
         self.num_cols = int(width * self.num_rows / height)
       target_size = (self.num_rows, self.num_cols)
     img = img.resize(reversed(target_size), Image.NEAREST) # resizing image with interpolation = NEAREST
-    img = np.expand_dims(K.preprocessing.image.img_to_array(img), axis = 0)
+    img = np.expand_dims(keras.preprocessing.image.img_to_array(img), axis = 0)
 
     return self.k_net_module.preprocess_input(img)
 
@@ -320,7 +315,7 @@ class Slow_NST(Network_Interface):
     :param img_: image to deprocess.
     :return: deprocessed image.
     """
-    img = np.copy(img_).reshape(*self.gen_shape[1:])
+    img = np.copy(img_).reshape(*self.generated.shape[1:])
     means = Slow_NST.get_hps("means")
     for i in range(len(means)):
       img[:, :, i] += means[i] # adding mean pixel values
@@ -346,7 +341,7 @@ class Slow_NST(Network_Interface):
     fig.suptitle(title)
     plt.axis("off")
 
-    plt.imshow(img.reshape(*self.gen_shape[1:]))
+    plt.imshow(img.reshape(*self.generated.shape[1:]))
     plt.pause(0.1)
 
     plt.show(block = False)
@@ -384,6 +379,22 @@ class Slow_NST(Network_Interface):
     fetched = tuple(Slow_NST.HYPERPARAMS[hp.upper()] for hp in hyperparams)
     return fetched[0] if len(fetched) == 1 else fetched
 
+  # SUPPORT FOR FAST NST
+  def fast_nst_init(self, target_size: tuple, style: Image.Image, gen_tensor: tf.Tensor, verbose = True):
+    self.k_net_module = importlib.import_module("keras.applications.{0}".format(self.net))
+
+    self.content = K.placeholder((1, *target_size, 3))
+    self.style = np.expand_dims(np.array(style.resize(target_size), dtype = np.float32), axis = 0)
+    self.generated = gen_tensor
+
+    self.img_tensor = K.concatenate([getattr(self, img) for img in Slow_NST.get_hps("img_order")], axis = 0)
+
+    self.model_init()
+
+    if verbose:
+      print("Generated image shape: {0}".format(K.int_shape(self.generated)[1:]))
+      print("Loaded {0} model".format(self.net))
+
 class Fast_NST(Slow_NST):
   """
   Fast neural style transfer, uses implementation of slow neural style transfer.
@@ -396,43 +407,39 @@ class Fast_NST(Slow_NST):
   """
 
   # INITS
-  def __init__(self, img_transform_net: Network_Interface = NST_Transform_Net(),
-               loss_net: Network_Interface = Slow_NST(), num_rows: int = 512):
+  def __init__(self, img_transform_net: Network_Interface = NST_Transform(),
+               loss_net: Network_Interface = Slow_NST()):
     """
     Initializes fast NST object. This network has two parts: a trainable network (img_transform_net) and a fixed
     network (loss_net).
 
-    :param img_transform_net: image transform network. Will be trained.
+    :param img_transform_net: image transform networkeras. Will be trained.
     :param loss_net: fixed network, either "vgg16" or "vgg19". Is pre-trained.
-    :param num_rows: number of rows in the target image.
     """
     self.img_transform_net = img_transform_net
     self.loss_net = loss_net
-    self.num_rows = num_rows
 
-  def train_init(self, style: Image.Image, target_shape: tuple = (256, 256), noise = 0.6, verbose: bool = True):
+  def train_init(self, style: Image.Image, target_size, noise = 0.6, verbose: bool = True):
     """
     Initializes processed images (style and generated) as keras tensors in preparation for training.
     Also initializes the function and models that will be used for training.
 
     :param style: style image as PIL Image.
-    :param target_shape: all training images will be reshaped to target_shape.
+    :param target_size: all training images will be reshaped to target_size.
     :param noise: amount of noise in initially generated image. Range is [0., 1.].
     :param verbose: if true, prints additional information.
     """
-    # target shape init
-    self.num_cols = int(target_shape[0] * self.num_rows / target_shape[1])
+    # dimension init
+    self.num_rows, self.num_cols = target_size
 
     # partial train init
-    self.img_transform_net.train_init(content, noise = noise)
-    self.loss_net.train_init(content, style, noise = noise, verbose = verbose,
-                             gen_tensor = self.img_transform_net.k_model.output)
+    self.img_transform_net.train_init(target_size, noise = noise)
     self.generated = self.img_transform_net.k_model.layers[-1].output # aka, output of the image transform net
-    self.gen_shape = self.generated.shape[1:]
+    self.loss_net.fast_nst_init(target_size, style, gen_tensor = self.generated)
 
     # concatenating models
     # outs = self.loss_net.k_model(self.img_transform_net.k_model.layers[-1].output)
-    # self.k_model = K.Model(self.img_transform_net.k_model.input, outs)
+    # self.k_model = keras.Model(self.img_transform_net.k_model.input, outs)
 
     # getting dict for loss net loss calculation
     self.outputs = dict([(layer.name, layer.output) for layer in self.loss_net.k_model.layers])
@@ -440,25 +447,34 @@ class Fast_NST(Slow_NST):
 
     # loss net as a loss function
     outs = [self.loss_tensor(*Slow_NST.get_hps("content_layer", "style_layers", "coef_c", "coef_s", "coef_v"))]
-    self.loss_func = K.backend.function([self.generated], outs)
+    self.loss_func = K.function([self.loss_net.content, self.generated], outs)
 
     # compiling model
-    self.img_transform_net.k_model.compile(optimizer = K.optimizers.Adam(), loss = self.loss)
+    self.img_transform_net.k_model.compile(optimizer = keras.optimizers.Adam(), loss = self.loss)
 
+  # THIS.
+  # IS.
+  # STILL.
+  # BROKEN.
+  # PROBLEM: CAN'T PASS PLACEHOLDER TENSOR INTO KERAS FUNCTION
+  # ARGH!
   def loss(self, y_true, y_pred):
     """
     Custom loss function.
 
     :param y_true: target label.
-    :param y_pred: prediction
-    :return: cost, evaluated by passing y_pred through the loss net and sampling outputs from various layers.
+    :param y_pred: prediction.
+    :return: loss, evaluated by passing y_pred through the loss net and sampling outputs from various layers.
     """
     if tf.placeholder("float", []).op.type == "Placeholder":
-      return tf.fill(tf.shape(y_true), np.inf) # for compile time, when y_true and y_pred are still placeholders
-    return self.loss_func([y_true])[0] # keras function cannot accept placeholder tensors as input
+      #print ("OHNO")
+      # return tf.fill(tf.shape(y_true), np.inf) # for compile time, when y_true and y_pred are still placeholders
+      return K.sum(K.square(y_true - y_pred))
+    return self.loss_func([y_true, y_pred]) # keras function cannot accept placeholder tensors as input
 
   # TRAINING
-  def train(self, style: Image.Image, epochs: int = 1, init_noise: float = 0.6, verbose: bool = True) -> np.ndarray:
+  def train(self, style: Image.Image, epochs: int = 1, init_noise: float = 0.6, target_size: tuple = (256, 256),
+            verbose: bool = True) -> np.ndarray:
     """
     Trains the image transform network on the MS COCO dataset (https://cocodataset.org/#download) to match a certain
     style. This dataset does not come preinstalled with easyai and takes a while to download (~4 hours).
@@ -467,20 +483,24 @@ class Fast_NST(Slow_NST):
     :param style: style image as PIL Image.
     :param epochs: number of iterations or epochs.
     :param init_noise: amount of noise in initially generated image. Range is [0., 1.].
+    :param target_size: all training images will be reshaped to target_size.
     :param verbose: if true, prints additional training information.
     :return: final cost
     """
-    self.train_init(style, noise = init_noise, verbose = verbose)
+    self.train_init(style, target_size = target_size, noise = init_noise, verbose = verbose)
 
     path_to_coco = os.getenv("HOME") + "/coco"
 
-    self.img_transform_net.k_model.fit()
+    datagen = keras.preprocessing.image.ImageDataGenerator()
+    generator = datagen.flow_from_directory(path_to_coco, target_size = target_size, batch_size = 4,
+                                            classes = ["unlabeled2017"], class_mode = "input")
+
+    self.img_transform_net.k_model.fit_generator(generator, steps_per_epoch = 40000, epochs = 2)
 
     return np.array([])
 
-from easyai.support.load import load_nst_imgs
-content, style = load_nst_imgs("/home/ryan/Pictures/nst_generated/dog_blue_green_stained_glass.jpg",
-                               "/home/ryan/Pictures/nst_generated/dog_blue_green_stained_glass.jpg")
+from easyai.support.load import load_imgs
+style = load_imgs("https://drive.google.com/uc?export=download&id=18MpTOAt40ngCRpX1xcckwxUXNhOiBemJ")
 
 test = Fast_NST()
 test.train(style)
