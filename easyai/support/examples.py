@@ -109,8 +109,13 @@ class Art(Static_Interface):
     images = Extras.load_nst()
     print ("Loaded NST images")
 
-    content_name, content_img = get_img(content, "content", images)
+    # content_name, content_img = get_img(content, "content", images)
     style_name, style_img = get_img(style, "style", images)
+
+    from easyai.support.load import load_imgs
+
+    content_name, content_img = \
+      "genji", load_imgs("https://static.playoverwatch.com/media/thumbnail/genji-concept.jpg")
 
     print ("Using content image \"{0}\" and style image \"{1}\"".format(content_name, style_name))
 
@@ -219,6 +224,6 @@ if __name__ == "__main__":
   styles = list(NST.style.keys())
   contents = list(NST.content.keys())
 
-  for style in styles:
-    for content in contents:
-      Art.neural_style_transfer(content, style, save_path = "/home/ryan/Documents")
+  from easyai.support import load
+
+  Art.slow_nst("cubist_karthik", save_path = "/home/ryan/Documents")
