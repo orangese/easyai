@@ -44,25 +44,6 @@ class Denormalize(keras.layers.Layer):
   def compute_output_shape(self, input_shape):
     return input_shape
 
-class VGG_Normalize(keras.layers.Layer):
-  """Custom normalization for VGG network."""
-
-  def __init__(self, **kwargs):
-    super(VGG_Normalize, self).__init__(**kwargs)
-
-  def build(self, input_shape):
-    pass
-
-  def call(self, x, mask = None):
-    x1 = keras.applications.vgg19.preprocess_input(x[0, ...])
-    x2 = keras.applications.vgg19.preprocess_input(x[1, ...])
-    return K.concatenate([x1, x2], axis = 0)
-    # return keras.applications.vgg19.preprocess_input(K.concatenate([x[0], x[1]], axis = 0))
-    # VGG19 and VGG16 have the same input preprocessing
-
-  def compute_output_shape(self, input_shape):
-    return input_shape
-
 class Instance_Norm(keras.layers.Layer):
   """Instance normalization."""
 
@@ -110,7 +91,7 @@ class NST_Transform(Network_Interface):
 
     self.net_init() # assumes img is a PIL image
     if verbose:
-      print ("Loaded NST transform net")
+      print("Loaded NST transform net")
 
   @staticmethod
   def conv_norm_block(filters, filter_size, strides = (1, 1), norm = "batch", include_relu = True,
@@ -139,7 +120,7 @@ class NST_Transform(Network_Interface):
     return _conv_res_block
 
   def net_init(self):
-    x = keras.layers.Input(shape = (self.num_rows, self.num_cols, 3))
+    x = keras.layers.Input(shape = (self.num_rows, self.num_cols, 3), name = "img_transform_input")
     a = Noisy_Normalize(noise = self.noise)(x)
 
     a = Reflection_Padding2D((40, 40))(a)
@@ -154,7 +135,7 @@ class NST_Transform(Network_Interface):
     a = NST_Transform.conv_norm_block(32, (3, 3), norm = self.norm, strides = (2, 2), transpose = True)(a)
     a = NST_Transform.conv_norm_block(3, (9, 9), norm = self.norm, strides = (1, 1), transpose = True)(a)
 
-    y = Denormalize(name = "generated")(a)
+    y = Denormalize(name = "img_transform_output")(a)
 
     self.k_model = keras.Model(inputs = x, outputs = y)
 
