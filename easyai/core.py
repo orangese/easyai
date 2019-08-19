@@ -136,11 +136,11 @@ class NN(Network_Interface):
     self.__init__(new_layers)
 
   def train(self, x: np.ndarray, y: np.ndarray, lr: float = 0.1, epochs: int = 1, batch_size: int = 10):
-    """Trains and compiles this NN object.  Only SGD is used.
+    """Trains and compiles this NN object. Only SGD is used.
 
     :param x: input data. For example, if classifying an image, `x` would the pixel vectors.
     :param y: labels. For example, if classifying an image, `y` would be the image labels.
-     The `y` data should be comprised of one-hot encodings.
+           The `y` data should be comprised of one-hot encodings.
     :param lr:  learning rate used in SGD. Default is 3.0.
     :param epochs: number of epochs. Default is 1.
     :param batch_size:  minibatch size. Default is 10.
@@ -149,7 +149,7 @@ class NN(Network_Interface):
     metrics = ["categorical_accuracy"] if self.layers[-1].num_neurons > 2 else ["binary_accuracy"]
     # fixes weird keras feature in which "accuracy" metric causes unexpected results if using "binary_crossentropy"
     self.k_model.compile(optimizer = optimizer, loss = self.loss, metrics = metrics)
-    print("Training with stochastic gradient descent in an {0}-D space. During epoch (training step), {1} "
+    print("Training with stochastic gradient descent in a {0}-D space. During epoch (training step), {1} "
            "training examples and their corresponding labels will be used to minimize cost".format(
       self.k_model.count_params(), len(x)))
     self.k_model.fit(x, y, epochs = epochs, batch_size = batch_size, validation_split = 0.2, verbose = 2)

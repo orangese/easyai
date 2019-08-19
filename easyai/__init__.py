@@ -18,7 +18,6 @@ def suppress_tf_warnings():
 
 suppress_tf_warnings()
 
-from . import advanced
 from . import applications
 from . import core
 from . import support

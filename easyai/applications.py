@@ -13,10 +13,8 @@ import os
 import matplotlib.pyplot as plt
 from PIL import Image
 from scipy.optimize import fmin_l_bfgs_b
-import tensorflow as tf
 
-from easyai.core import *
-from easyai.advanced import *
+from easyai.support._advanced import *
 
 # SUPPORT
 class Evaluator(object):
@@ -74,7 +72,7 @@ class Slow_NST(Network_Interface):
                  "COEF_C": 1e0,
                  "COEF_S": 1e3,
                  "COEF_V": 1e-4,
-                 "MEANS": [103.939, 116.779, 123.68], # not a hp-- don't edit
+                 "MEANS": [103.939, 116.779, 123.68], # not a hp-- don"t edit
                  "IMG_ORDER": ["content", "style", "generated"]
                  }
 
@@ -126,7 +124,7 @@ class Slow_NST(Network_Interface):
     try:
       net_name = getattr(self.k_net_module, Slow_NST.MODELS[self.net])
     except KeyError:
-      raise ModuleNotFoundError("{0} is not currently supported for neural style transfer".format(self.net))
+      raise ModuleNotFoundError("{0} is not currently supported for slow neural style transfer".format(self.net))
 
     self.k_model = net_name(input_tensor = self.img_tensor, weights = "imagenet",
                             include_top = False) # no need for FC layers since no predictions occur
@@ -187,7 +185,7 @@ class Slow_NST(Network_Interface):
 
     self.tensor_init(content_layer, style_layers)
 
-    print("Training with L-BFGS-B (another gradient-based optimization algorithm) in an {0}-D space. During "
+    print("Training with L-BFGS-B (another gradient-based optimization algorithm) in a {0}-D space. During "
            "each epoch, the pixels of the generated image will be changed {1} times in an attempt to minimize cost"
            .format(np.prod(content.size), num_iters))
 
@@ -307,7 +305,7 @@ class Slow_NST(Network_Interface):
         width, height = img.size
         self.num_cols = int(width * self.num_rows / height)
       target_size = (self.num_rows, self.num_cols)
-    img = img.resize(reversed(target_size), Image.NEAREST) # resizing image with interpolation = NEAREST
+    img = img.resize(reversed(target_size)) # resizing image with interpolation = NEAREST
     img = np.expand_dims(keras.preprocessing.image.img_to_array(img), axis = 0)
 
     return self.k_net_module.preprocess_input(img)
@@ -324,7 +322,7 @@ class Slow_NST(Network_Interface):
     for i in range(len(means)):
       img[:, :, i] += means[i] # adding mean pixel values
     img = img[:, :, ::-1] #BGR -> RBG
-    img = np.clip(img, 0, 255).astype('uint8')
+    img = np.clip(img, 0, 255).astype("uint8")
     return img
 
   def display_img(self, img: np.ndarray, title: str):
@@ -395,7 +393,7 @@ class Fast_NST(object):
   """
 
   # INITS
-  def __init__(self, img_transform_net: Network_Interface = NST_Transform(), loss_net: str = "vgg19"):
+  def __init__(self, img_transform_net: Network_Interface = NST_Transform(), loss_net: str = "vgg16"):
     """
     Initializes fast NST object. This network has two parts: a trainable network (img_transform_net) and a fixed
     network (loss_net).
@@ -418,17 +416,16 @@ class Fast_NST(object):
     :param verbose: if true, prints additional information.
     """
     self.num_rows, self.num_cols = target_size
-    self.style = style
-    self.k_net_module = importlib.import_module("keras.applications.{0}".format(self.loss_net))
+    self.style = style.resize(target_size)
 
     self.img_transform_net.train_init(target_size, coef_v = Slow_NST.get_hps("coef_v"), noise = noise, norm = norm)
     self.loss_net_init()
 
     self.k_model.compile(optimizer = keras.optimizers.Adam(), loss = Fast_NST.dummy_loss)
-    self.k_model.summary()
 
     if verbose:
       print("Loaded image transform and loss nets")
+      self.k_model.summary()
 
   def loss_net_init(self):
 
@@ -438,11 +435,10 @@ class Fast_NST(object):
         style_layers = Slow_NST.get_hps("style_layers")
 
         # preprocessing
-        style_img = style_img.resize(reversed(target_size), Image.NEAREST)
+        style_img = style_img.resize(reversed(target_size))
         style_img = np.expand_dims(keras.preprocessing.image.img_to_array(style_img), axis=0)
 
-        style_func = K.function([model.layers[1].input], [outputs[style_layer] for style_layer in style_layers])
-        # models.layers[1] because VGG normalize (layers[0]) is not needed because style_img was already processed
+        style_func = K.function([model.layers[-19].input], [outputs[style_layer] for style_layer in style_layers])
         style_features = style_func([style_img])
 
         weight = Slow_NST.get_hps("coef_s")
@@ -462,24 +458,24 @@ class Fast_NST(object):
       add_style_loss(style_img, layers, outputs, target_size)
       add_content_loss(layers)
 
-    try:
-      net_name = getattr(self.k_net_module, Slow_NST.MODELS[self.loss_net])
-    except KeyError:
-      raise ModuleNotFoundError("{0} is not currently supported for neural style transfer".format(self.loss_net))
-
     generated, content = self.img_transform_net.k_model.output, self.img_transform_net.k_model.input
 
     # no concatenation of style (that occurs in the regularizers)
-    img_tensor = K.concatenate([keras.applications.vgg19.preprocess_input(generated),
-                                keras.applications.vgg19.preprocess_input(content)], axis = 0)
+    img_tensor = keras.layers.merge.concatenate([generated, content], axis = 0)
+    img_tensor = VGG_Normalize()(img_tensor)
 
-    self.k_model = net_name(input_tensor = img_tensor, weights = "imagenet", include_top = False)
+    try:
+      loss_net = getattr(NST_Loss, Slow_NST.MODELS[self.loss_net].upper())
+    except AttributeError:
+      raise ModuleNotFoundError("{0} is not currently supported for fast neural style transfer".format(self.loss_net))
+
+    self.k_model = loss_net(input_tensor = img_tensor) # automatically excludes top
+
+    for layer in self.k_model.layers[-19:]:
+      layer.trainable = False
 
     add_regularizers(self.k_model, self.style, (self.num_rows, self.num_cols))
     # adding loss and regularizers
-
-    for layer in self.k_model.layers[1:]:
-      layer.trainable = False
 
   # TRAINING
   def train(self, style: Image.Image, epochs: int = 1, batch_size = 4, init_noise: float = 0.6,
@@ -487,7 +483,7 @@ class Fast_NST(object):
     """
     Trains the image transform network on the MS COCO dataset (https://cocodataset.org/#download) to match a certain
     style. This dataset does not come preinstalled with easyai and takes a while to download (~4 hours).
-    If you start training without COCO installed, you will be prompted to run easyai's COCO installer script.
+    If you start training without COCO installed, you will be prompted to run easyai"s COCO installer script.
 
     :param style: style image as PIL Image.
     :param epochs: number of iterations or epochs.
@@ -503,24 +499,60 @@ class Fast_NST(object):
 
     self.train_init(style, target_size = target_size, noise = init_noise, norm = "batch", verbose = verbose)
 
-    print("Training with L-BFGS-B (another gradient-based optimization algorithm) in an {0}-D space. During "
+    print("Training with L-BFGS-B (another gradient-based optimization algorithm) in a {0}-D space. During "
           "each epoch, the pixels of the generated image will be changed {1} times in an attempt to minimize cost"
-          .format(np.prod(target_size), steps_per_epoch))
+          .format(self.img_transform_net.k_model.count_params(), steps_per_epoch))
+
+    # datagen = keras.preprocessing.image.ImageDataGenerator()
+    # generator = datagen.flow_from_directory(path_to_coco, target_size = target_size, batch_size = batch_size,
+    #                                         classes = ["unlabeled2017"], class_mode = "input")
+    #
+    # self.k_model.fit_generator(generator, steps_per_epoch = steps_per_epoch, epochs = epochs)
+
+    nb_epoch = 82785 * 2
+    train_batchsize = 1
+    train_image_path = "/home/ryan/coco/unlabeled2017/"
+
+    learning_rate = 1e-3  # 1e-3
+    optimizer = keras.optimizers.Adam()  # Adam(lr=learning_rate,beta_1=0.99)
+
+    self.k_model.compile(optimizer, Fast_NST.dummy_loss)  # Dummy loss since we are learning from regularizes
 
     datagen = keras.preprocessing.image.ImageDataGenerator()
-    generator = datagen.flow_from_directory(path_to_coco, target_size = target_size, batch_size = batch_size,
-                                            classes = ["unlabeled2017"], class_mode = None)
 
-    dummy_label = np.zeros((batch_size, *target_size, 3))
-    self.k_model.predict(np.array(style))
-    self.img_transform_net.predict(np.array(style))
-    self.k_model.train_on_batch(np.array(style), dummy_label)
+    dummy_y = np.zeros(
+      (train_batchsize, *target_size, 3))  # Dummy output, not used since we use regularizers to train
 
-    for img in generator:
-      self.k_model.train_on_batch(img, dummy_label)
-      print("OK")
+    # model.load_weights(style+'_weights.h5',by_name=False)
 
-    # self.k_model.fit_generator(generator, steps_per_epoch = steps_per_epoch, epochs = epochs)
+    skip_to = 0
+
+    i = 0
+    import time
+    t1 = time.time()
+    for x in datagen.flow_from_directory(path_to_coco, target_size = target_size, batch_size = train_batchsize,
+                                             classes = ["unlabeled2017"], class_mode = None):
+      if i > nb_epoch:
+        break
+
+      if i < skip_to:
+        i += train_batchsize
+        if i % 1000 == 0:
+          print("skip to: %d" % i)
+
+        continue
+
+      hist = self.k_model.train_on_batch(x, dummy_y)
+
+      if i % 50 == 0:
+        print(hist, (time.time() - t1))
+        t1 = time.time()
+
+      if i % 500 == 0:
+        print("epoc: ", i)
+        val_x = self.img_transform_net.k_model.predict(x)
+
+      i += train_batchsize
 
   @staticmethod
   def dummy_loss(y_true, y_pred):
@@ -528,7 +560,7 @@ class Fast_NST(object):
 
 if __name__ == "__main__":
   from easyai.support.load import load_imgs
-  style = load_imgs("https://drive.google.com/uc?export=download&id=18MpTOAt40ngCRpX1xcckwxUXNhOiBemJ")
+  style = load_imgs("https://drive.google.com/uc?export=download&id=1YH2IE42KcwxOzu3C_xs6F_cLT4VJqpAW")
 
   test = Fast_NST()
   test.train(style)
