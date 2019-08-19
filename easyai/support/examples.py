@@ -28,10 +28,10 @@ class MNIST(Static_Interface):
     :return: trained NN model.
     """
     (x_train, y_train), (x_test, y_test) = Builtins.load_mnist(version = version, mode = "mlp")
-    print ("Loaded MNIST data\n")
+    print("Loaded MNIST data\n")
 
     mlp = NN(Input(784), Dense(100), Dense(10, actv = "softmax"), loss = "categorical_crossentropy")
-    print (mlp.summary())
+    print(mlp.summary())
 
     mlp.train(x_train, y_train, lr = 3.0, epochs = 1)
     mlp.evaluate(x_test, y_test)
@@ -47,11 +47,11 @@ class MNIST(Static_Interface):
     :return: trained NN model.
     """
     (x_train, y_train), (x_test, y_test) = Builtins.load_mnist(version = version, mode = "conv")
-    print ("Loaded MNIST data")
+    print("Loaded MNIST data")
 
     conv_nn = NN(Input(28, 28), Conv((5, 5), 20), Pooling(2, 2), Dense(100), Dense(10, actv = "softmax"),
                  loss = "categorical_crossentropy")
-    print (conv_nn.summary())
+    print(conv_nn.summary())
 
     conv_nn.train(x_train, y_train, lr = 0.1, epochs = 60)
     conv_nn.evaluate(x_test, y_test)
@@ -75,7 +75,7 @@ class Lending_Club(Static_Interface):
 
     mlp = NN(Input(9), Dense(200, actv = "relu"), Dense(200, actv = "relu"), Dense(7, actv = "softmax"),
              loss = "categorical_crossentropy")
-    print (mlp.summary())
+    print(mlp.summary())
 
     mlp.train(x_train, y_train, lr = 0.01, epochs = 50)
     mlp.evaluate(x_test, y_test)
@@ -107,17 +107,12 @@ class Art(Static_Interface):
           raise ValueError("supported {0} images are {1}".format(type_, list(images[type_].keys())))
 
     images = Extras.load_nst()
-    print ("Loaded NST images")
+    print("Loaded NST images")
 
-    # content_name, content_img = get_img(content, "content", images)
+    content_name, content_img = get_img(content, "content", images)
     style_name, style_img = get_img(style, "style", images)
 
-    from easyai.support.load import load_imgs
-
-    content_name, content_img = \
-      "genji", load_imgs("https://static.playoverwatch.com/media/thumbnail/genji-concept.jpg")
-
-    print ("Using content image \"{0}\" and style image \"{1}\"".format(content_name, style_name))
+    print("Using content image \"{0}\" and style image \"{1}\"".format(content_name, style_name))
 
     model = Slow_NST("vgg19")
 
@@ -128,7 +123,7 @@ class Art(Static_Interface):
     if save_path is not None:
       full_save_path = save_path + "/{0}_{1}.jpg".format(content_name, style_name)
       keras.preprocessing.image.save_img(full_save_path, final_img)
-      print ("Saved image at \"{0}\"".format(full_save_path))
+      print("Saved image at \"{0}\"".format(full_save_path))
 
 #--BELOW NOT SUPPORTED--
 from tkinter import *
@@ -220,10 +215,12 @@ if __name__ == "__main__":
   # Unsupported.draw("test.png")
   # activation = Unsupported.getActivation(filename)
   # Unsupported.display_image(activation)
+  from easyai.support.load import load_imgs
+  from easyai.support.datasets.datasets import NST
 
-  styles = list(NST.style.keys())
-  contents = list(NST.content.keys())
-
-  from easyai.support import load
-
-  Art.slow_nst("cubist_karthik", save_path = "/home/ryan/Documents")
+  nst = Slow_NST()
+  Slow_NST.HYPERPARAMS["coef_s"] = 1e5
+  for link in list(NST.style.keys()):
+    final_img = nst.train(load_imgs("https://static.playoverwatch.com/media/thumbnail/genji-concept.jpg"),
+                          load_imgs(NST.style[link]), epochs = 25, verbose = False)
+    keras.preprocessing.image.save_img("/home/ryan/Pictures/nst_generated/genji_{0}.jpg".format(link), final_img)

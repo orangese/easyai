@@ -149,6 +149,9 @@ class NN(Network_Interface):
     metrics = ["categorical_accuracy"] if self.layers[-1].num_neurons > 2 else ["binary_accuracy"]
     # fixes weird keras feature in which "accuracy" metric causes unexpected results if using "binary_crossentropy"
     self.k_model.compile(optimizer = optimizer, loss = self.loss, metrics = metrics)
+    print("Training with stochastic gradient descent in an {0}-D space. During epoch (training step), {1} "
+           "training examples and their corresponding labels will be used to minimize cost".format(
+      self.k_model.count_params(), len(x)))
     self.k_model.fit(x, y, epochs = epochs, batch_size = batch_size, validation_split = 0.2, verbose = 2)
     self.is_trained = True
 
@@ -166,7 +169,7 @@ class NN(Network_Interface):
     for name, evaluation in zip(self.k_model.metrics_names, evaluation):
       result += (" - test_{0}: {1}".format(name, round(evaluation, 4)))
     if verbose:
-      print (result)
+      print(result)
     return evaluation
 
   def predict(self, x: np.ndarray) -> np.ndarray:
@@ -175,6 +178,7 @@ class NN(Network_Interface):
     :param x: input data.
     :return: prediction.
     """
+    print("Getting output encoding of x")
     return self.k_model.predict(x)
 
   def summary(self, advanced: bool = False) -> str:
@@ -192,7 +196,8 @@ class NN(Network_Interface):
     result += "  2. Trained: {0}\n".format(self.is_trained)
     if advanced and self.is_trained:
       result += "Advanced: \n"
-      result += "    1. loss function: {0}\n".format(self.loss)
+      result += "    1. Loss function: {0}\n".format(self.loss)
+      result += "    2. Training algorithm: {0}\n".format("stochastic gradient descent")
     return result
 
   def save(self, filename: str):
