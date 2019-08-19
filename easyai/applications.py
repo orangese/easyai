@@ -83,7 +83,7 @@ class Slow_NST(Network_Interface):
             }
 
   # INITS
-  def __init__(self, net: str = None, num_rows: int = 512):
+  def __init__(self, net: str = None, num_rows: int = 400):
     """
     Initializes Slow_NST object.
 
@@ -144,10 +144,9 @@ class Slow_NST(Network_Interface):
     self.content = K.variable(self.preprocess(content))
     self.style = K.variable(self.preprocess(style))
 
-    self.generated = K.placeholder(shape = (1, self.num_rows, self.num_cols, 3))
-    # 1 is number of images in batch
+    self.generated = K.placeholder(shape = (1, self.num_rows, self.num_cols, 3)) # 1 is number of images in batch
 
-    print ("Generated image shape: {0}".format(self.generated.shape[1:]))
+    print("Generated image shape: {0}".format(self.generated.shape[1:]))
 
   def tensor_init(self, content_layer: str, style_layers: list):
     """
@@ -180,11 +179,17 @@ class Slow_NST(Network_Interface):
     :param save_path: (optional) path at which to save the created image at each iteration.
     :return: final created image.
     """
+    num_iters = 20 # number of L-BFGS-B iterations per epoch
+
     self.train_init(content, style, verbose = verbose, noise = init_noise)
 
     content_layer, style_layers = Slow_NST.get_hps("content_layer", "style_layers")
 
     self.tensor_init(content_layer, style_layers)
+
+    print("Training with L-BFGS-B (another gradient-based optimization algorithm) in an {0}-D space. During "
+           "each epoch, the pixels of the generated image will be changed {1} times in an attempt to minimize cost"
+           .format(np.prod(content.size), num_iters))
 
     if verbose:
       Slow_NST.display_original(content, style)
@@ -194,12 +199,12 @@ class Slow_NST(Network_Interface):
 
       # updating pixel values using L-BFGS-B
       self.img, loss, info = fmin_l_bfgs_b(func = self.evaluator.f_loss, x0 = self.img.flatten(),
-                                           fprime = self.evaluator.f_grads, maxfun = 20) # 20 iterations per epoch
+                                           fprime = self.evaluator.f_grads, maxfun = num_iters)
       plt.close()
 
       if verbose:
-        print ("Epoch {0}/{1}".format(epoch + 1, epochs))
-        print (" - {0}s - loss: {1} [broken]".format(round(time() - start), loss)) # loss is broken-- it's way too high
+        print("Epoch {0}/{1}".format(epoch + 1, epochs))
+        print(" - {0}s - loss: {1} [broken]".format(round(time() - start), loss)) # loss is broken-- it's way too high
         self.display_img(self.img, "Epoch {0}/{1}".format(epoch + 1, epochs))
 
       if save_path is not None:
@@ -417,14 +422,15 @@ class Fast_NST(object):
     self.k_net_module = importlib.import_module("keras.applications.{0}".format(self.loss_net))
 
     self.img_transform_net.train_init(target_size, coef_v = Slow_NST.get_hps("coef_v"), noise = noise, norm = norm)
-    print (self.img_transform_net.k_model.output, self.img_transform_net.k_model.input)
-    self.loss_net_init(self.img_transform_net.k_model.output, self.img_transform_net.k_model.input)
+    self.loss_net_init()
 
     self.k_model.compile(optimizer = keras.optimizers.Adam(), loss = Fast_NST.dummy_loss)
-
     self.k_model.summary()
 
-  def loss_net_init(self, generated, content):
+    if verbose:
+      print("Loaded image transform and loss nets")
+
+  def loss_net_init(self):
 
     def add_regularizers(model, style_img, target_size):
 
@@ -461,16 +467,19 @@ class Fast_NST(object):
     except KeyError:
       raise ModuleNotFoundError("{0} is not currently supported for neural style transfer".format(self.loss_net))
 
-    # no concatenation of style (that occurs in the regularizers)
-    img_tensor = K.concatenate([generated, content], axis = 0)
-    #img_tensor = VGG_Normalize()(img_tensor)
-    #print (K.int_shape(img_tensor))
+    generated, content = self.img_transform_net.k_model.output, self.img_transform_net.k_model.input
 
-    self.k_model = net_name(include_top = False, weights = "imagenet", input_tensor = img_tensor)
+    # no concatenation of style (that occurs in the regularizers)
+    img_tensor = K.concatenate([keras.applications.vgg19.preprocess_input(generated),
+                                keras.applications.vgg19.preprocess_input(content)], axis = 0)
+
+    self.k_model = net_name(input_tensor = img_tensor, weights = "imagenet", include_top = False)
+
     add_regularizers(self.k_model, self.style, (self.num_rows, self.num_cols))
     # adding loss and regularizers
 
-    self.k_model.trainable = False
+    for layer in self.k_model.layers[1:]:
+      layer.trainable = False
 
   # TRAINING
   def train(self, style: Image.Image, epochs: int = 1, batch_size = 4, init_noise: float = 0.6,
@@ -488,24 +497,38 @@ class Fast_NST(object):
     :param verbose: if true, prints additional training information.
     :return: final cost
     """
+    steps_per_epoch = 40000 # according to reference paper
+
     path_to_coco = os.getenv("HOME") + "/coco"
 
     self.train_init(style, target_size = target_size, noise = init_noise, norm = "batch", verbose = verbose)
 
+    print("Training with L-BFGS-B (another gradient-based optimization algorithm) in an {0}-D space. During "
+          "each epoch, the pixels of the generated image will be changed {1} times in an attempt to minimize cost"
+          .format(np.prod(target_size), steps_per_epoch))
+
     datagen = keras.preprocessing.image.ImageDataGenerator()
     generator = datagen.flow_from_directory(path_to_coco, target_size = target_size, batch_size = batch_size,
-                                            classes = ["unlabeled2017"])#, class_mode = "input")
+                                            classes = ["unlabeled2017"], class_mode = None)
 
     dummy_label = np.zeros((batch_size, *target_size, 3))
+    self.k_model.predict(np.array(style))
+    self.img_transform_net.predict(np.array(style))
+    self.k_model.train_on_batch(np.array(style), dummy_label)
 
-    self.k_model.fit_generator(generator, steps_per_epoch = 40000, epochs = 2)
+    for img in generator:
+      self.k_model.train_on_batch(img, dummy_label)
+      print("OK")
+
+    # self.k_model.fit_generator(generator, steps_per_epoch = steps_per_epoch, epochs = epochs)
 
   @staticmethod
   def dummy_loss(y_true, y_pred):
     return K.variable(0.0) # loss is not optimized; instead, regularizers are used
-#
-# from easyai.support.load import load_imgs
-# style = load_imgs("https://drive.google.com/uc?export=download&id=18MpTOAt40ngCRpX1xcckwxUXNhOiBemJ")
-#
-# test = Fast_NST()
-# test.train(style)
+
+if __name__ == "__main__":
+  from easyai.support.load import load_imgs
+  style = load_imgs("https://drive.google.com/uc?export=download&id=18MpTOAt40ngCRpX1xcckwxUXNhOiBemJ")
+
+  test = Fast_NST()
+  test.train(style)
