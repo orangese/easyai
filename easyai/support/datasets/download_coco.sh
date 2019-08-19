@@ -5,6 +5,7 @@ if [ ! -d "$HOME/coco" ] ; then
   mkdir coco
   cd coco || exit
   curl https://sdk.cloud.google.com | bash
+  bash --login
   mkdir unlabeled2017
   gsutil -m rsync gs://images.cocodataset.org/unlabeled2017 unlabeled2017
   echo "Downloaded COCO to ~/coco"

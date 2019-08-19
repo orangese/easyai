@@ -1,7 +1,7 @@
 
 """
 
-"easyai.advanced.py"
+"easyai._advanced.py"
 
 Custom keras layers. Does not use easyai API. Not recommended for use by easyai users.
 
@@ -25,6 +25,21 @@ class Noisy_Normalize(keras.layers.Layer):
   def call(self, x, mask = None):
     noise_image = np.random.uniform(0, 1.0, size = K.int_shape(x)[1:])
     return tf.cast(noise_image * self.noise + ((x / 255.) * (1.0 - self.noise)), tf.float32)
+
+  def compute_output_shape(self, input_shape):
+    return input_shape
+
+class VGG_Normalize(keras.layers.Layer):
+  """VGG normalization layer."""
+
+  def __init__(self, **kwargs):
+    super(VGG_Normalize, self).__init__(**kwargs)
+
+  def build(self, input_shape):
+    pass
+
+  def call(self, x, mask = None):
+    return keras.applications.vgg19.preprocess_input(x)
 
   def compute_output_shape(self, input_shape):
     return input_shape
@@ -137,7 +152,7 @@ class NST_Transform(Network_Interface):
 
     y = Denormalize(name = "img_transform_output")(a)
 
-    self.k_model = keras.Model(inputs = x, outputs = y)
+    self.k_model = keras.models.Model(inputs = x, outputs = y)
 
     tv_regularizer = TV_Regularizer(self.coef_v)(self.k_model.layers[-1])
     self.k_model.layers[-1].add_loss(tv_regularizer)
@@ -185,3 +200,63 @@ class TV_Regularizer(keras.regularizers.Regularizer):
     b = K.square(x.output[:, :num_rows - 1, :num_cols - 1, :] - x.output[:, :num_rows - 1, 1:, :])
 
     return K.sum(K.pow(a + b, 1.25))
+
+# VGG NETS
+class NST_Loss(Static_Interface):
+  """Pre-trained NST loss networks. Copied from keras source code and changed to fit this API's needs."""
+
+  WEIGHTS_PATH_NO_TOP = {
+    "vgg16": "https://github.com/fchollet/deep-learning-models/releases/download/v0.1/vgg16_weights"
+             "_tf_dim_ordering_tf_kernels_notop.h5",
+    "vgg19": "https://github.com/fchollet/deep-learning-models/releases/download/v0.1/vgg19_weights"
+             "_tf_dim_ordering_tf_kernels_notop.h5"
+  }
+
+  @staticmethod
+  def VGG16(input_tensor):
+    """VGG16. Input tensor required."""
+    img_input = input_tensor
+
+    # block 1
+    x = keras.layers.Conv2D(64, (3, 3), activation = "relu", padding = "same", name = "block1_conv1")(img_input)
+    x = keras.layers.Conv2D(64, (3, 3), activation = "relu", padding = "same", name = "block1_conv2")(x)
+    x = keras.layers.MaxPooling2D((2, 2), strides = (2, 2), name = "block1_pool")(x)
+
+    # block 2
+    x = keras.layers.Conv2D(128, (3, 3), activation = "relu", padding = "same", name = "block2_conv1")(x)
+    x = keras.layers.Conv2D(128, (3, 3), activation = "relu", padding = "same", name = "block2_conv2")(x)
+    x = keras.layers.MaxPooling2D((2, 2), strides = (2, 2), name = "block2_pool")(x)
+
+    # block 3
+    x = keras.layers.Conv2D(256, (3, 3), activation = "relu", padding = "same", name = "block3_conv1")(x)
+    x = keras.layers.Conv2D(256, (3, 3), activation = "relu", padding = "same", name = "block3_conv2")(x)
+    x = keras.layers.Conv2D(256, (3, 3), activation = "relu", padding = "same", name = "block3_conv3")(x)
+    x = keras.layers.MaxPooling2D((2, 2), strides = (2, 2), name="block3_pool")(x)
+
+    # block 4
+    x = keras.layers.Conv2D(512, (3, 3), activation = "relu", padding = "same", name = "block4_conv1")(x)
+    x = keras.layers.Conv2D(512, (3, 3), activation = "relu", padding = "same", name = "block4_conv2")(x)
+    x = keras.layers.Conv2D(512, (3, 3), activation = "relu", padding = "same", name = "block4_conv3")(x)
+    x = keras.layers.MaxPooling2D((2, 2), strides = (2, 2), name = "block4_pool")(x)
+
+    # block 5
+    x = keras.layers.Conv2D(512, (3, 3), activation = "relu", padding = "same", name = "block5_conv1")(x)
+    x = keras.layers.Conv2D(512, (3, 3), activation = "relu", padding = "same", name = "block5_conv2")(x)
+    x = keras.layers.Conv2D(512, (3, 3), activation = "relu", padding = "same", name = "block5_conv3")(x)
+    x = keras.layers.MaxPooling2D((2, 2), strides = (2, 2), name = "block5_pool")(x)
+
+    # create model
+    inputs = keras.engine.network.get_source_inputs(input_tensor)
+    model = keras.models.Model(inputs, x, name = "vgg16")
+
+    # load weights
+    weights_path = keras.utils.data_utils.get_file("vgg16_weights_tf_dim_ordering_tf_kernels_notop.h5",
+                                                   NST_Loss.WEIGHTS_PATH_NO_TOP["vgg16"], cache_subdir = "models")
+    model.load_weights(weights_path, by_name = True)
+
+    return model
+
+  @staticmethod
+  def VGG19(input_tensor):
+    """VGG19. Input tensor required."""
+    raise NotImplementedError()
