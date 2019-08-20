@@ -1,9 +1,9 @@
 
 """
 
-"easyai._advanced.py"
+"easyai._advanced.py" (protected)
 
-Custom keras layers. Does not use easyai API. Not recommended for use by easyai users.
+Custom keras layers. Does not use easyai API-- not recommended for use by easyai users.
 
 """
 
@@ -70,7 +70,7 @@ class Instance_Norm(keras.layers.Layer):
     return input_shape
 
   def call(self, x, mask = None):
-    mean, variance = tf.nn.moments(x, axis = [1, 2], keep_dims = True)
+    mean, variance = tf.nn.moments(x, axes = [1, 2], keep_dims = True)
     return tf.div(tf.subtract(x, mean), tf.sqrt(tf.add(variance, self.epsilon)))
 
 class Reflection_Padding2D(keras.layers.Layer):
@@ -259,4 +259,47 @@ class NST_Loss(Static_Interface):
   @staticmethod
   def VGG19(input_tensor):
     """VGG19. Input tensor required."""
-    raise NotImplementedError()
+    img_input = input_tensor
+
+    # block 1
+    x = keras.layers.Conv2D(64, (3, 3), activation = "relu", padding = "same", name = "block1_conv1")(img_input)
+    x = keras.layers.Conv2D(64, (3, 3), activation = "relu", padding = "same", name = "block1_conv2")(x)
+    x = keras.layers.MaxPooling2D((2, 2), strides = (2, 2), name = "block1_pool")(x)
+
+    # block 2
+    x = keras.layers.Conv2D(128, (3, 3), activation = "relu", padding = "same", name = "block2_conv1")(x)
+    x = keras.layers.Conv2D(128, (3, 3), activation = "relu", padding = "same", name = "block2_conv2")(x)
+    x = keras.layers.MaxPooling2D((2, 2), strides = (2, 2), name = "block2_pool")(x)
+
+    # block 3
+    x = keras.layers.Conv2D(256, (3, 3), activation = "relu", padding = "same", name = "block3_conv1")(x)
+    x = keras.layers.Conv2D(256, (3, 3), activation = "relu", padding = "same", name = "block3_conv2")(x)
+    x = keras.layers.Conv2D(256, (3, 3), activation = "relu", padding = "same", name = "block3_conv3")(x)
+    x = keras.layers.Conv2D(256, (3, 3), activation = "relu", padding = "same", name = "block3_conv4")(x)
+    x = keras.layers.MaxPooling2D((2, 2), strides = (2, 2), name = "block3_pool")(x)
+
+    # block 4
+    x = keras.layers.Conv2D(512, (3, 3), activation = "relu", padding = "same", name = "block4_conv1")(x)
+    x = keras.layers.Conv2D(512, (3, 3), activation = "relu", padding = "same", name = "block4_conv2")(x)
+    x = keras.layers.Conv2D(512, (3, 3), activation = "relu", padding = "same", name = "block4_conv3")(x)
+    x = keras.layers.Conv2D(512, (3, 3), activation = "relu", padding = "same", name = "block4_conv4")(x)
+    x = keras.layers.MaxPooling2D((2, 2), strides = (2, 2), name = "block4_pool")(x)
+
+    # block 5
+    x = keras.layers.Conv2D(512, (3, 3), activation = "relu", padding = "same", name = "block5_conv1")(x)
+    x = keras.layers.Conv2D(512, (3, 3), activation = "relu", padding = "same", name = "block5_conv2")(x)
+    x = keras.layers.Conv2D(512, (3, 3), activation = "relu", padding = "same", name = "block5_conv3")(x)
+    x = keras.layers.Conv2D(512, (3, 3), activation = "relu", padding = "same", name = "block5_conv4")(x)
+    x = keras.layers.MaxPooling2D((2, 2), strides = (2, 2), name = "block5_pool")(x)
+
+    # create model
+    inputs = keras.engine.network.get_source_inputs(input_tensor)
+    model = keras.models.Model(inputs, x, name = "vgg19")
+
+    # load weights
+    weights_path = keras.utils.data_utils.get_file("vgg19_weights_tf_dim_ordering_tf_kernels_notop.h5",
+                                                   NST_Loss.WEIGHTS_PATH_NO_TOP["vgg19"], cache_subdir = "models")
+    model.load_weights(weights_path, by_name = True)
+
+    return model
+  

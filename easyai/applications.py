@@ -504,7 +504,7 @@ class Fast_NST(object):
 
     path_to_coco = os.getenv("HOME") + "/coco"
 
-    self.train_init(style, target_size = target_size, noise = init_noise, norm = "batch", verbose = verbose)
+    self.train_init(style, target_size = target_size, noise = init_noise, norm = "instance", verbose = verbose)
 
     datagen = keras.preprocessing.image.ImageDataGenerator()
     generator = datagen.flow_from_directory(path_to_coco, target_size = target_size, batch_size = batch_size,
