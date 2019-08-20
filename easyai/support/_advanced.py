@@ -158,8 +158,6 @@ class NST_Transform(Network_Interface):
     self.k_model.layers[-1].add_loss(tv_regularizer)
     # adding total variation loss
 
-    print (self.k_model.count_params())
-
 # REGULARIZERS FOR NST
 class Style_Regularizer(keras.regularizers.Regularizer):
 
@@ -248,7 +246,7 @@ class NST_Loss(Static_Interface):
     x = keras.layers.MaxPooling2D((2, 2), strides = (2, 2), name = "block5_pool")(x)
 
     # create model
-    inputs = keras.engine.topology.get_source_inputs(input_tensor)
+    inputs = keras.engine.network.get_source_inputs(input_tensor)
     model = keras.models.Model(inputs, x, name = "vgg16")
 
     # load weights

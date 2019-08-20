@@ -7,12 +7,16 @@ Loads new, user-supplied data.
 
 """
 
+import os
 from typing import Union, List
 from io import BytesIO
 
 from PIL import Image
 import requests
+import keras
+import numpy as np
 
+# GENERAL FUNCTIONS
 def load_imgs(*paths) -> Union[List[Image.Image], Image.Image]:
   """
   Loads new images from paths or links. Images will be of shape (width, height, 3) and will have pixel values
@@ -29,3 +33,19 @@ def load_imgs(*paths) -> Union[List[Image.Image], Image.Image]:
       result.append(Image.open(BytesIO(requests.get(path).content)))
   return result[0] if len(result) == 1 else result
 
+# # COCO DATA GENERATOR
+# class Coco_Datagen(keras.utils.data_utils.Sequence):
+#
+#   def __init__(self, path_to_coco: str, target_size: tuple = (256, 256), batch_size: int = 32):
+#     self.path_to_coco = path_to_coco
+#     self.target_size = target_size
+#     self.batch_size = batch_size
+#
+#     self.get_img = lambda path: np.array(Image.open(path))
+#
+#   def __len__(self):
+#     num_files = len([name for name in os.listdir(self.path_to_cocoth) if os.path.isfile(name)])
+#     return int(np.ceil(num_files) / float(self.batch_size))
+#
+#   def __getitem__(self, item):
+#     self.get_img()
