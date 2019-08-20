@@ -90,7 +90,7 @@ class Art(Static_Interface):
   @staticmethod
   def slow_nst(content = None, style = None, save_path = None):
     """
-    Neural style transfer with art and photographs.
+    (Slow) neural style transfer with art and photographs.
 
     :param content: name of content image from dataset. Default is a random image from built-in datasets.
     :param style: name of style image from dataset. Default is a random image from built-in datasets.
@@ -124,6 +124,17 @@ class Art(Static_Interface):
       full_save_path = save_path + "/{0}_{1}.jpg".format(content_name, style_name)
       keras.preprocessing.image.save_img(full_save_path, final_img)
       print("Saved image at \"{0}\"".format(full_save_path))
+
+  @staticmethod
+  def fast_nst(content = None, style = None):
+    """
+    (Fast) neural style transfer with arts and photographs, using pretrained models.
+
+    :param content: name of content image.
+    :param style: name of style network.
+    :return: final result.
+    """
+    raise NotImplementedError()
 
 #--BELOW NOT SUPPORTED--
 from tkinter import *
@@ -166,37 +177,6 @@ class Unsupported(Static_Interface):
     img = np.take(np.asarray(img), [0], axis=2).reshape(28, 28)
     return np.abs(img - 255)
 
-  @staticmethod
-  def mnist_demo(h5_model: str = None):
-
-    def get_user_draw():
-      raise NotImplementedError()
-
-    def write(text: any):
-      raise NotImplementedError()
-
-    if h5_model is None:
-      nn = MNIST.mlp()
-      h5_model = "h5_model.h5"
-      nn.save(h5_model)
-
-    model = keras.models.load_model("h5_model")
-    write("Test evalaution: {0}%".format(model.evaluate()[-1] * 100))
-
-    digit = get_user_draw()
-
-    digits = np.arange(model.layers[-1].units + 1)
-    pred = digits[np.argmax(model.predict(digit))]
-
-    write("Network prediction: \"{0}\"".format(pred))
-
-  @staticmethod
-  def style_transfer(img_path):
-    """
-    Neural style transfer to make a content image (C) look a certain style (S). Uses VGG as base network.
-
-    :return: trained NN model.
-    """
   @staticmethod
   def display_image(pixels, label=None):
     # function that displays an image using matplotlib-- not really necessary for the digit classifier
