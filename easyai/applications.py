@@ -194,6 +194,9 @@ class Slow_NST(Network_Interface):
       Slow_NST.display_original(content, style)
 
     for epoch in range(epochs):
+      if verbose:
+        print("Epoch {0}/{1}".format(epoch + 1, epochs))
+
       start = time()
 
       # updating pixel values using L-BFGS-B
@@ -202,15 +205,14 @@ class Slow_NST(Network_Interface):
       plt.close()
 
       if verbose:
-        print("Epoch {0}/{1}".format(epoch + 1, epochs))
         print(" - {0}s - loss: {1} [broken]".format(round(time() - start), loss)) # loss is broken-- it's way too high
-        self.display_img(self.img, "Epoch {0}/{1}".format(epoch + 1, epochs))
+        Slow_NST.display_img(self.img, "Epoch {0}/{1}".format(epoch + 1, epochs), *self.generated.shape[1:])
 
       if save_path is not None:
         full_save_path = save_path + "/epoch{0}.png".format(epoch + 1)
-        keras.preprocessing.image.save_img(full_save_path, self.deprocess(self.img))
+        keras.preprocessing.image.save_img(full_save_path, Slow_NST.deprocess(self.img, *self.generated.shape[1:]))
 
-    return self.deprocess(self.img)
+    return Slow_NST.deprocess(self.img, *self.generated.shape[1:])
 
   # LOSS CALCULATIONS
   def loss_and_grads(self, img: np.ndarray) -> tuple:
@@ -311,14 +313,16 @@ class Slow_NST(Network_Interface):
 
     return self.k_net_module.preprocess_input(img)
 
-  def deprocess(self, img_: np.ndarray) -> np.ndarray:
+  @staticmethod
+  def deprocess(img_: np.ndarray, target_shape: tuple) -> np.ndarray:
     """
     Reverses effect of preprocess
 
     :param img_: image to deprocess.
+    :param target_shape: target shape.
     :return: deprocessed image.
     """
-    img = np.copy(img_).reshape(*self.generated.shape[1:])
+    img = np.copy(img_).reshape(target_shape)
     means = Slow_NST.get_hps("means")
     for i in range(len(means)):
       img[:, :, i] += means[i] # adding mean pixel values
@@ -326,15 +330,17 @@ class Slow_NST(Network_Interface):
     img = np.clip(img, 0, 255).astype("uint8")
     return img
 
-  def display_img(self, img: np.ndarray, title: str):
+  @staticmethod
+  def display_img(img: np.ndarray, title: str, target_shape):
     """
     Displays image.
 
     :param img: image to be displayed.
     :param title: title of maptlotlib plot.
+    :param target_shape: target shape.
     """
     try:
-      img = self.deprocess(img)
+      img = Slow_NST.deprocess(img, target_shape)
     except np.core._exceptions.UFuncTypeError:
       pass
 
@@ -344,7 +350,7 @@ class Slow_NST(Network_Interface):
     fig.suptitle(title)
     plt.axis("off")
 
-    plt.imshow(img.reshape(*self.generated.shape[1:]))
+    plt.imshow(img.reshape(target_shape))
     plt.pause(0.1)
 
     plt.show(block = False)
@@ -479,7 +485,7 @@ class Fast_NST(object):
 
   # TRAINING
   def train(self, style: Image.Image, epochs: int = 1, batch_size = 1, init_noise: float = 0.6,
-            target_size: tuple = (256, 256), verbose: bool = True):
+            target_size: tuple = (256, 256), verbose: bool = True, save_path: str = None):
     """
     Trains the image transform network on the MS COCO dataset (https://cocodataset.org/#download) to match a certain
     style. This dataset does not come preinstalled with easyai and takes a while to download (~4 hours).
@@ -491,32 +497,51 @@ class Fast_NST(object):
     :param init_noise: amount of noise in initially generated image. Range is [0., 1.].
     :param target_size: all training images will be reshaped to target_size.
     :param verbose: if true, prints additional training information.
+    :param save_path: path to save training results
     :return: final cost
     """
-    steps_per_epoch = 40000 # according to reference paper
+    assert batch_size == 2, "only batch size of 2 is supported"
 
     path_to_coco = os.getenv("HOME") + "/coco"
 
     self.train_init(style, target_size = target_size, noise = init_noise, norm = "batch", verbose = verbose)
 
-    print("Training with L-BFGS-B (another gradient-based optimization algorithm) in a {0}-D space. During "
-          "each epoch, the pixels of the generated image will be changed {1} times in an attempt to minimize cost."
-          .format(self.img_transform_net.k_model.count_params(), steps_per_epoch))
-
     datagen = keras.preprocessing.image.ImageDataGenerator()
     generator = datagen.flow_from_directory(path_to_coco, target_size = target_size, batch_size = batch_size,
                                             classes = ["unlabeled2017"], class_mode = None)
 
+    print("Training with L-BFGS-B (another gradient-based optimization algorithm) in a {0}-D space. During each epoch, "
+          "the pixels of the generated image will be changed approximately {1} times in an attempt to minimize cost."
+          .format(self.img_transform_net.k_model.count_params(), int(generator.samples / batch_size)))
+
     dummy_y = np.zeros((batch_size, *target_size, 3))
 
-    for img in generator:
-      self.k_model.train_on_batch(img, dummy_y)
-      break
-    # for img, img in generator:
-    #   print(img.shape)
-    #   print(self.k_model.input_shape, self.k_model.output_shape)
-    #
-    # self.k_model.fit_generator(generator, steps_per_epoch = steps_per_epoch, epochs = epochs)
+    for epoch in range(epochs):
+      if verbose:
+        print("Epoch {0}/{1}".format(epoch + 1, epochs))
+
+      start = time()
+
+      batch_nums = [1, 1]
+      batch_start = time()
+      img_transform_result = None
+
+      for batch in generator:
+        self.k_model.train_on_batch(batch, dummy_y)
+        if verbose and batch_nums[0] % (int(generator.samples / 20 / batch_size)) == 0:
+          print(" - {0}s - batches {1}-{2} completed".format(round(time() - batch_start), *batch_nums))
+          batch_start = time()
+          batch_nums[0] = batch_nums[1]
+        img_transform_result = self.img_transform_net.k_model.predict(batch[0])
+        #TODO: write cost evaluation function for each epoch or batch
+        batch_nums[0] += 1
+
+      if verbose:
+        print(" - {0}s".format(round(time() - start)))
+
+      if save_path is not None:
+        full_save_path = save_path + "/epoch{0}.png".format(epoch + 1)
+        keras.preprocessing.image.save_img(full_save_path, Slow_NST.deprocess(img_transform_result))
 
   @staticmethod
   def dummy_loss(y_true, y_pred):
@@ -530,6 +555,7 @@ class Fast_NST(object):
     return K.variable(0.0)
 
 if __name__ == "__main__":
+
   from easyai.support.load import load_imgs
   style = load_imgs("/Users/ryan/coco/unlabeled2017/000000436250.jpg")
   style = load_imgs("/Users/ryan/coco/unlabeled2017/000000436250.jpg")
