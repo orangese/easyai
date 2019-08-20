@@ -186,7 +186,7 @@ class Slow_NST(Network_Interface):
     self.tensor_init(content_layer, style_layers)
 
     print("Training with L-BFGS-B (another gradient-based optimization algorithm) in a {0}-D space. During "
-           "each epoch, the pixels of the generated image will be changed {1} times in an attempt to minimize cost"
+           "each epoch, the pixels of the generated image will be changed {1} times in an attempt to minimize cost."
            .format(np.prod(content.size), num_iters))
 
     if verbose:
@@ -478,7 +478,7 @@ class Fast_NST(object):
     # adding loss and regularizers
 
   # TRAINING
-  def train(self, style: Image.Image, epochs: int = 1, batch_size = 4, init_noise: float = 0.6,
+  def train(self, style: Image.Image, epochs: int = 1, batch_size = 1, init_noise: float = 0.6,
             target_size: tuple = (256, 256), verbose: bool = True):
     """
     Trains the image transform network on the MS COCO dataset (https://cocodataset.org/#download) to match a certain
@@ -500,67 +500,41 @@ class Fast_NST(object):
     self.train_init(style, target_size = target_size, noise = init_noise, norm = "batch", verbose = verbose)
 
     print("Training with L-BFGS-B (another gradient-based optimization algorithm) in a {0}-D space. During "
-          "each epoch, the pixels of the generated image will be changed {1} times in an attempt to minimize cost"
+          "each epoch, the pixels of the generated image will be changed {1} times in an attempt to minimize cost."
           .format(self.img_transform_net.k_model.count_params(), steps_per_epoch))
 
-    # datagen = keras.preprocessing.image.ImageDataGenerator()
-    # generator = datagen.flow_from_directory(path_to_coco, target_size = target_size, batch_size = batch_size,
-    #                                         classes = ["unlabeled2017"], class_mode = "input")
+    datagen = keras.preprocessing.image.ImageDataGenerator()
+    generator = datagen.flow_from_directory(path_to_coco, target_size = target_size, batch_size = batch_size,
+                                            classes = ["unlabeled2017"], class_mode = None)
+
+    dummy_y = np.zeros((batch_size, *target_size, 3))
+
+    for img in generator:
+      print (img.shape, self.k_model.input_shape, dummy_y.shape)
+      self.k_model.train_on_batch(img, dummy_y)
+      print ("OK")
+    # for img, img in generator:
+    #   print(img.shape)
+    #   print(self.k_model.input_shape, self.k_model.output_shape)
     #
     # self.k_model.fit_generator(generator, steps_per_epoch = steps_per_epoch, epochs = epochs)
 
-    nb_epoch = 82785 * 2
-    train_batchsize = 1
-    train_image_path = "/home/ryan/coco/unlabeled2017/"
-
-    learning_rate = 1e-3  # 1e-3
-    optimizer = keras.optimizers.Adam()  # Adam(lr=learning_rate,beta_1=0.99)
-
-    self.k_model.compile(optimizer, Fast_NST.dummy_loss)  # Dummy loss since we are learning from regularizes
-
-    datagen = keras.preprocessing.image.ImageDataGenerator()
-
-    dummy_y = np.zeros(
-      (train_batchsize, *target_size, 3))  # Dummy output, not used since we use regularizers to train
-
-    # model.load_weights(style+'_weights.h5',by_name=False)
-
-    skip_to = 0
-
-    i = 0
-    import time
-    t1 = time.time()
-    for x in datagen.flow_from_directory(path_to_coco, target_size = target_size, batch_size = train_batchsize,
-                                             classes = ["unlabeled2017"], class_mode = None):
-      if i > nb_epoch:
-        break
-
-      if i < skip_to:
-        i += train_batchsize
-        if i % 1000 == 0:
-          print("skip to: %d" % i)
-
-        continue
-
-      hist = self.k_model.train_on_batch(x, dummy_y)
-
-      if i % 50 == 0:
-        print(hist, (time.time() - t1))
-        t1 = time.time()
-
-      if i % 500 == 0:
-        print("epoc: ", i)
-        val_x = self.img_transform_net.k_model.predict(x)
-
-      i += train_batchsize
-
   @staticmethod
   def dummy_loss(y_true, y_pred):
-    return K.variable(0.0) # loss is not optimized; instead, regularizers are used
+    """
+    Dummy loss function. Loss is not optimized; instead, regularizers are used.
+
+    :param y_true: true label.
+    :param y_pred: network prediction.
+    :return: keras variable with value = 0.0
+    """
+    return K.variable(0.0)
 
 if __name__ == "__main__":
-  from easyai.support.load import load_imgs
-  style = load_imgs("https://drive.google.com/uc?export=download&id=1YH2IE42KcwxOzu3C_xs6F_cLT4VJqpAW")
+  with tf.device("/cpu:0"):
+    from easyai.support.load import load_imgs
+    style = load_imgs("/home/ryan/coco/unlabeled2017/000000436250.jpg")
+    style = load_imgs("/home/ryan/coco/unlabeled2017/000000436250.jpg")
 
-  test = Fast_NST()
-  test.train(style)
+    test = Fast_NST()
+    test.train(style)

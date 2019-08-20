@@ -150,7 +150,7 @@ class NN(Network_Interface):
     # fixes weird keras feature in which "accuracy" metric causes unexpected results if using "binary_crossentropy"
     self.k_model.compile(optimizer = optimizer, loss = self.loss, metrics = metrics)
     print("Training with stochastic gradient descent in a {0}-D space. During epoch (training step), {1} "
-           "training examples and their corresponding labels will be used to minimize cost".format(
+           "training examples and their corresponding labels will be used to minimize cost.".format(
       self.k_model.count_params(), len(x)))
     self.k_model.fit(x, y, epochs = epochs, batch_size = batch_size, validation_split = 0.2, verbose = 2)
     self.is_trained = True
