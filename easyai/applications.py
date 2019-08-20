@@ -9,6 +9,7 @@ Applications of core layers and networks in larger, more real-world-based algori
 
 import importlib
 import os
+from time import time
 
 import matplotlib.pyplot as plt
 from PIL import Image
@@ -424,8 +425,7 @@ class Fast_NST(object):
     self.k_model.compile(optimizer = keras.optimizers.Adam(), loss = Fast_NST.dummy_loss)
 
     if verbose:
-      print("Loaded image transform and loss nets")
-      self.k_model.summary()
+      print("Loaded NST loss net")
 
   def loss_net_init(self):
 
@@ -510,9 +510,8 @@ class Fast_NST(object):
     dummy_y = np.zeros((batch_size, *target_size, 3))
 
     for img in generator:
-      print (img.shape, self.k_model.input_shape, dummy_y.shape)
       self.k_model.train_on_batch(img, dummy_y)
-      print ("OK")
+      break
     # for img, img in generator:
     #   print(img.shape)
     #   print(self.k_model.input_shape, self.k_model.output_shape)
@@ -531,10 +530,9 @@ class Fast_NST(object):
     return K.variable(0.0)
 
 if __name__ == "__main__":
-  with tf.device("/cpu:0"):
-    from easyai.support.load import load_imgs
-    style = load_imgs("/home/ryan/coco/unlabeled2017/000000436250.jpg")
-    style = load_imgs("/home/ryan/coco/unlabeled2017/000000436250.jpg")
+  from easyai.support.load import load_imgs
+  style = load_imgs("/Users/ryan/coco/unlabeled2017/000000436250.jpg")
+  style = load_imgs("/Users/ryan/coco/unlabeled2017/000000436250.jpg")
 
-    test = Fast_NST()
-    test.train(style)
+  test = Fast_NST()
+  test.train(style, batch_size = 2)
