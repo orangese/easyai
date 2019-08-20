@@ -1,7 +1,7 @@
 
 # EasyAI
 
-EasyAI (`easyai`) is a small wrapper API for Keras, written for use by the AI club at Millburn High School. It simplifies Keras' syntax so that a person with little programming experience and even less knowledge of machine learning can use it. Users should use this API as a springboard from which they can start coding using advanced and capable tools. Despite what its name might imply, EasyAI is centered around neural network algorithms due to their recent prevalence and popularity.
+EasyAI (`easyai`) is a small wrapper API for Keras, written for use by CSII AI at Millburn High School. It simplifies Keras' syntax so that a person with little programming experience and even less knowledge of machine learning can use it. Users should use this API as a springboard from which they can start coding using advanced and capable tools. Despite what its name might imply, EasyAI is centered around neural network algorithms (mainly their applications in visual fields) due to their recent prevalence and popularity.
 
 ## Core principles
 
