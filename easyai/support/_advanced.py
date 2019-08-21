@@ -3,13 +3,57 @@
 
 "easyai._advanced.py" (protected)
 
-Custom keras layers. Does not use easyai API-- not recommended for use by easyai users.
+Custom keras classes. Does not use easyai API-- not recommended for use by easyai users.
 
 """
 
 import tensorflow as tf
 
 from easyai.core import *
+
+# SUPPORT FOR CUSTOM LOSS
+class Evaluator(object):
+  """
+  Class used for custom loss and gradient functions. Should be used in conjunction with scipy.optimize.[whatever].
+  """
+
+  def __init__(self, obj: object):
+    """
+    Initializes Evaluator object.
+
+    :param obj: obj that has some function used to evaluate loss and gradients, called "loss_and_grads"
+    :raises AssertionError: obj must have loss_and_grads function
+    """
+    self.obj = obj
+    assert hasattr(obj, "loss_and_grads"), "obj must have loss_and_grads function"
+    self.reset()
+
+  def f_loss(self, img: np.ndarray):
+    """
+    Calculates loss.
+
+    :param img: image (array) used to calculate loss.
+    :return: loss.
+    """
+    loss, grads = self.obj.loss_and_grads(img)
+    self.loss = loss
+    self.grads = grads
+    return self.loss
+
+  def f_grads(self, img):
+    """
+    Calculates gradients.
+
+    :param img: image (array) used to calculate gradients.
+    :return: gradients.
+    """
+    grads = np.copy(self.grads)
+    self.reset()
+    return grads
+
+  def reset(self):
+    self.loss = None
+    self.grads = None
 
 # CONV LAYERS
 class Noisy_Normalize(keras.layers.Layer):
@@ -152,7 +196,7 @@ class NST_Transform(Network_Interface):
 
     y = Denormalize(name = "img_transform_output")(a)
 
-    self.k_model = keras.models.Model(inputs = x, outputs = y)
+    self.k_model = keras.Model(inputs = x, outputs = y)
 
     tv_regularizer = TV_Regularizer(self.coef_v)(self.k_model.layers[-1])
     self.k_model.layers[-1].add_loss(tv_regularizer)
@@ -247,7 +291,7 @@ class NST_Loss(Static_Interface):
 
     # create model
     inputs = keras.engine.network.get_source_inputs(input_tensor)
-    model = keras.models.Model(inputs, x, name = "vgg16")
+    model = keras.Model(inputs, x, name = "vgg16")
 
     # load weights
     weights_path = keras.utils.data_utils.get_file("vgg16_weights_tf_dim_ordering_tf_kernels_notop.h5",
@@ -294,7 +338,7 @@ class NST_Loss(Static_Interface):
 
     # create model
     inputs = keras.engine.network.get_source_inputs(input_tensor)
-    model = keras.models.Model(inputs, x, name = "vgg19")
+    model = keras.Model(inputs, x, name = "vgg19")
 
     # load weights
     weights_path = keras.utils.data_utils.get_file("vgg19_weights_tf_dim_ordering_tf_kernels_notop.h5",

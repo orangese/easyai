@@ -3,63 +3,19 @@
 
 "easyai.applications.py"
 
-Applications of core layers and networks in larger, more real-world-based algorithms. Example: neural style transfer.
+Applications of neural networks in larger, more real-world-based algorithms. Does not use easyai API; instead, relies
+on keras since easyai is not flexible enough to meet the demands of these algorithms.
 
 """
 
 import importlib
 import os
-from time import time
 
 import matplotlib.pyplot as plt
 from PIL import Image
 from scipy.optimize import fmin_l_bfgs_b
 
 from easyai.support._advanced import *
-
-# SUPPORT
-class Evaluator(object):
-  """
-  Class used for custom loss and gradient functions. Should be used in conjunction with scipy.optimize.[whatever].
-  """
-
-  def __init__(self, obj: object):
-    """
-    Initializes Evaluator object.
-
-    :param obj: obj that has some function used to evaluate loss and gradients, called "loss_and_grads"
-    :raises AssertionError: obj must have loss_and_grads function
-    """
-    self.obj = obj
-    assert hasattr(obj, "loss_and_grads"), "obj must have loss_and_grads function"
-    self.reset()
-
-  def f_loss(self, img: np.ndarray):
-    """
-    Calculates loss.
-
-    :param img: image (array) used to calculate loss.
-    :return: loss.
-    """
-    loss, grads = self.obj.loss_and_grads(img)
-    self.loss = loss
-    self.grads = grads
-    return self.loss
-
-  def f_grads(self, img):
-    """
-    Calculates gradients.
-
-    :param img: image (array) used to calculate gradients.
-    :return: gradients.
-    """
-    grads = np.copy(self.grads)
-    self.reset()
-    return grads
-
-  def reset(self):
-    self.loss = None
-    self.grads = None
 
 # NEURAL NETWORK APPLICATION
 class Slow_NST(Network_Interface):
