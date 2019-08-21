@@ -12,6 +12,7 @@ import random
 from easyai.layers import *
 from easyai.applications import *
 from easyai.support.datasets.datasets import *
+from easyai.support.models import *
 
 # CLASSES
 class MNIST(Static_Interface):
@@ -97,20 +98,11 @@ class Art(Static_Interface):
     :param save_path: path to which to save final result. Default is None.
     :return: trained Slow_NST object.
     """
-    def get_img(img_name, type_, images):
-      if img_name is None:
-        return random.choice(list(images[type_].items()))
-      else:
-        try:
-          return img_name, images[type_][img_name]
-        except KeyError:
-          raise ValueError("supported {0} images are {1}".format(type_, list(images[type_].keys())))
-
-    images = Extras.load_nst()
+    images = Extras.load_nst_imgs()
     print("Loaded NST images")
 
-    content_name, content_img = get_img(content, "content", images)
-    style_name, style_img = get_img(style, "style", images)
+    content_name, content_img = Helpers.get_img(content, "content", images)
+    style_name, style_img = Helpers.get_img(style, "style", images)
 
     print("Using content image \"{0}\" and style image \"{1}\"".format(content_name, style_name))
 
@@ -118,7 +110,7 @@ class Art(Static_Interface):
 
     final_img = model.train(content_img, style_img, epochs = 25, init_noise = 0.6)
 
-    model.display_img(final_img, "Final result")
+    Slow_NST.display_img(final_img, "Final result", model.generated.shape[1:])
 
     if save_path is not None:
       full_save_path = save_path + "/{0}_{1}.jpg".format(content_name, style_name)
@@ -126,15 +118,35 @@ class Art(Static_Interface):
       print("Saved image at \"{0}\"".format(full_save_path))
 
   @staticmethod
-  def fast_nst(content = None, style = None):
+  def fast_nst(content = None, style_net = None, save_path = None):
     """
     (Fast) neural style transfer with arts and photographs, using pretrained models.
 
-    :param content: name of content image.
-    :param style: name of style network.
+    :param content: name of content image. Default is None.
+    :param style_net: name of style network. Default is None.
+    :param save_path: path to which to save the final result. Default is None.
     :return: final result.
     """
-    raise NotImplementedError()
+    images = Extras.load_nst_imgs()
+    print("Loaded NST images")
+
+    content_name, content_img = Helpers.get_img(content, "content", images)
+
+    if style_net is None:
+      model = Fast_NST_Models.random_net()
+    else:
+      model = Fast_NST_Models.load_net(style_net)
+
+    print("Using content image \"{0}\" and style net trained on  \"{1}\"".format(content_name, style_net))
+
+    final_img = model.run_nst(content)
+
+    Slow_NST.display_img(final_img, "Final result")
+
+    if save_path is not None:
+      full_save_path = save_path + "/{0}_{1}.jpg".format(content_img, style_net)
+      keras.preprocessing.image.save_img(full_save_path, final_img)
+      print("Saved image at \"{0}\"".format(full_save_path))
 
 #--BELOW NOT SUPPORTED--
 from tkinter import *

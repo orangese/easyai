@@ -162,13 +162,13 @@ class Slow_NST(Network_Interface):
 
       if verbose:
         print(" - {0}s - loss: {1} [broken]".format(round(time() - start), loss)) # loss is broken-- it's way too high
-        Slow_NST.display_img(self.img, "Epoch {0}/{1}".format(epoch + 1, epochs), *self.generated.shape[1:])
+        Slow_NST.display_img(self.img, "Epoch {0}/{1}".format(epoch + 1, epochs), self.generated.shape[1:])
 
       if save_path is not None:
         full_save_path = save_path + "/epoch{0}.png".format(epoch + 1)
-        keras.preprocessing.image.save_img(full_save_path, Slow_NST.deprocess(self.img, *self.generated.shape[1:]))
+        keras.preprocessing.image.save_img(full_save_path, Slow_NST.deprocess(self.img, self.generated.shape[1:]))
 
-    return Slow_NST.deprocess(self.img, *self.generated.shape[1:])
+    return Slow_NST.deprocess(self.img, self.generated.shape[1:])
 
   # LOSS CALCULATIONS
   def loss_and_grads(self, img: np.ndarray) -> tuple:
@@ -270,7 +270,7 @@ class Slow_NST(Network_Interface):
     return self.k_net_module.preprocess_input(img)
 
   @staticmethod
-  def deprocess(img_: np.ndarray, target_shape: tuple) -> np.ndarray:
+  def deprocess(img_: np.ndarray, target_shape: tuple = None) -> np.ndarray:
     """
     Reverses effect of preprocess
 
@@ -278,7 +278,9 @@ class Slow_NST(Network_Interface):
     :param target_shape: target shape.
     :return: deprocessed image.
     """
-    img = np.copy(img_).reshape(target_shape)
+    img = np.copy(img_)
+    if target_shape is not None:
+      img = img.reshape(target_shape)
     means = Slow_NST.get_hps("means")
     for i in range(len(means)):
       img[:, :, i] += means[i] # adding mean pixel values
@@ -287,7 +289,7 @@ class Slow_NST(Network_Interface):
     return img
 
   @staticmethod
-  def display_img(img: np.ndarray, title: str, target_shape):
+  def display_img(img: np.ndarray, title: str, target_shape: tuple = None):
     """
     Displays image.
 
@@ -296,7 +298,7 @@ class Slow_NST(Network_Interface):
     :param target_shape: target shape.
     """
     try:
-      img = Slow_NST.deprocess(img, target_shape)
+      img = Slow_NST.deprocess(img, target_shape = target_shape)
     except np.core._exceptions.UFuncTypeError:
       pass
 
@@ -440,7 +442,7 @@ class Fast_NST(object):
     # adding loss and regularizers
 
   # TRAINING
-  def train(self, style: Image.Image, epochs: int = 1, batch_size = 1, init_noise: float = 0.6,
+  def train(self, style: Image.Image, epochs: int = 1, batch_size = 2, init_noise: float = 0.6,
             target_size: tuple = (256, 256), verbose: bool = True, save_path: str = None):
     """
     Trains the image transform network on the MS COCO dataset (https://cocodataset.org/#download) to match a certain
@@ -454,7 +456,6 @@ class Fast_NST(object):
     :param target_size: all training images will be reshaped to target_size.
     :param verbose: if true, prints additional training information.
     :param save_path: path to save training results
-    :return: final cost
     """
     assert batch_size == 2, "only batch size of 2 is supported"
 
@@ -469,8 +470,9 @@ class Fast_NST(object):
     print("Training with L-BFGS-B (another gradient-based optimization algorithm) in a {0}-D space. During each epoch, "
           "the pixels of the generated image will be changed approximately {1} times in an attempt to minimize cost."
           .format(self.img_transform_net.k_model.count_params(), int(generator.samples / batch_size)))
-
     dummy_y = np.zeros((batch_size, *target_size, 3))
+
+    num_batches = round(generator.samples / batch_size)
 
     for epoch in range(epochs):
       if verbose:
@@ -478,27 +480,60 @@ class Fast_NST(object):
 
       start = time()
 
-      batch_nums = [1, 1]
+      batch_nums = [1, 1] # batch_nums[0] is the current batch, and batch_nums[1] is the current batch of batches
       batch_start = time()
       img_transform_result = None
 
+      eta = None # estimated time until to the next epoch
+
       for batch in generator:
         self.k_model.train_on_batch(batch, dummy_y)
-        if verbose and batch_nums[0] % (int(generator.samples / 20 / batch_size)) == 0:
-          print(" - {0}s - batches {1}-{2} completed".format(round(time() - batch_start), *batch_nums))
+
+        if verbose and batch_nums[0] % 1 == 0: # if verbose, display information every 20 batches
+          elapsed = round(time() - batch_start)
+
+          if eta is None:
+            eta = round(elapsed * num_batches - elapsed)
+          else:
+            eta = round((0.6 * eta + 0.4 * (elapsed * num_batches - elapsed * batch_nums[0])) - elapsed)
+            # exponentially weighted average of previous ETAs and current elapsed time
+
+          img_transform_result = self.run_nst(batch[0]) # doesn't matter which batch example is used for evaluation
+          print(" - {0}s - batches {1}-{2} completed - time until next epoch - {3}s - batches left - {4}".format(
+            elapsed, *reversed(batch_nums), eta, num_batches - batch_nums[0]))
+
+          batch_nums[1] = batch_nums[0] + 1
           batch_start = time()
-          batch_nums[0] = batch_nums[1]
-        img_transform_result = self.img_transform_net.k_model.predict(batch[0])
-        #TODO: write cost evaluation function for each epoch or batch
+          # TODO: write cost evaluation function for each epoch or batch
+
         batch_nums[0] += 1
 
+        if batch_nums[0] >= generator.samples:
+          break
+
       if verbose:
-        print(" - {0}s".format(round(time() - start)))
+        print("Epoch {0} completed in {1}s".format(epoch, round(time() - start)))
 
       if save_path is not None:
         full_save_path = save_path + "/epoch{0}.png".format(epoch + 1)
         keras.preprocessing.image.save_img(full_save_path, Slow_NST.deprocess(img_transform_result))
 
+  # TESTING
+  def run_nst(self, content: Union[Image.Image, np.ndarray]) -> np.ndarray:
+    """
+    Run fast NST on content image.
+
+    :param content: image (as PIL image or numpy array) on which to run NST.
+    :return: final result as a (deprocessed) numpy array.
+    """
+    if isinstance(content, Image.Image):
+      content = np.array(content)
+    try:
+      return Slow_NST.deprocess(self.img_transform_net.k_model.predict(content))
+    except ValueError:
+      return Slow_NST.deprocess(self.img_transform_net.k_model.predict(np.expand_dims(content, axis = 0)))
+
+  # CUSTOM LOSS
   @staticmethod
   def dummy_loss(y_true, y_pred):
     """
@@ -511,9 +546,7 @@ class Fast_NST(object):
     return K.variable(0.0)
 
 if __name__ == "__main__":
-
   from easyai.support.load import load_imgs
-  style = load_imgs("/Users/ryan/coco/unlabeled2017/000000436250.jpg")
   style = load_imgs("/Users/ryan/coco/unlabeled2017/000000436250.jpg")
 
   test = Fast_NST()
