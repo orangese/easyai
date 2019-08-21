@@ -7,14 +7,11 @@ Loads new, user-supplied data.
 
 """
 
-import os
 from typing import Union, List
 from io import BytesIO
 
 from PIL import Image
 import requests
-import keras
-import numpy as np
 
 # GENERAL FUNCTIONS
 def load_imgs(*paths) -> Union[List[Image.Image], Image.Image]:

@@ -11,6 +11,7 @@ from io import BytesIO
 from typing import Tuple
 import os
 import subprocess
+import random
 
 import pandas as pd
 import requests
@@ -133,7 +134,7 @@ class Extras(Static_Interface):
   """
 
   @staticmethod
-  def load_nst() -> dict:
+  def load_nst_imgs() -> dict:
     """
     Method to load images used as examples for neural style transfer.
 
@@ -176,6 +177,8 @@ class Extras(Static_Interface):
 
     :return: two tuples: (x_train, y_train) and (x_test, y_test).
     """
+    raise NotImplementedError("LendingClub data loader is currently under construction")
+
     globals_ = {}
 
     def sigmoid_normalize(raw_array, range_ = None):
@@ -248,7 +251,7 @@ class Extras(Static_Interface):
 
     def load_file(filestream):
       """Reads a specific excel file and prepares it for data processing."""
-      data = pd.ExcelFile(filestream, engine = "xlrd")
+      data = pd.read_excel(filestream, engine = "xlrd")
       del data["loan_status"]
       del data["funded_amnt"]
       del data["sub_grade"]
@@ -299,3 +302,15 @@ class Extras(Static_Interface):
 
     return load_data(
       "https://drive.google.com/uc?export=download&id=1HYE7qIgAjdYve_sS1ixZH8TJTE5wB-sv")
+  
+class Helpers(Static_Interface):
+
+  @staticmethod
+  def get_img(img_name: str, key: str, images: dict):
+    if img_name is None:
+      return random.choice(list(images[key].items()))
+    else:
+      try:
+        return img_name, images[key][img_name]
+      except KeyError:
+        raise ValueError("supported {0} images are {1}".format(key, list(images[key].keys())))
