@@ -9,8 +9,6 @@ Holds links to pre-trained easyai models stored on Google Drive.
 
 import random
 
-import keras
-
 from easyai.core import *
 
 class Trained_Model_Interface(Static_Interface):
@@ -33,7 +31,7 @@ class Fast_NST_Models(Trained_Model_Interface):
   Contains links to pretrained fast NST models as well as model loaders.
   """
 
-  models = {}
+  models = {} # TODO: created pretrained fast NST net and write load_net function
 
   @staticmethod
   def load_net(net_name: str) -> Network_Interface:
