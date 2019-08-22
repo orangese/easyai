@@ -16,27 +16,27 @@ import keras.backend as K
 import numpy as np
 
 # FRAMEWORK
-class Static_Interface(object):
+class StaticInterface(object):
   """
   Static interface for other programs. An object of this class cannot be created.
   """
 
   def __init__(self):
     """
-    As Static_Interface objects should not be created, __init__ throws a NotImplementedError.
+    As StaticInterface objects should not be created, __init__ throws a NotImplementedError.
 
     :raises NotImplementedError
     """
     raise NotImplementedError("class is static")
 
-class Abstract_Layer(Static_Interface):
+class AbstractLayer(StaticInterface):
   """
   Abstract class that acts as the base for all layer classes. Should not be implemented.
   """
 
   def __init__(self, num_neurons: int , actv: str):
     """
-    As Abstract_Layer objects should not be created, __init__ throws a NotImplementedError.
+    As AbstractLayer objects should not be created, __init__ throws a NotImplementedError.
 
     :raises NotImplementedError
     """
@@ -64,7 +64,7 @@ class Abstract_Layer(Static_Interface):
     assert self.prev, "self.prev must be initialized"
     raise NotImplementedError("cannot be implemented. How did you even call this function?")
 
-class Network_Interface(object):
+class NetworkInterface(object):
   """Interface for all network-like classes."""
 
   def __init__(self):
@@ -76,7 +76,7 @@ class Network_Interface(object):
     raise NotImplementedError("class is an interface")
 
 # NEURAL NETWORK IMPLEMENTATION
-class NN(Network_Interface):
+class NN(NetworkInterface):
   """
   Uses easyai layer objects to create a functional keras model.
   """
@@ -109,7 +109,7 @@ class NN(Network_Interface):
         self.k_layers.append(layer.k_model)
     self.k_model = keras.Sequential(self.k_layers)
 
-  def add_layer(self, layer: Abstract_Layer, position: int = None):
+  def add_layer(self, layer: AbstractLayer, position: int = None):
     """Adds a layer and creates a new keras object.
 
     :param layer: layer to be added. Should be instance of easyai core layer classes.
@@ -121,7 +121,7 @@ class NN(Network_Interface):
     new_layers.insert(position, layer)
     self.__init__(new_layers)
 
-  def rm_layer(self, position: int = None, layer: Abstract_Layer = None):
+  def rm_layer(self, position: int = None, layer: AbstractLayer = None):
     """Removes a layer and creates a new keras object.
 
     :param position: position at which layer should be removed. Recommended instead of `layer`.
@@ -150,7 +150,7 @@ class NN(Network_Interface):
     # fixes weird keras feature in which "accuracy" metric causes unexpected results if using "binary_crossentropy"
     self.k_model.compile(optimizer = optimizer, loss = self.loss, metrics = metrics)
     print("Training with stochastic gradient descent in a {0}-D space. During epoch (training step), {1} "
-           "training examples and their corresponding labels will be used to minimize cost.".format(
+           "training examples and their corresponding labels will be used to minimize loss.".format(
       self.k_model.count_params(), len(x)))
     self.k_model.fit(x, y, epochs = epochs, batch_size = batch_size, validation_split = 0.2, verbose = 2)
     self.is_trained = True

@@ -11,7 +11,7 @@ import random
 
 from easyai.core import *
 
-class Trained_Model_Interface(Static_Interface):
+class TrainedModelInterface(StaticInterface):
   """
   Model for all model classes.
   """
@@ -26,7 +26,7 @@ class Trained_Model_Interface(Static_Interface):
   def random_net() -> keras.Model:
     raise NotImplementedError("abstract class methods should not be implemented")
 
-class Fast_NST_Models(Trained_Model_Interface):
+class FastNSTModels(TrainedModelInterface):
   """
   Contains links to pretrained fast NST models as well as model loaders.
   """
@@ -34,7 +34,7 @@ class Fast_NST_Models(Trained_Model_Interface):
   models = {} # TODO: created pretrained fast NST net and write load_net function
 
   @staticmethod
-  def load_net(net_name: str) -> Network_Interface:
+  def load_net(net_name: str) -> NetworkInterface:
     """
     Loads pretrained fast NST model.
 
@@ -44,10 +44,10 @@ class Fast_NST_Models(Trained_Model_Interface):
     raise NotImplementedError()
 
   @staticmethod
-  def random_net() -> Network_Interface:
+  def random_net() -> NetworkInterface:
     """
     Loads random pretrained fast NST model.
 
     :return: random pretrained model.
     """
-    return Fast_NST_Models.load_net(random.choice(list(Fast_NST_Models.models.keys())))
+    return FastNSTModels.load_net(random.choice(list(FastNSTModels.models.keys())))

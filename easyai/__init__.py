@@ -23,5 +23,5 @@ from . import core
 from . import support
 
 # Importable from root
-from .core import Static_Interface
+from .core import StaticInterface
 from .core import NN

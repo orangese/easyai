@@ -11,7 +11,7 @@ flexibility and diversity.
 from easyai.core import *
 
 # CORE LAYERS
-class Input(Abstract_Layer):
+class Input(AbstractLayer):
   """
   MLP input layer with no activation, bias, or weights of its own.  No keras mask.
   """
@@ -30,7 +30,7 @@ class Input(Abstract_Layer):
       self.output_shape = (input_shape, 1)
     self.k_model = None # just to be explicit
 
-class Dense(Abstract_Layer):
+class Dense(AbstractLayer):
   """
   MLP layer (aka a dense layer).  Has a keras mask.
   """
@@ -57,7 +57,7 @@ class Dense(Abstract_Layer):
       self.k_model = keras.layers.Dense(units = self.num_neurons, activation = self.actv)
 
 # CONV NET LAYERS
-class Conv(Abstract_Layer):
+class Conv(AbstractLayer):
   """
   Convolutional layer.  Has a keras mask, padding = "valid".
   """
@@ -89,7 +89,7 @@ class Conv(Abstract_Layer):
     self.k_model = keras.layers.Conv2D(filters = self.num_filters, strides = (self.strides, self.strides),
                                    kernel_size = self.filter_size, activation = self.actv)
 
-class Pooling(Abstract_Layer):
+class Pooling(AbstractLayer):
   """
   Pooling layer.  Has a keras mask, stride = 1, pooling type = "max pooling".
   """

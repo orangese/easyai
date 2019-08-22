@@ -13,7 +13,7 @@ from easyai.support.datasets.datasets import *
 from easyai.support.models import *
 
 # CLASSES
-class MNIST(Static_Interface):
+class MNIST(StaticInterface):
   """
   Contains examples using MNIST and Fashion-MNIST datasets.
   """
@@ -57,7 +57,7 @@ class MNIST(Static_Interface):
 
     return conv_nn
 
-class Lending_Club(Static_Interface):
+class Lending_Club(StaticInterface):
   """
   Contains examples using LendingClub credit rating dataset.
   """
@@ -81,20 +81,20 @@ class Lending_Club(Static_Interface):
 
     return mlp
 
-class Art(Static_Interface):
+class Art(StaticInterface):
   """
   Art generated with AI.
   """
 
   @staticmethod
-  def slow_nst(content = None, style = None, save_path = None):
+  def SlowNST(content = None, style = None, save_path = None):
     """
     (Slow) neural style transfer with art and photographs.
 
     :param content: name of content image from dataset. Default is a random image from built-in datasets.
     :param style: name of style image from dataset. Default is a random image from built-in datasets.
     :param save_path: path to which to save final result. Default is None.
-    :return: trained Slow_NST object.
+    :return: trained SlowNST object.
     """
     images = Extras.load_nst_imgs()
     print("Loaded NST images")
@@ -104,11 +104,11 @@ class Art(Static_Interface):
 
     print("Using content image \"{0}\" and style image \"{1}\"".format(content_name, style_name))
 
-    model = Slow_NST("vgg19")
+    model = SlowNST("vgg19")
 
     final_img = model.train(content_img, style_img, epochs = 25, init_noise = 0.6)
 
-    Slow_NST.display_img(final_img, "Final result", model.generated.shape[1:])
+    SlowNST.display_img(final_img, "Final result", model.generated.shape[1:])
 
     if save_path is not None:
       full_save_path = save_path + "/{0}_{1}.jpg".format(content_name, style_name)
@@ -116,7 +116,7 @@ class Art(Static_Interface):
       print("Saved image at \"{0}\"".format(full_save_path))
 
   @staticmethod
-  def fast_nst(content = None, style_net = None, save_path = None):
+  def FastNST(content = None, style_net = None, save_path = None):
     """
     (Fast) neural style transfer with arts and photographs, using pretrained models.
 
@@ -131,15 +131,15 @@ class Art(Static_Interface):
     content_name, content_img = Helpers.get_img(content, "content", images)
 
     if style_net is None:
-      model = Fast_NST_Models.random_net()
+      model = FastNSTModels.random_net()
     else:
-      model = Fast_NST_Models.load_net(style_net)
+      model = FastNSTModels.load_net(style_net)
 
     print("Using content image \"{0}\" and style net trained on  \"{1}\"".format(content_name, style_net))
 
     final_img = model.run_nst(content)
 
-    Slow_NST.display_img(final_img, "Final result")
+    SlowNST.display_img(final_img, "Final result")
 
     if save_path is not None:
       full_save_path = save_path + "/{0}_{1}.jpg".format(content_img, style_net)
@@ -152,7 +152,7 @@ from PIL import Image, ImageDraw
 import PIL
 import numpy as np
 
-class Unsupported(Static_Interface):
+class Unsupported(StaticInterface):
 
   @staticmethod
   def draw(fileName):
@@ -208,8 +208,8 @@ if __name__ == "__main__":
   from easyai.support.load import load_imgs
   from easyai.support.datasets.datasets import NST
 
-  nst = Slow_NST()
-  Slow_NST.HYPERPARAMS["coef_s"] = 1e5
+  nst = SlowNST()
+  SlowNST.HYPERPARAMS["coef_s"] = 1e5
   for link in list(NST.style.keys()):
     final_img = nst.train(load_imgs("https://static.playoverwatch.com/media/thumbnail/genji-concept.jpg"),
                           load_imgs(NST.style[link]), epochs = 25, verbose = False)

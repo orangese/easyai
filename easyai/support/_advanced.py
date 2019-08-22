@@ -56,34 +56,35 @@ class Evaluator(object):
     self.grads = None
 
 # CONV LAYERS
-class Noisy_Normalize(keras.layers.Layer):
+class NoisyNormalize(keras.layers.Layer):
   """Noisy image-normalizing input layer. Used for Fast NST."""
 
   def __init__(self, noise, **kwargs):
     self.noise = noise
-    super(Noisy_Normalize, self).__init__(**kwargs)
+    super(NoisyNormalize, self).__init__(**kwargs)
 
   def build(self, input_shape):
     pass
 
   def call(self, x, mask = None):
     noise_image = np.random.uniform(0, 1.0, size = K.int_shape(x)[1:])
-    return tf.cast(noise_image * self.noise + ((x / 255.) * (1.0 - self.noise)), tf.float32)
+    # return tf.cast(noise_image * self.noise + ((x / 255.) * (1.0 - self.noise)), tf.float32)
+    return x / 255.
 
   def compute_output_shape(self, input_shape):
     return input_shape
 
-class VGG_Normalize(keras.layers.Layer):
+class VGGNormalize(keras.layers.Layer):
   """VGG normalization layer."""
 
   def __init__(self, **kwargs):
-    super(VGG_Normalize, self).__init__(**kwargs)
+    super(VGGNormalize, self).__init__(**kwargs)
 
   def build(self, input_shape):
     pass
 
   def call(self, x, mask = None):
-    return keras.applications.vgg19.preprocess_input(x)
+    return keras.applications.vgg19.preprocess_input(x) # preprocessing is the same for VGG16 and VGG19
 
   def compute_output_shape(self, input_shape):
     return input_shape
@@ -117,13 +118,13 @@ class Instance_Norm(keras.layers.Layer):
     mean, variance = tf.nn.moments(x, axes = [1, 2], keep_dims = True)
     return tf.div(tf.subtract(x, mean), tf.sqrt(tf.add(variance, self.epsilon)))
 
-class Reflection_Padding2D(keras.layers.Layer):
+class ReflectionPadding2D(keras.layers.Layer):
   """Reflection padding."""
 
   def __init__(self, padding = (1, 1), **kwargs):
     self.padding = tuple(padding)
     self.input_spec = [keras.layers.InputSpec(ndim = 4)]
-    super(Reflection_Padding2D, self).__init__(**kwargs)
+    super(ReflectionPadding2D, self).__init__(**kwargs)
 
   def compute_output_shape(self, input_shape):
     return input_shape[0], input_shape[1] + 2 * self.padding[0], input_shape[2] + 2 * self.padding[1], input_shape[3]
@@ -133,7 +134,7 @@ class Reflection_Padding2D(keras.layers.Layer):
     return tf.pad(x, paddings = [[0, 0], [height_pad, height_pad], [width_pad, width_pad], [0, 0]], mode = "REFLECT")
 
 # NST TRANSFORM NET
-class NST_Transform(Network_Interface):
+class NSTTransform(NetworkInterface):
   """Image transform NST layers. Implementation of network described in
   https://cs.stanford.edu/people/jcjohns/papers/eccv16/JohnsonECCV16.pdf. See 
   https://cs.stanford.edu/people/jcjohns/papers/eccv16/JohnsonECCV16Supplementary.pdf for exact network structure."""
@@ -173,46 +174,46 @@ class NST_Transform(Network_Interface):
   def conv_res_block(filters, filter_size, norm = "batch"):
     def _conv_res_block(x):
       identity = keras.layers.convolutional.Cropping2D(cropping = ((2, 2), (2, 2)))(x) # 2 is the number of conv layers
-      a = NST_Transform.conv_norm_block(filters, filter_size, norm = norm, include_relu = True, padding = "valid")(x)
-      a = NST_Transform.conv_norm_block(filters, filter_size, norm = norm, include_relu = False,padding = "valid")(a)
+      a = NSTTransform.conv_norm_block(filters, filter_size, norm = norm, include_relu = True, padding = "valid")(x)
+      a = NSTTransform.conv_norm_block(filters, filter_size, norm = norm, include_relu = False,padding = "valid")(a)
       return keras.layers.merge.add([identity, a])
     return _conv_res_block
 
   def net_init(self):
     x = keras.layers.Input(shape = (self.num_rows, self.num_cols, 3), name = "img_transform_input")
-    a = Noisy_Normalize(noise = self.noise)(x)
+    a = NoisyNormalize(noise = self.noise)(x)
 
-    a = Reflection_Padding2D((40, 40))(a)
-    a = NST_Transform.conv_norm_block(32, (9, 9), norm = self.norm)(a)
-    a = NST_Transform.conv_norm_block(64, (3, 3), strides = (2, 2), norm = self.norm)(a)
-    a = NST_Transform.conv_norm_block(128, (3, 3), strides = (2, 2), norm = self.norm)(a)
+    a = ReflectionPadding2D((40, 40))(a)
+    a = NSTTransform.conv_norm_block(32, (9, 9), norm = self.norm)(a)
+    a = NSTTransform.conv_norm_block(64, (3, 3), strides = (2, 2), norm = self.norm)(a)
+    a = NSTTransform.conv_norm_block(128, (3, 3), strides = (2, 2), norm = self.norm)(a)
 
     for i in range(5):
-      a = NST_Transform.conv_res_block(128, (3, 3), norm = self.norm)(a)
+      a = NSTTransform.conv_res_block(128, (3, 3), norm = self.norm)(a)
 
-    a = NST_Transform.conv_norm_block(64, (3, 3), norm = self.norm, strides = (2, 2), transpose = True)(a)
-    a = NST_Transform.conv_norm_block(32, (3, 3), norm = self.norm, strides = (2, 2), transpose = True)(a)
-    a = NST_Transform.conv_norm_block(3, (9, 9), norm = self.norm, strides = (1, 1), transpose = True)(a)
+    a = NSTTransform.conv_norm_block(64, (3, 3), norm = self.norm, strides = (2, 2), transpose = True)(a)
+    a = NSTTransform.conv_norm_block(32, (3, 3), norm = self.norm, strides = (2, 2), transpose = True)(a)
+    a = NSTTransform.conv_norm_block(3, (9, 9), norm = self.norm, strides = (1, 1), transpose = True)(a)
 
     y = Denormalize(name = "img_transform_output")(a)
 
     self.k_model = keras.Model(inputs = x, outputs = y)
 
-    tv_regularizer = TV_Regularizer(self.coef_v)(self.k_model.layers[-1])
+    tv_regularizer = TVRegularizer(self.coef_v)(self.k_model.layers[-1])
     self.k_model.layers[-1].add_loss(tv_regularizer)
     # adding total variation loss
 
 # REGULARIZERS FOR NST
-class Style_Regularizer(keras.regularizers.Regularizer):
+class StyleRegularizer(keras.regularizers.Regularizer):
 
   def __init__(self, style_img, weight):
-    self.style_gram = Style_Regularizer.gram_matrix(style_img)
+    self.style_gram = StyleRegularizer.gram_matrix(style_img)
     self.weight = weight
     self.uses_learning_phase = False
-    super(Style_Regularizer, self).__init__()
+    super(StyleRegularizer, self).__init__()
 
   def __call__(self, x):
-    return self.weight * K.sum(K.square(self.style_gram - Style_Regularizer.gram_matrix(x.output[0])))
+    return self.weight * K.sum(K.square(self.style_gram - StyleRegularizer.gram_matrix(x.output[0])))
     # x.output[0] is generated by network, x.output[1] is the true label
 
   @staticmethod
@@ -220,21 +221,22 @@ class Style_Regularizer(keras.regularizers.Regularizer):
     a = K.batch_flatten(K.permute_dimensions(a, (2, 0, 1)))
     return K.dot(a, K.transpose(a))
 
-class Content_Regularizer(keras.regularizers.Regularizer):
+class ContentRegularizer(keras.regularizers.Regularizer):
 
   def __init__(self, weight):
     self.weight = weight
     self.uses_learning_phase = False
-    super(Content_Regularizer, self).__init__()
+    super(ContentRegularizer, self).__init__()
 
   def __call__(self, x):
     return self.weight * K.sum(K.square(x.output[0] - x.output[1]))
 
-class TV_Regularizer(keras.regularizers.Regularizer):
+class TVRegularizer(keras.regularizers.Regularizer):
 
   def __init__(self, weight):
     self.weight = weight
     self.uses_learning_phase = False
+    super(TVRegularizer, self).__init__()
 
   def __call__(self, x):
     shape = K.shape(x.output)
@@ -246,7 +248,7 @@ class TV_Regularizer(keras.regularizers.Regularizer):
     return K.sum(K.pow(a + b, 1.25))
 
 # VGG NETS
-class NST_Loss(Static_Interface):
+class NSTLoss(StaticInterface):
   """Pre-trained NST loss networks. Copied from keras source code and changed to fit this API's needs."""
 
   WEIGHTS_PATH_NO_TOP = {
@@ -295,7 +297,7 @@ class NST_Loss(Static_Interface):
 
     # load weights
     weights_path = keras.utils.data_utils.get_file("vgg16_weights_tf_dim_ordering_tf_kernels_notop.h5",
-                                                   NST_Loss.WEIGHTS_PATH_NO_TOP["vgg16"], cache_subdir = "models")
+                                                   NSTLoss.WEIGHTS_PATH_NO_TOP["vgg16"], cache_subdir = "models")
     model.load_weights(weights_path, by_name = True)
 
     return model
@@ -342,13 +344,13 @@ class NST_Loss(Static_Interface):
 
     # load weights
     weights_path = keras.utils.data_utils.get_file("vgg19_weights_tf_dim_ordering_tf_kernels_notop.h5",
-                                                   NST_Loss.WEIGHTS_PATH_NO_TOP["vgg19"], cache_subdir = "models")
+                                                   NSTLoss.WEIGHTS_PATH_NO_TOP["vgg19"], cache_subdir = "models")
     model.load_weights(weights_path, by_name = True)
 
     return model
 
 # CALLBACKS
-class Loss_History(keras.callbacks.Callback):
+class LossHistory(keras.callbacks.Callback):
   """History of loss for a "model.fit" call. Copied from keras example code for callbacks."""
 
   def on_train_begin(self, logs = {}):
