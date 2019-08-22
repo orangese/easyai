@@ -18,7 +18,7 @@ from scipy.optimize import fmin_l_bfgs_b
 from easyai.support._advanced import *
 
 # NEURAL NETWORK APPLICATION
-class Slow_NST(Network_Interface):
+class SlowNST(NetworkInterface):
   """
   Class implementation of neural style transfer learning. As of August 2019, only VGG19 and VGG16 is supported.
   Borrowed heavily from the keras implementation of neural style transfer.
@@ -40,7 +40,7 @@ class Slow_NST(Network_Interface):
   # INITS
   def __init__(self, net: str = None, num_rows: int = 400):
     """
-    Initializes Slow_NST object.
+    Initializes SlowNST object.
 
     :param net: pre-trained model. Should be a string represeting the name of model, e.g., "vgg19".
     :param num_rows: number of rows that the image has. Is a pre-defined but editable hyperparameter.
@@ -64,7 +64,7 @@ class Slow_NST(Network_Interface):
 
     self.image_init(content, style)
 
-    self.img_tensor = K.concatenate([getattr(self, img) for img in Slow_NST.get_hps("img_order")], axis = 0)
+    self.img_tensor = K.concatenate([getattr(self, img) for img in SlowNST.get_hps("img_order")], axis = 0)
 
     self.model_init()
 
@@ -79,7 +79,7 @@ class Slow_NST(Network_Interface):
     Initializes model based on net type provided in __init__.
     """
     try:
-      net_name = getattr(self.k_net_module, Slow_NST.MODELS[self.net])
+      net_name = getattr(self.k_net_module, SlowNST.MODELS[self.net])
     except KeyError:
       raise ModuleNotFoundError("{0} is not currently supported for slow neural style transfer".format(self.net))
 
@@ -110,7 +110,7 @@ class Slow_NST(Network_Interface):
     :param content_layer: layer at which content loss will be evaluated. Is a pre-defined hyperparameter.
     :param style_layers: layer(s) at which style loss will be evaluated. Is a pre-defined hyperparameter.
     """
-    coef_c, coef_s, coef_v = Slow_NST.get_hps("coef_c", "coef_s", "coef_v")
+    coef_c, coef_s, coef_v = SlowNST.get_hps("coef_c", "coef_s", "coef_v")
 
     loss = self.loss_tensor(content_layer, style_layers, coef_c, coef_s, coef_v)
     grads = K.gradients(loss, self.generated)
@@ -123,7 +123,7 @@ class Slow_NST(Network_Interface):
   def train(self, content: Image.Image, style: Image.Image, epochs: int = 1, init_noise: float = 0.6,
             verbose: bool = True, save_path: str = None) -> np.ndarray:
     """
-    Trains a Slow_NST object. More precisely, the pixel values of the created image are optimized using
+    Trains a SlowNST object. More precisely, the pixel values of the created image are optimized using
     scipy's implementation of L-BFGS-B.
 
     :param content: content image as PIL Image.
@@ -138,16 +138,16 @@ class Slow_NST(Network_Interface):
 
     self.train_init(content, style, verbose = verbose, noise = init_noise)
 
-    content_layer, style_layers = Slow_NST.get_hps("content_layer", "style_layers")
+    content_layer, style_layers = SlowNST.get_hps("content_layer", "style_layers")
 
     self.tensor_init(content_layer, style_layers)
 
     print("Training with L-BFGS-B (another gradient-based optimization algorithm) in a {0}-D space. During "
-           "each epoch, the pixels of the generated image will be changed {1} times in an attempt to minimize cost."
+           "each epoch, the pixels of the generated image will be changed {1} times in an attempt to minimize loss."
            .format(np.prod(content.size), num_iters))
 
     if verbose:
-      Slow_NST.display_original(content, style)
+      SlowNST.display_original(content, style)
 
     for epoch in range(epochs):
       if verbose:
@@ -162,13 +162,13 @@ class Slow_NST(Network_Interface):
 
       if verbose:
         print(" - {0}s - loss: {1} [broken]".format(round(time() - start), loss)) # loss is broken-- it's way too high
-        Slow_NST.display_img(self.img, "Epoch {0}/{1}".format(epoch + 1, epochs), self.generated.shape[1:])
+        SlowNST.display_img(self.img, "Epoch {0}/{1}".format(epoch + 1, epochs), self.generated.shape[1:])
 
       if save_path is not None:
         full_save_path = save_path + "/epoch{0}.png".format(epoch + 1)
-        keras.preprocessing.image.save_img(full_save_path, Slow_NST.deprocess(self.img, self.generated.shape[1:]))
+        keras.preprocessing.image.save_img(full_save_path, SlowNST.deprocess(self.img, self.generated.shape[1:]))
 
-    return Slow_NST.deprocess(self.img, self.generated.shape[1:])
+    return SlowNST.deprocess(self.img, self.generated.shape[1:])
 
   # LOSS CALCULATIONS
   def loss_and_grads(self, img: np.ndarray) -> tuple:
@@ -205,8 +205,8 @@ class Slow_NST(Network_Interface):
       """Computes the content loss at layer "layer"."""
       layer_features = outputs[layer]
 
-      content_actvs = layer_features[Slow_NST.get_hps("img_order").index("content"), :, :, :]
-      generated_actvs = layer_features[Slow_NST.get_hps("img_order").index("generated"), :, :, :]
+      content_actvs = layer_features[SlowNST.get_hps("img_order").index("content"), :, :, :]
+      generated_actvs = layer_features[SlowNST.get_hps("img_order").index("generated"), :, :, :]
 
       return K.sum(K.square(generated_actvs - content_actvs)) # i.e., squared norm
 
@@ -239,8 +239,8 @@ class Slow_NST(Network_Interface):
     for layer in style_layers: # style loss
       layer_features = self.outputs[layer]
 
-      generated_actvs = layer_features[Slow_NST.get_hps("img_order").index("generated"), :, :, :]
-      style_actvs = layer_features[Slow_NST.get_hps("img_order").index("style"), :, :, :]
+      generated_actvs = layer_features[SlowNST.get_hps("img_order").index("generated"), :, :, :]
+      style_actvs = layer_features[SlowNST.get_hps("img_order").index("style"), :, :, :]
 
       loss += (coef_s / len(style_layers)) * layer_style_loss(generated_actvs, style_actvs) / \
               (4.0 * (K.int_shape(self.generated)[-1] ** 2) * ((self.num_rows * self.num_cols) ** 2))
@@ -281,7 +281,7 @@ class Slow_NST(Network_Interface):
     img = np.copy(img_)
     if target_shape is not None:
       img = img.reshape(target_shape)
-    means = Slow_NST.get_hps("means")
+    means = SlowNST.get_hps("means")
     for i in range(len(means)):
       img[:, :, i] += means[i] # adding mean pixel values
     img = img[:, :, ::-1] #BGR -> RBG
@@ -289,18 +289,17 @@ class Slow_NST(Network_Interface):
     return img
 
   @staticmethod
-  def display_img(img: np.ndarray, title: str, target_shape: tuple = None):
+  def display_img(img: np.ndarray, title: str, target_shape: tuple = None, deprocess: bool = True):
     """
     Displays image.
 
     :param img: image to be displayed.
     :param title: title of maptlotlib plot.
     :param target_shape: target shape.
+    :param deprocess: whether or not to deprocess the image before displaying it.
     """
-    try:
-      img = Slow_NST.deprocess(img, target_shape = target_shape)
-    except np.core._exceptions.UFuncTypeError:
-      pass
+    if deprocess:
+      img = SlowNST.deprocess(img, target_shape = target_shape)
 
     fig = plt.gcf()
 
@@ -343,10 +342,10 @@ class Slow_NST(Network_Interface):
     :param hyperparams: any number of hyperparameters to fetch.
     :return: feched hyperparameters.
     """
-    fetched = tuple(Slow_NST.HYPERPARAMS[hp.upper()] for hp in hyperparams)
+    fetched = tuple(SlowNST.HYPERPARAMS[hp.upper()] for hp in hyperparams)
     return fetched[0] if len(fetched) == 1 else fetched
 
-class Fast_NST(object):
+class FastNST(object):
   """
   Fast neural style transfer, uses implementation of slow neural style transfer.
 
@@ -358,7 +357,7 @@ class Fast_NST(object):
   """
 
   # INITS
-  def __init__(self, img_transform_net: Network_Interface = NST_Transform(), loss_net: str = "vgg16"):
+  def __init__(self, img_transform_net: NetworkInterface = NSTTransform(), loss_net: str = "vgg16"):
     """
     Initializes fast NST object. This network has two parts: a trainable network (img_transform_net) and a fixed
     network (loss_net).
@@ -380,13 +379,18 @@ class Fast_NST(object):
     :param norm: type of normalization to apply. Either "batch" for batch norm or "instance" for instance norm.
     :param verbose: if true, prints additional information.
     """
+    # IMAGE INIT
     self.num_rows, self.num_cols = target_size
     self.style = style.resize(target_size)
 
-    self.img_transform_net.train_init(target_size, coef_v = Slow_NST.get_hps("coef_v"), noise = noise, norm = norm)
+    # NET INIT
+    self.img_transform_net.train_init(target_size, coef_v = SlowNST.get_hps("coef_v"), noise = noise, norm = norm)
     self.loss_net_init()
 
-    self.k_model.compile(optimizer = keras.optimizers.Adam(), loss = Fast_NST.dummy_loss)
+    self.k_model.compile(optimizer = keras.optimizers.Adam(), loss = FastNST.dummy_loss)
+
+    # CALLBACKS INIT
+    self.losses = []
 
     if verbose:
       print("Loaded NST loss net")
@@ -396,24 +400,24 @@ class Fast_NST(object):
     def add_regularizers(model, style_img, target_size):
 
       def add_style_loss(style_img, layers, outputs, target_size):
-        style_layers = Slow_NST.get_hps("style_layers")
+        style_layers = SlowNST.get_hps("style_layers")
 
         # preprocessing
         style_img = style_img.resize(reversed(target_size))
-        style_img = np.expand_dims(keras.preprocessing.image.img_to_array(style_img), axis=0)
+        style_img = np.expand_dims(keras.preprocessing.image.img_to_array(style_img), axis = 0)
 
         style_func = K.function([model.layers[-19].input], [outputs[style_layer] for style_layer in style_layers])
         style_features = style_func([style_img])
 
-        weight = Slow_NST.get_hps("coef_s")
+        weight = SlowNST.get_hps("coef_s")
         for layer_num, layer_name in enumerate(style_layers): # adding style loss
           layer = layers[layer_name]
-          style_regularizer = Style_Regularizer(K.variable(style_features[layer_num][0]), weight)(layer)
+          style_regularizer = StyleRegularizer(K.variable(style_features[layer_num][0]), weight)(layer)
           layer.add_loss(style_regularizer)
 
       def add_content_loss(layers):
-        content_layer = layers[Slow_NST.get_hps("content_layer")]
-        content_regularizer = Content_Regularizer(Slow_NST.get_hps("coef_C"))(content_layer)
+        content_layer = layers[SlowNST.get_hps("content_layer")]
+        content_regularizer = ContentRegularizer(SlowNST.get_hps("coef_C"))(content_layer)
         content_layer.add_loss(content_regularizer)
 
       layers = dict([(layer.name, layer) for layer in model.layers])
@@ -426,10 +430,10 @@ class Fast_NST(object):
 
     # no concatenation of style (that occurs in the regularizers)
     img_tensor = keras.layers.merge.concatenate([generated, content], axis = 0)
-    img_tensor = VGG_Normalize()(img_tensor)
+    img_tensor = VGGNormalize()(img_tensor)
 
     try:
-      loss_net = getattr(NST_Loss, Slow_NST.MODELS[self.loss_net].upper())
+      loss_net = getattr(NSTLoss, SlowNST.MODELS[self.loss_net].upper())
     except AttributeError:
       raise ModuleNotFoundError("{0} is not currently supported for fast neural style transfer".format(self.loss_net))
 
@@ -462,13 +466,14 @@ class Fast_NST(object):
     path_to_coco = os.getenv("HOME") + "/coco"
 
     self.train_init(style, target_size = target_size, noise = init_noise, norm = "instance", verbose = verbose)
+    # TODO: fix network so that loss works-- right now it goes to 2e26 after 1 batch and nan after 2 batches
 
     datagen = keras.preprocessing.image.ImageDataGenerator()
     generator = datagen.flow_from_directory(path_to_coco, target_size = target_size, batch_size = batch_size,
                                             classes = ["unlabeled2017"], class_mode = None)
 
-    print("Training with L-BFGS-B (another gradient-based optimization algorithm) in a {0}-D space. During each epoch, "
-          "the pixels of the generated image will be changed approximately {1} times in an attempt to minimize cost."
+    print("Training with Adam (another gradient-based optimization algorithm) in a {0}-D space. During each epoch, "
+          "network parameters will be changed approximately {1} times in an attempt to minimize loss."
           .format(self.img_transform_net.k_model.count_params(), int(generator.samples / batch_size)))
     dummy_y = np.zeros((batch_size, *target_size, 3))
 
@@ -482,12 +487,17 @@ class Fast_NST(object):
 
       batch_nums = [1, 1] # batch_nums[0] is the current batch, and batch_nums[1] is the current batch of batches
       batch_start = time()
-      img_transform_result = None
+      content_example = None # example to be used to evaluate
 
       eta = None # estimated time until to the next epoch
 
       for batch in generator:
-        self.k_model.train_on_batch(batch, dummy_y)
+        content_example = np.squeeze(batch[0]) if content_example is None else content_example
+
+        loss_history = LossHistory()
+        self.k_model.fit(batch, dummy_y, batch_size = batch_size, verbose = 0, callbacks = [loss_history])
+        # using fit instead train_on_batch because fit allows for use of callbacks
+        self.losses.extend(loss_history.losses)
 
         if verbose and batch_nums[0] % 1 == 0: # if verbose, display information every 20 batches
           elapsed = round(time() - batch_start)
@@ -498,13 +508,13 @@ class Fast_NST(object):
             eta = round((0.6 * eta + 0.4 * (elapsed * num_batches - elapsed * batch_nums[0])) - elapsed)
             # exponentially weighted average of previous ETAs and current elapsed time
 
-          img_transform_result = self.run_nst(batch[0]) # doesn't matter which batch example is used for evaluation
-          print(" - {0}s - batches {1}-{2} completed - time until next epoch - {3}s - batches left - {4}".format(
-            elapsed, *reversed(batch_nums), eta, num_batches - batch_nums[0]))
+          print(" - {0}s - batches {1}-{2} of {3} completed - time until next epoch - {4}s - loss - {5}".format(
+            elapsed, *reversed(batch_nums), num_batches, eta, self.losses[-1]))
+          SlowNST.display_img(self.run_nst(content_example), "Epoch {0}: batch {1}".format(epoch, batch_nums[0]),
+                               deprocess = False)
 
           batch_nums[1] = batch_nums[0] + 1
           batch_start = time()
-          # TODO: write cost evaluation function for each epoch or batch
 
         batch_nums[0] += 1
 
@@ -512,11 +522,13 @@ class Fast_NST(object):
           break
 
       if verbose:
-        print("Epoch {0} completed in {1}s".format(epoch, round(time() - start)))
+        print("Epoch {0} completed in {1}s with average loss of {2}".format(epoch, round(time() - start),
+                                                                            np.average(np.array(self.losses))))
+        self.losses = []
 
       if save_path is not None:
         full_save_path = save_path + "/epoch{0}.png".format(epoch + 1)
-        keras.preprocessing.image.save_img(full_save_path, Slow_NST.deprocess(img_transform_result))
+        keras.preprocessing.image.save_img(full_save_path, SlowNST.deprocess(self.run_nst(content_example)))
 
   # TESTING
   def run_nst(self, content: Union[Image.Image, np.ndarray]) -> np.ndarray:
@@ -529,9 +541,9 @@ class Fast_NST(object):
     if isinstance(content, Image.Image):
       content = np.array(content)
     try:
-      return Slow_NST.deprocess(self.img_transform_net.k_model.predict(content))
+      return np.squeeze(SlowNST.deprocess(self.img_transform_net.k_model.predict(content)))
     except ValueError:
-      return Slow_NST.deprocess(self.img_transform_net.k_model.predict(np.expand_dims(content, axis = 0)))
+      return np.squeeze(SlowNST.deprocess(self.img_transform_net.k_model.predict(np.expand_dims(content, axis = 0))))
 
   # CUSTOM LOSS
   @staticmethod
@@ -549,5 +561,5 @@ if __name__ == "__main__":
   from easyai.support.load import load_imgs
   style = load_imgs("/Users/ryan/coco/unlabeled2017/000000436250.jpg")
 
-  test = Fast_NST()
+  test = FastNST()
   test.train(style, batch_size = 2)
