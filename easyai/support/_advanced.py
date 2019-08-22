@@ -346,4 +346,13 @@ class NST_Loss(Static_Interface):
     model.load_weights(weights_path, by_name = True)
 
     return model
-  
+
+# CALLBACKS
+class Loss_History(keras.callbacks.Callback):
+  """History of loss for a "model.fit" call. Copied from keras example code for callbacks."""
+
+  def on_train_begin(self, logs = {}):
+    self.losses = []
+
+  def on_batch_end(self, batch, logs = {}):
+    self.losses.append(logs.get("loss"))
