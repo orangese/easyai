@@ -169,7 +169,7 @@ class Extras(Static_Interface):
     sh_path = os.path.abspath(easyai.__file__).replace("/__init__.py", "/support/datasets/download_coco.sh")
     subprocess.run([sh_path])
 
-  # BROKEN
+  # FIXME: loading of lending club is not working
   @staticmethod
   def load_lending_club() -> Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray]]:
     """

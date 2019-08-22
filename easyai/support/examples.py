@@ -7,8 +7,6 @@ Program that implements easyai.support.datasets.datasets and easyai.core in exam
 
 """
 
-import random
-
 from easyai.layers import *
 from easyai.applications import *
 from easyai.support.datasets.datasets import *
