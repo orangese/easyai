@@ -15,7 +15,10 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from scipy.optimize import fmin_l_bfgs_b
 
-from easyai.support._advanced import *
+from easyai._advanced import HidePrints
+from easyai._advanced._layers import *
+from easyai._advanced._nets import *
+from easyai._advanced._losses import *
 
 # NEURAL NETWORK APPLICATION
 class SlowNST(NetworkInterface):
@@ -258,7 +261,6 @@ class SlowNST(NetworkInterface):
     :param target_size: target size of the image. If is none, defaults to object attributes.
     :return: processed image.
     """
-    # because of pass-by-assignment properties, a copy must be made to prevent tampering with original img
     if target_size is None:
       if self.num_cols is None:
         width, height = img.size
@@ -345,7 +347,7 @@ class SlowNST(NetworkInterface):
     fetched = tuple(SlowNST.HYPERPARAMS[hp.upper()] for hp in hyperparams)
     return fetched[0] if len(fetched) == 1 else fetched
 
-class FastNST(object):
+class FastNST(NetworkInterface):
   """
   Fast neural style transfer, uses implementation of slow neural style transfer.
 
@@ -423,7 +425,7 @@ class FastNST(object):
       layers = dict([(layer.name, layer) for layer in model.layers])
       outputs = dict([(layer.name, layer.output) for layer in model.layers])
 
-      add_style_loss(style_img, layers, outputs, target_size)
+      # add_style_loss(style_img, layers, outputs, target_size)
       add_content_loss(layers)
 
     generated, content = self.img_transform_net.k_model.output, self.img_transform_net.k_model.input
@@ -439,10 +441,12 @@ class FastNST(object):
 
     self.k_model = loss_net(input_tensor = img_tensor) # automatically excludes top
 
-    for layer in self.k_model.layers[-19:]:
+    for layer in self.k_model.layers[-19:]: # only freezing VGG layers-- image transform net is trainable
       layer.trainable = False
 
     add_regularizers(self.k_model, self.style, (self.num_rows, self.num_cols))
+
+    self.k_model.summary()
     # adding loss and regularizers
 
   # TRAINING
@@ -466,15 +470,16 @@ class FastNST(object):
     path_to_coco = os.getenv("HOME") + "/coco"
 
     self.train_init(style, target_size = target_size, noise = init_noise, norm = "instance", verbose = verbose)
-    # TODO: fix network so that loss works-- right now it goes to 2e26 after 1 batch and nan after 2 batches
 
-    datagen = keras.preprocessing.image.ImageDataGenerator()
-    generator = datagen.flow_from_directory(path_to_coco, target_size = target_size, batch_size = batch_size,
-                                            classes = ["unlabeled2017"], class_mode = None)
+    with HidePrints(): # hiding print messages called when using ImageDataGenerator
+      datagen = keras.preprocessing.image.ImageDataGenerator()
+      generator = datagen.flow_from_directory(path_to_coco, target_size = target_size, batch_size = batch_size,
+                                              classes = ["unlabeled2017"], class_mode = None)
 
     print("Training with Adam (another gradient-based optimization algorithm) in a {0}-D space. During each epoch, "
           "network parameters will be changed approximately {1} times in an attempt to minimize loss."
           .format(self.img_transform_net.k_model.count_params(), int(generator.samples / batch_size)))
+
     dummy_y = np.zeros((batch_size, *target_size, 3))
 
     num_batches = round(generator.samples / batch_size)
@@ -497,6 +502,11 @@ class FastNST(object):
         loss_history = LossHistory()
         self.k_model.fit(batch, dummy_y, batch_size = batch_size, verbose = 0, callbacks = [loss_history])
         # using fit instead train_on_batch because fit allows for use of callbacks
+
+        # FIXME: fix network so that loss works-- right now it goes to 2e26 after 1 batch and nan after 2 batches
+        #  (note: weights go to nan after 1 batch; as a consequence, loss goes to nan-- probably because of regularizers)
+        #  (problem: style loss (most probable)
+
         self.losses.extend(loss_history.losses)
 
         if verbose and batch_nums[0] % 1 == 0: # if verbose, display information every 20 batches
