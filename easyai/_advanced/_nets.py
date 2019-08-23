@@ -1,137 +1,14 @@
 
 """
 
-"easyai._advanced.py" (protected)
+"easyai._advanced._nets"
 
-Custom keras classes. Does not use easyai API-- not recommended for use by easyai users.
+Advanced keras nets. Not for use by easyai users-- does not use easyai API.
 
 """
 
-import tensorflow as tf
-
-from easyai.core import *
-
-# SUPPORT FOR CUSTOM LOSS
-class Evaluator(object):
-  """
-  Class used for custom loss and gradient functions. Should be used in conjunction with scipy.optimize.[whatever].
-  """
-
-  def __init__(self, obj: object):
-    """
-    Initializes Evaluator object.
-
-    :param obj: obj that has some function used to evaluate loss and gradients, called "loss_and_grads"
-    :raises AssertionError: obj must have loss_and_grads function
-    """
-    self.obj = obj
-    assert hasattr(obj, "loss_and_grads"), "obj must have loss_and_grads function"
-    self.reset()
-
-  def f_loss(self, img: np.ndarray):
-    """
-    Calculates loss.
-
-    :param img: image (array) used to calculate loss.
-    :return: loss.
-    """
-    loss, grads = self.obj.loss_and_grads(img)
-    self.loss = loss
-    self.grads = grads
-    return self.loss
-
-  def f_grads(self, img):
-    """
-    Calculates gradients.
-
-    :param img: image (array) used to calculate gradients.
-    :return: gradients.
-    """
-    grads = np.copy(self.grads)
-    self.reset()
-    return grads
-
-  def reset(self):
-    self.loss = None
-    self.grads = None
-
-# CONV LAYERS
-class NoisyNormalize(keras.layers.Layer):
-  """Noisy image-normalizing input layer. Used for Fast NST."""
-
-  def __init__(self, noise, **kwargs):
-    self.noise = noise
-    super(NoisyNormalize, self).__init__(**kwargs)
-
-  def build(self, input_shape):
-    pass
-
-  def call(self, x, mask = None):
-    noise_image = np.random.uniform(0, 1.0, size = K.int_shape(x)[1:])
-    # return tf.cast(noise_image * self.noise + ((x / 255.) * (1.0 - self.noise)), tf.float32)
-    return x / 255.
-
-  def compute_output_shape(self, input_shape):
-    return input_shape
-
-class VGGNormalize(keras.layers.Layer):
-  """VGG normalization layer."""
-
-  def __init__(self, **kwargs):
-    super(VGGNormalize, self).__init__(**kwargs)
-
-  def build(self, input_shape):
-    pass
-
-  def call(self, x, mask = None):
-    return keras.applications.vgg19.preprocess_input(x) # preprocessing is the same for VGG16 and VGG19
-
-  def compute_output_shape(self, input_shape):
-    return input_shape
-
-class Denormalize(keras.layers.Layer):
-  """Reverses non-stochastic effect of Normalize input layer (noise is preserved)."""
-
-  def __init__(self, **kwargs):
-    super(Denormalize, self).__init__(**kwargs)
-
-  def build(self, input_shape):
-    pass
-
-  def call(self, x, mask = None):
-    return (x + 1) * 127.5
-
-  def compute_output_shape(self, input_shape):
-    return input_shape
-
-class Instance_Norm(keras.layers.Layer):
-  """Instance normalization."""
-
-  def __init__(self, **kwargs):
-    super(Instance_Norm, self).__init__(**kwargs)
-    self.epsilon = 1e-4
-
-  def compute_output_shape(self, input_shape):
-    return input_shape
-
-  def call(self, x, mask = None):
-    mean, variance = tf.nn.moments(x, axes = [1, 2], keep_dims = True)
-    return tf.div(tf.subtract(x, mean), tf.sqrt(tf.add(variance, self.epsilon)))
-
-class ReflectionPadding2D(keras.layers.Layer):
-  """Reflection padding."""
-
-  def __init__(self, padding = (1, 1), **kwargs):
-    self.padding = tuple(padding)
-    self.input_spec = [keras.layers.InputSpec(ndim = 4)]
-    super(ReflectionPadding2D, self).__init__(**kwargs)
-
-  def compute_output_shape(self, input_shape):
-    return input_shape[0], input_shape[1] + 2 * self.padding[0], input_shape[2] + 2 * self.padding[1], input_shape[3]
-
-  def call(self, x, mask = None):
-    width_pad, height_pad = self.padding
-    return tf.pad(x, paddings = [[0, 0], [height_pad, height_pad], [width_pad, width_pad], [0, 0]], mode = "REFLECT")
+from easyai._advanced._layers import *
+from easyai._advanced._losses import *
 
 # NST TRANSFORM NET
 class NSTTransform(NetworkInterface):
@@ -164,7 +41,7 @@ class NSTTransform(NetworkInterface):
       if norm == "batch":
         a = keras.layers.BatchNormalization()(a)
       elif norm == "instance":
-        a = Instance_Norm()(a)
+        a = InstanceNorm()(a)
       if include_relu:
         a = keras.layers.Activation("relu")(a)
       return a
@@ -181,7 +58,7 @@ class NSTTransform(NetworkInterface):
 
   def net_init(self):
     x = keras.layers.Input(shape = (self.num_rows, self.num_cols, 3), name = "img_transform_input")
-    a = NoisyNormalize(noise = self.noise)(x)
+    a = Normalize(noise = self.noise)(x)
 
     a = ReflectionPadding2D((40, 40))(a)
     a = NSTTransform.conv_norm_block(32, (9, 9), norm = self.norm)(a)
@@ -202,50 +79,6 @@ class NSTTransform(NetworkInterface):
     tv_regularizer = TVRegularizer(self.coef_v)(self.k_model.layers[-1])
     self.k_model.layers[-1].add_loss(tv_regularizer)
     # adding total variation loss
-
-# REGULARIZERS FOR NST
-class StyleRegularizer(keras.regularizers.Regularizer):
-
-  def __init__(self, style_img, weight):
-    self.style_gram = StyleRegularizer.gram_matrix(style_img)
-    self.weight = weight
-    self.uses_learning_phase = False
-    super(StyleRegularizer, self).__init__()
-
-  def __call__(self, x):
-    return self.weight * K.sum(K.square(self.style_gram - StyleRegularizer.gram_matrix(x.output[0])))
-    # x.output[0] is generated by network, x.output[1] is the true label
-
-  @staticmethod
-  def gram_matrix(a):
-    a = K.batch_flatten(K.permute_dimensions(a, (2, 0, 1)))
-    return K.dot(a, K.transpose(a))
-
-class ContentRegularizer(keras.regularizers.Regularizer):
-
-  def __init__(self, weight):
-    self.weight = weight
-    self.uses_learning_phase = False
-    super(ContentRegularizer, self).__init__()
-
-  def __call__(self, x):
-    return self.weight * K.sum(K.square(x.output[0] - x.output[1]))
-
-class TVRegularizer(keras.regularizers.Regularizer):
-
-  def __init__(self, weight):
-    self.weight = weight
-    self.uses_learning_phase = False
-    super(TVRegularizer, self).__init__()
-
-  def __call__(self, x):
-    shape = K.shape(x.output)
-    num_rows, num_cols, channels = shape[0], shape[1], shape[2]
-    # tensors are not iterable unless eager execution is enabled
-    a = K.square(x.output[:, :num_rows - 1, :num_cols - 1, :] - x.output[:, 1:, :num_cols - 1, :])
-    b = K.square(x.output[:, :num_rows - 1, :num_cols - 1, :] - x.output[:, :num_rows - 1, 1:, :])
-
-    return K.sum(K.pow(a + b, 1.25))
 
 # VGG NETS
 class NSTLoss(StaticInterface):
@@ -348,13 +181,3 @@ class NSTLoss(StaticInterface):
     model.load_weights(weights_path, by_name = True)
 
     return model
-
-# CALLBACKS
-class LossHistory(keras.callbacks.Callback):
-  """History of loss for a "model.fit" call. Copied from keras example code for callbacks."""
-
-  def on_train_begin(self, logs = {}):
-    self.losses = []
-
-  def on_batch_end(self, batch, logs = {}):
-    self.losses.append(logs.get("loss"))
