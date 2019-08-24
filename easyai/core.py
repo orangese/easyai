@@ -73,6 +73,7 @@ class NetworkInterface(object):
 
     :raises NotImplementedError: class is an interface
     """
+    self.k_model = None # to be explicit, every NetworkInterface should have a k_model attribute
     raise NotImplementedError("class is an interface")
 
 # NEURAL NETWORK IMPLEMENTATION
