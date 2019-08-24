@@ -43,7 +43,7 @@ class VGGNormalize(keras.layers.Layer):
     return input_shape
 
 class Denormalize(keras.layers.Layer):
-  """Reverses Normalize layer."""
+  """Converts tanh range to RGB range."""
 
   def __init__(self, **kwargs):
     super(Denormalize, self).__init__(**kwargs)
@@ -52,7 +52,7 @@ class Denormalize(keras.layers.Layer):
     pass
 
   def call(self, x, mask = None):
-    return x * 255. # (x + 1) * 127.5
+    return (x + 1) * 127.5 # converting tanh range (-1, 1) to RGB range (0, 255)
 
   def compute_output_shape(self, input_shape):
     return input_shape
