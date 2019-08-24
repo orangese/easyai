@@ -41,14 +41,14 @@ class SlowNST(NetworkInterface):
             }
 
   # INITS
-  def __init__(self, net: str = None, num_rows: int = 400):
+  def __init__(self, net: str = "vgg19", num_rows: int = 400):
     """
     Initializes SlowNST object.
 
-    :param net: pre-trained model. Should be a string represeting the name of model, e.g., "vgg19".
+    :param net: pre-trained model. Either "vgg16" or "vgg19"
     :param num_rows: number of rows that the image has. Is a pre-defined but editable hyperparameter.
     """
-    self.net = net if net is not None else "vgg19"
+    self.net = net
 
     self.num_rows = num_rows
     self.num_cols = None
@@ -370,6 +370,8 @@ class FastNST(NetworkInterface):
     self.img_transform_net = img_transform_net
     self.loss_net = loss_net
 
+    self.vgg_num = int(self.loss_net.replace("vgg", ""))
+
   def train_init(self, style: Image.Image, target_size, noise = 0.6, norm = "batch", verbose: bool = True):
     """
     Initializes processed images (style and generated) as keras tensors in preparation for training.
@@ -399,19 +401,24 @@ class FastNST(NetworkInterface):
 
   def loss_net_init(self):
 
+    vgg_num = self.vgg_num
+
     def add_regularizers(model, style_img, target_size):
 
       def add_style_loss(style_img, layers, outputs, target_size):
+        # retrieving hyperparameters
         style_layers = SlowNST.get_hps("style_layers")
 
         # preprocessing
         style_img = style_img.resize(reversed(target_size))
         style_img = np.expand_dims(keras.preprocessing.image.img_to_array(style_img), axis = 0)
 
-        style_func = K.function([model.layers[-19].input], [outputs[style_layer] for style_layer in style_layers])
+        style_func = K.function([model.layers[-(vgg_num + 3)].input], [outputs[layer] for layer in style_layers])
+        # +3 to account for the three relevant layers-- InputNormalize, Denormalize, Concatenate
         style_features = style_func([style_img])
 
-        weight = SlowNST.get_hps("coef_s")
+        weight = (SlowNST.get_hps("coef_s") / len(style_layers)) * \
+                 (4.0 * (style_img.shape[-1] ** 2)) * (np.prod(style_img.shape[1:-1]) ** 2)
         for layer_num, layer_name in enumerate(style_layers): # adding style loss
           layer = layers[layer_name]
           style_regularizer = StyleRegularizer(K.variable(style_features[layer_num][0]), weight)(layer)
@@ -422,10 +429,11 @@ class FastNST(NetworkInterface):
         content_regularizer = ContentRegularizer(SlowNST.get_hps("coef_C"))(content_layer)
         content_layer.add_loss(content_regularizer)
 
-      layers = dict([(layer.name, layer) for layer in model.layers])
-      outputs = dict([(layer.name, layer.output) for layer in model.layers])
+      outputs = dict([(layer.name, layer.output) for layer in model.layers[-(vgg_num + 2):]])
+      layers = dict([(layer.name, layer) for layer in model.layers[-(vgg_num + 2):]])
+      # +2 to account for the addition of the input tensor (Concatenate) and the VGGNormalize layer
 
-      # add_style_loss(style_img, layers, outputs, target_size)
+      add_style_loss(style_img, layers, outputs, target_size)
       add_content_loss(layers)
 
     generated, content = self.img_transform_net.k_model.output, self.img_transform_net.k_model.input
@@ -444,9 +452,9 @@ class FastNST(NetworkInterface):
     for layer in self.k_model.layers[-19:]: # only freezing VGG layers-- image transform net is trainable
       layer.trainable = False
 
+    self.k_model.summary()
     add_regularizers(self.k_model, self.style, (self.num_rows, self.num_cols))
 
-    self.k_model.summary()
     # adding loss and regularizers
 
   # TRAINING
@@ -503,9 +511,11 @@ class FastNST(NetworkInterface):
         self.k_model.fit(batch, dummy_y, batch_size = batch_size, verbose = 0, callbacks = [loss_history])
         # using fit instead train_on_batch because fit allows for use of callbacks
 
+        print(self.run_nst(content_example))
+
         # FIXME: fix network so that loss works-- right now it goes to 2e26 after 1 batch and nan after 2 batches
         #  (note: weights go to nan after 1 batch; as a consequence, loss goes to nan-- probably because of regularizers)
-        #  (problem: style loss (most probable)
+        #  (problem: style loss (most probable))
 
         self.losses.extend(loss_history.losses)
 
