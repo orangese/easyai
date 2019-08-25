@@ -16,7 +16,6 @@ from PIL import Image
 from scipy.optimize import fmin_l_bfgs_b
 
 from easyai._advanced import HidePrints
-from easyai._advanced._layers import *
 from easyai._advanced._nets import *
 from easyai._advanced._losses import *
 
@@ -27,6 +26,7 @@ class SlowNST(NetworkInterface):
   Borrowed heavily from the keras implementation of neural style transfer.
   """
 
+  # CONSTANTS
   HYPERPARAMS = {"CONTENT_LAYER": "block5_conv2",
                  "STYLE_LAYERS": ["block1_conv1", "block2_conv1", "block3_conv1", "block4_conv1", "block5_conv1"],
                  "COEF_C": 1e0,
@@ -86,8 +86,8 @@ class SlowNST(NetworkInterface):
     except KeyError:
       raise ModuleNotFoundError("{0} is not currently supported for slow neural style transfer".format(self.net))
 
-    self.k_model = net_name(input_tensor = self.img_tensor, weights = "imagenet",
-                            include_top = False) # no need for FC layers since no predictions occur
+    self.k_model = net_name(input_tensor = self.img_tensor, weights = "imagenet", include_top = False)
+    # no need for FC layers since no predictions occur
 
     self.k_model.trainable = False
     self.outputs = dict([(layer.name, layer.output) for layer in self.k_model.layers])
@@ -164,7 +164,7 @@ class SlowNST(NetworkInterface):
       plt.close()
 
       if verbose:
-        print(" - {0}s - loss: {1} [broken]".format(round(time() - start), loss)) # loss is broken-- it's way too high
+        print(" - {0}s - loss: {1} [broken]".format(round(time() - start), loss))
         SlowNST.display_img(self.img, "Epoch {0}/{1}".format(epoch + 1, epochs), self.generated.shape[1:])
 
       if save_path is not None:
@@ -238,15 +238,16 @@ class SlowNST(NetworkInterface):
 
     loss += coef_c * content_loss(content_layer, self.outputs) # content loss
 
-    # this loop is probably broken (and/or the computation of layer_style_loss)
     for layer in style_layers: # style loss
       layer_features = self.outputs[layer]
 
       generated_actvs = layer_features[SlowNST.get_hps("img_order").index("generated"), :, :, :]
       style_actvs = layer_features[SlowNST.get_hps("img_order").index("style"), :, :, :]
 
-      loss += (coef_s / len(style_layers)) * layer_style_loss(generated_actvs, style_actvs) / \
-              (4.0 * (K.int_shape(self.generated)[-1] ** 2) * ((self.num_rows * self.num_cols) ** 2))
+      layer_shape = layer_features.get_shape().as_list()
+      norm_term = 4.0 * (layer_shape[-1] ** 2) * (np.prod(layer_shape[1:-1]) ** 2)
+      # norm_term = 4.0 * (K.int_shape(self.generated)[-1] ** 2) * ((self.num_rows * self.num_cols) ** 2)
+      loss += (coef_s / len(style_layers)) * layer_style_loss(generated_actvs, style_actvs) / norm_term
 
     loss += coef_v * total_variation_loss(self.generated, self.num_rows, self.num_cols)
 
@@ -417,8 +418,7 @@ class FastNST(NetworkInterface):
         # +3 to account for the three relevant layers-- InputNormalize, Denormalize, Concatenate
         style_features = style_func([style_img])
 
-        weight = (SlowNST.get_hps("coef_s") / len(style_layers)) * \
-                 (4.0 * (style_img.shape[-1] ** 2)) * (np.prod(style_img.shape[1:-1]) ** 2)
+        weight = SlowNST.get_hps("coef_s") / len(style_layers)
         for layer_num, layer_name in enumerate(style_layers): # adding style loss
           layer = layers[layer_name]
           style_regularizer = StyleRegularizer(K.variable(style_features[layer_num][0]), weight)(layer)
@@ -449,12 +449,10 @@ class FastNST(NetworkInterface):
 
     self.k_model = loss_net(input_tensor = img_tensor) # automatically excludes top
 
-    for layer in self.k_model.layers[-19:]: # only freezing VGG layers-- image transform net is trainable
+    for layer in self.k_model.layers[-self.vgg_num:]: # only freezing VGG layers-- image transform net is trainable
       layer.trainable = False
 
-    self.k_model.summary()
     add_regularizers(self.k_model, self.style, (self.num_rows, self.num_cols))
-
     # adding loss and regularizers
 
   # TRAINING
@@ -505,17 +503,13 @@ class FastNST(NetworkInterface):
       eta = None # estimated time until to the next epoch
 
       for batch in generator:
+        batch = FastNST.coco_preprocess(batch) # preprocess image
+
         content_example = np.squeeze(batch[0]) if content_example is None else content_example
 
         loss_history = LossHistory()
         self.k_model.fit(batch, dummy_y, batch_size = batch_size, verbose = 0, callbacks = [loss_history])
         # using fit instead train_on_batch because fit allows for use of callbacks
-
-        print(self.run_nst(content_example))
-
-        # FIXME: fix network so that loss works-- right now it goes to 2e26 after 1 batch and nan after 2 batches
-        #  (note: weights go to nan after 1 batch; as a consequence, loss goes to nan-- probably because of regularizers)
-        #  (problem: style loss (most probable))
 
         self.losses.extend(loss_history.losses)
 
@@ -525,13 +519,13 @@ class FastNST(NetworkInterface):
           if eta is None:
             eta = round(elapsed * num_batches - elapsed)
           else:
-            eta = round((0.6 * eta + 0.4 * (elapsed * num_batches - elapsed * batch_nums[0])) - elapsed)
+            eta = round((0.8 * eta + 0.2 * (elapsed * (num_batches - batch_nums[0]))) - elapsed)
             # exponentially weighted average of previous ETAs and current elapsed time
 
           print(" - {0}s - batches {1}-{2} of {3} completed - time until next epoch - {4}s - loss - {5}".format(
             elapsed, *reversed(batch_nums), num_batches, eta, self.losses[-1]))
           SlowNST.display_img(self.run_nst(content_example), "Epoch {0}: batch {1}".format(epoch, batch_nums[0]),
-                               deprocess = False)
+                              deprocess = False)
 
           batch_nums[1] = batch_nums[0] + 1
           batch_start = time()
@@ -576,6 +570,22 @@ class FastNST(NetworkInterface):
     :return: keras variable with value = 0.0
     """
     return K.variable(0.0)
+
+  # IMAGE PROCESSING
+  @staticmethod
+  def coco_preprocess(img: Union[list, Image.Image, np.ndarray]) -> Union[list, np.ndarray]:
+    """
+    Preprocess COCO image by converting BGR to RGB and applying dtype conversions.
+
+    :param img: image as a numpy array or PIL Image, or a batch of images.
+    :return: preprocessed img as numpy array.
+    """
+    if not isinstance(img, list):
+      img = img[:, :, ::-1] # BGR -> RGB
+      img = img.astype(np.uint8) # converting to proper dtype
+      return img
+    else:
+      return [FastNST.coco_preprocess(img_) for img_ in img]
 
 if __name__ == "__main__":
   from easyai.support.load import load_imgs
