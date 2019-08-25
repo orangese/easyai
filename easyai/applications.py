@@ -164,7 +164,7 @@ class SlowNST(NetworkInterface):
       plt.close()
 
       if verbose:
-        print(" - {0}s - loss: {1} [broken]".format(round(time() - start), loss))
+        print(" - {}s - loss: {:.4e}".format(round(time() - start), loss))
         SlowNST.display_img(self.img, "Epoch {0}/{1}".format(epoch + 1, epochs), self.generated.shape[1:])
 
       if save_path is not None:
@@ -522,8 +522,9 @@ class FastNST(NetworkInterface):
             eta = round((0.8 * eta + 0.2 * (elapsed * (num_batches - batch_nums[0]))) - elapsed)
             # exponentially weighted average of previous ETAs and current elapsed time
 
-          print(" - {0}s - batches {1}-{2} of {3} completed - time until next epoch - {4}s - loss - {5}".format(
+          print(" - {}s - batches {}-{} of {} completed - time until next epoch - {}s - loss - {:.4e}".format(
             elapsed, *reversed(batch_nums), num_batches, eta, self.losses[-1]))
+          # {:.4e} represents the loss in scientific notation
           SlowNST.display_img(self.run_nst(content_example), "Epoch {0}: batch {1}".format(epoch, batch_nums[0]),
                               deprocess = False)
 
