@@ -7,6 +7,8 @@ Holds links to pre-trained easyai models stored on Google Drive.
 
 """
 
+# TODO: implement firebase (use existing code structure)
+
 import random
 
 from easyai.core import *
@@ -31,7 +33,8 @@ class FastNSTModels(TrainedModelInterface):
   Contains links to pretrained fast NST models as well as model loaders.
   """
 
-  models = {} # TODO: created pretrained fast NST net and write load_net function
+  models = {} # models will be a dictionary mapping style name to h5 file or link to h5 file
+  # TODO: created pretrained fast NST net and write load_net function
 
   @staticmethod
   def load_net(net_name: str) -> NetworkInterface:
@@ -39,7 +42,7 @@ class FastNSTModels(TrainedModelInterface):
     Loads pretrained fast NST model.
 
     :param net_name: name of model to be loaded.
-    :return: pretrained model.
+    :return: pretrained model as a NetworkInterface.
     """
     raise NotImplementedError()
 
@@ -50,4 +53,4 @@ class FastNSTModels(TrainedModelInterface):
 
     :return: random pretrained model.
     """
-    return FastNSTModels.load_net(random.choice(list(FastNSTModels.models.keys())))
+    return FastNSTModels.load_net(random.choice(list(FastNSTModels.models.keys()))) # should not be changed
