@@ -70,10 +70,7 @@ class NSTTransform(NetworkInterface):
 
     a = NSTTransform.conv_norm_block(64, (3, 3), norm = self.norm, strides = (2, 2), transpose = True)(a)
     a = NSTTransform.conv_norm_block(32, (3, 3), norm = self.norm, strides = (2, 2), transpose = True)(a)
-    a = NSTTransform.conv_norm_block(3, (9, 9), norm = self.norm, strides = (1, 1), include_relu = False,
-                                     transpose = True)(a)
-
-    a = keras.layers.Activation("tanh")(a) # replacing relu with tanh in final layer for easier scaling
+    a = NSTTransform.conv_norm_block(3, (9, 9), norm = self.norm, strides = (1, 1), transpose = True)(a)
 
     y = Denormalize(name = "img_transform_output")(a)
 
