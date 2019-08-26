@@ -512,7 +512,7 @@ class FastNST(NetworkInterface):
 
         self.losses.append(loss)
 
-        if verbose and batch_nums[0] % 1 == 0: # if verbose, display information every 20 batches
+        if verbose and batch_nums[0] % int(num_batches / 20) == 0: # if verbose, display information every 20 batches
           elapsed = round(time() - batch_start)
 
           if eta is None:
