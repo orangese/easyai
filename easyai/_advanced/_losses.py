@@ -11,40 +11,20 @@ from easyai.core import *
 
 # SUPPORT FOR CUSTOM LOSS
 class Evaluator(object):
-  """
-  Class used for custom loss and gradient functions. Should be used in conjunction with scipy.optimize.[whatever].
-  """
+  """Class used for custom loss and gradient functions. Should be used in conjunction with scipy.optimize.[whatever]."""
 
-  def __init__(self, obj: object):
-    """
-    Initializes Evaluator object.
-
-    :param obj: obj that has some function used to evaluate loss and gradients, called "loss_and_grads"
-    :raises AssertionError: obj must have loss_and_grads function
-    """
+  def __init__(self, obj):
     self.obj = obj
     assert hasattr(obj, "loss_and_grads"), "obj must have loss_and_grads function"
     self.reset()
 
-  def f_loss(self, img: np.ndarray):
-    """
-    Calculates loss.
-
-    :param img: image (array) used to calculate loss.
-    :return: loss.
-    """
+  def f_loss(self, img):
     loss, grads = self.obj.loss_and_grads(img)
     self.loss = loss
     self.grads = grads
     return self.loss
 
   def f_grads(self, img):
-    """
-    Calculates gradients.
-
-    :param img: image (array) used to calculate gradients.
-    :return: gradients.
-    """
     grads = np.copy(self.grads)
     self.reset()
     return grads
@@ -55,6 +35,7 @@ class Evaluator(object):
 
 # REGULARIZERS FOR NST
 class StyleRegularizer(keras.regularizers.Regularizer):
+  """Style regularizer for fast NST."""
 
   def __init__(self, style_img, weight):
     self.style_gram = StyleRegularizer.gram_matrix(style_img)
@@ -75,6 +56,7 @@ class StyleRegularizer(keras.regularizers.Regularizer):
     return K.dot(a, K.transpose(a))
 
 class ContentRegularizer(keras.regularizers.Regularizer):
+  """Content regularizer for fast NST."""
 
   def __init__(self, weight):
     self.weight = weight
@@ -98,14 +80,4 @@ class TVRegularizer(keras.regularizers.Regularizer):
     a = K.square(x.output[:, :num_rows - 1, :num_cols - 1, :] - x.output[:, 1:, :num_cols - 1, :])
     b = K.square(x.output[:, :num_rows - 1, :num_cols - 1, :] - x.output[:, :num_rows - 1, 1:, :])
 
-    return K.sum(K.pow(a + b, 1.25))
-
-# CALLBACKS
-class LossHistory(keras.callbacks.Callback):
-  """History of loss for a "model.fit" call. Copied from keras example code for callbacks."""
-
-  def on_train_begin(self, logs = {}):
-    self.losses = []
-
-  def on_batch_end(self, batch, logs = {}):
-    self.losses.append(logs.get("loss"))
+    return self.weight * K.sum(K.pow(a + b, 1.25))
