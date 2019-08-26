@@ -58,7 +58,7 @@ class NSTTransform(NetworkInterface):
 
   def net_init(self):
     x = keras.layers.Input(shape = (self.num_rows, self.num_cols, 3), name = "img_transform_input")
-    a = Normalize(noise = self.noise)(x)
+    a = Normalize()(x)
 
     a = ReflectionPadding2D((40, 40))(a)
     a = NSTTransform.conv_norm_block(32, (9, 9), norm = self.norm)(a)

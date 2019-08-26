@@ -14,8 +14,7 @@ import tensorflow as tf
 class Normalize(keras.layers.Layer):
   """Image-normalizing input layer. Used for Fast NST."""
 
-  def __init__(self, noise, **kwargs):
-    self.noise = noise
+  def __init__(self, **kwargs):
     super(Normalize, self).__init__(**kwargs)
 
   def build(self, input_shape):
