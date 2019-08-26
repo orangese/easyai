@@ -87,7 +87,7 @@ class Art(StaticInterface):
   """
 
   @staticmethod
-  def SlowNST(content = None, style = None, save_path = None):
+  def slow_nst(content = None, style = None, save_path = None):
     """
     (Slow) neural style transfer with art and photographs.
 
@@ -116,7 +116,7 @@ class Art(StaticInterface):
       print("Saved image at \"{0}\"".format(full_save_path))
 
   @staticmethod
-  def FastNST(content = None, style_net = None, save_path = None):
+  def fast_nst(content = None, style_net = None, save_path = None):
     """
     (Fast) neural style transfer with arts and photographs, using pretrained models.
 
