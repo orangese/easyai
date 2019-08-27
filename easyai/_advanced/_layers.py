@@ -53,7 +53,8 @@ class Denormalize(keras.layers.Layer):
 
   def call(self, x, mask = None):
     # return (x + 1) * 127.5 # converting tanh range (-1, 1) to RGB range (0, 255)
-    return 255 * (x - K.min(x)) / (K.max(x) + K.min(x)) # converting relu range (0, <unbounded>) to RGB range (0, 255)
+    x -= K.min(x)
+    return 255 * (x / (K.max(x) + K.min(x))) # converting relu range (0, <unbounded>) to RGB range (0, 255)
 
   def compute_output_shape(self, input_shape):
     return input_shape
