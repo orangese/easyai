@@ -13,5 +13,3 @@ setup(name = "easyai",
       packages = find_packages(),
       extras_require = {"gpu": ["tensorflow-gpu==1.8.0"], "cpu": ["tensorflow"]},
       zip_safe = False)
-
-# TODO: write bash script to automatically install the correct version of tensorflow-- replace extras_require
