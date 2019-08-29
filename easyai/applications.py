@@ -14,6 +14,7 @@ import os
 import matplotlib.pyplot as plt
 from PIL import Image
 from scipy.optimize import fmin_l_bfgs_b
+import tensorflow as tf
 
 from easyai._advanced import HidePrints
 from easyai._advanced._nets import *
@@ -426,8 +427,11 @@ class FastNST(NetworkInterface):
 
       def add_content_loss(layers):
         content_layer = layers[SlowNST.get_hps("content_layer")]
-        content_regularizer = ContentRegularizer(SlowNST.get_hps("coef_C"))(content_layer)
+        content_regularizer = ContentRegularizer(SlowNST.get_hps("coef_c"))(content_layer)
         content_layer.add_loss(content_regularizer)
+
+      def add_tv_loss(tv_layer):
+        tv_layer.add_loss(TVRegularizer(SlowNST.get_hps("coef_v"))(tv_layer))
 
       outputs = dict([(layer.name, layer.output) for layer in model.layers[-(vgg_num + 2):]])
       layers = dict([(layer.name, layer) for layer in model.layers[-(vgg_num + 2):]])
@@ -435,12 +439,13 @@ class FastNST(NetworkInterface):
 
       add_style_loss(style_img, layers, outputs, target_size)
       add_content_loss(layers)
+      add_tv_loss(model.get_layer("img_transform_output")) # tv loss is evaluated on the output of the transform net
 
     generated, content = self.img_transform_net.k_model.output, self.img_transform_net.k_model.input
 
     # no concatenation of style (that occurs in the regularizers)
     img_tensor = keras.layers.merge.concatenate([generated, content], axis = 0)
-    img_tensor = VGGNormalize()(img_tensor)
+    img_tensor = VGGNormalize(name = "vgg_normalize")(img_tensor)
 
     try:
       loss_net = getattr(NSTLoss, SlowNST.MODELS[self.loss_net].upper())
@@ -449,7 +454,8 @@ class FastNST(NetworkInterface):
 
     self.k_model = loss_net(input_tensor = img_tensor) # automatically excludes top
 
-    for layer in self.k_model.layers[-self.vgg_num:]: # only freezing VGG layers-- image transform net is trainable
+    # only freezing VGG layers-- image transform net is trainable
+    for layer in self.k_model.layers[-(self.vgg_num + 2):]:
       layer.trainable = False
 
     add_regularizers(self.k_model, self.style, (self.num_rows, self.num_cols))
@@ -475,18 +481,16 @@ class FastNST(NetworkInterface):
 
     path_to_coco = os.getenv("HOME") + "/coco"
 
-    self.train_init(style, target_size = target_size, noise = init_noise, norm = "instance", verbose = verbose)
+    self.train_init(style, target_size = target_size, noise = init_noise, norm = "batch", verbose = verbose)
 
     with HidePrints(): # hiding print messages called when using ImageDataGenerator
       datagen = keras.preprocessing.image.ImageDataGenerator()
       generator = datagen.flow_from_directory(path_to_coco, target_size = target_size, batch_size = batch_size,
-                                              classes = ["unlabeled2017"], class_mode = None)
+                                              classes = ["unlabeled2017"], class_mode = "input")
 
     print("Training with Adam (another gradient-based optimization algorithm) in a {0}-D space. During each epoch, "
           "network parameters will be changed approximately {1} times in an attempt to minimize loss."
           .format(self.img_transform_net.k_model.count_params(), int(generator.samples / batch_size)))
-
-    dummy_labels = np.zeros((batch_size, *target_size, 3))
 
     num_batches = round(generator.samples / batch_size)
 
@@ -502,34 +506,38 @@ class FastNST(NetworkInterface):
 
       eta = None # estimated time until to the next epoch
 
-      for batch in generator:
+      for batch, labels in generator: # batch == labels == content image
 
+        # TRAINING
+        loss = self.k_model.train_on_batch(batch, labels) # train single batch
+
+        self.losses.append(loss)
+
+        # DISPLAY
         if content_example is None:
           content_example = np.squeeze(batch[0]).astype(np.uint8)
           SlowNST.display_img(content_example, "Content example image", deprocess = False)
 
-        loss = self.k_model.train_on_batch(batch, dummy_labels) # train single batch
-
-        self.losses.append(loss)
-
+        # VERBOSE OUTPUT
         if verbose and batch_nums[0] % 20 == 0:# int(num_batches / 20) == 0: # if verbose, display information every 20 batches
           elapsed = round(time() - batch_start)
 
           if eta is None:
             eta = round(elapsed * num_batches - elapsed)
           else:
-            eta = round((0.8 * eta + 0.2 * (elapsed * (num_batches - batch_nums[0]))) - elapsed)
+            eta = round((0.95 * eta + 0.05 * (elapsed * (num_batches - batch_nums[0]))) - elapsed)
             # exponentially weighted average of previous ETAs and current elapsed time
 
           print(" - {}s - batches {}-{} of {} completed ({}%) - time until next epoch - {}s - loss - {:.4e}".format(
             elapsed, *reversed(batch_nums), num_batches, round(batch_nums[0] / num_batches * 100, 1), eta,
-            self.losses[-1])) # {:.4e} represents the loss in scientific notation
+            self.losses[-1])) # {:.4e} represents the loss in scientific notation, rounded to 4 significant figures
           SlowNST.display_img(self.run_nst(content_example).astype(np.uint8),
                               "Epoch {0}: batch {1}".format(epoch, batch_nums[0]), deprocess = False)
 
           batch_nums[1] = batch_nums[0] + 1
           batch_start = time()
 
+        # BATCH COUNT
         batch_nums[0] += 1
 
         if batch_nums[0] >= generator.samples:
@@ -542,7 +550,7 @@ class FastNST(NetworkInterface):
 
       if save_path is not None:
         full_save_path = save_path + "/epoch{0}.png".format(epoch + 1)
-        keras.preprocessing.image.save_img(full_save_path, SlowNST.deprocess(self.run_nst(content_example)))
+        keras.preprocessing.image.save_img(full_save_path, self.run_nst(content_example))
 
   # TESTING
   def run_nst(self, content: Union[list, Image.Image, np.ndarray]) -> np.ndarray:
@@ -561,7 +569,7 @@ class FastNST(NetworkInterface):
 
   # CUSTOM LOSS
   @staticmethod
-  def dummy_loss(y_true, y_pred):
+  def dummy_loss(y_true, y_pred) -> tf.Variable:
     """
     Dummy loss function. Loss is not optimized; instead, regularizers are used.
 
@@ -572,6 +580,9 @@ class FastNST(NetworkInterface):
     return K.variable(0.0)
 
 if __name__ == "__main__":
+  # SlowNST.HYPERPARAMS["COEF_S"] = 0
+  # SlowNST.HYPERPARAMS["COEF_V"] = 0
+
   from easyai.support.load import load_imgs
   style = load_imgs("/Users/ryan/Downloads/drive-download-20190820T070132Z-001/starry_night_van_gogh.jpg")
 
