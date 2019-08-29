@@ -481,7 +481,7 @@ class FastNST(NetworkInterface):
 
     path_to_coco = os.getenv("HOME") + "/coco"
 
-    self.train_init(style, target_size = target_size, noise = init_noise, norm = "batch", verbose = verbose)
+    self.train_init(style, target_size = target_size, noise = init_noise, norm = "instance", verbose = verbose)
 
     with HidePrints(): # hiding print messages called when using ImageDataGenerator
       datagen = keras.preprocessing.image.ImageDataGenerator()
@@ -519,7 +519,7 @@ class FastNST(NetworkInterface):
           SlowNST.display_img(content_example, "Content example image", deprocess = False)
 
         # VERBOSE OUTPUT
-        if verbose and batch_nums[0] % 20 == 0:# int(num_batches / 20) == 0: # if verbose, display information every 20 batches
+        if verbose and batch_nums[0] % int(num_batches / 20) == 0: # if verbose, display information every 20 batches
           elapsed = round(time() - batch_start)
 
           if eta is None:
