@@ -18,9 +18,6 @@ class Normalize(keras.layers.Layer):
   def __init__(self, **kwargs):
     super(Normalize, self).__init__(**kwargs)
 
-  def build(self, input_shape):
-    pass
-
   def call(self, x, mask = None):
     return x / 255.
 
@@ -32,9 +29,6 @@ class VGGNormalize(keras.layers.Layer):
 
   def __init__(self, **kwargs):
     super(VGGNormalize, self).__init__(**kwargs)
-
-  def build(self, input_shape):
-    pass
 
   def call(self, x, mask = None):
     return keras.applications.vgg19.preprocess_input(x) # preprocessing is the same for VGG16 and VGG19
@@ -48,13 +42,8 @@ class Denormalize(keras.layers.Layer):
   def __init__(self, **kwargs):
     super(Denormalize, self).__init__(**kwargs)
 
-  def build(self, input_shape):
-    pass
-
   def call(self, x, mask = None):
-    # return (x + 1) * 127.5 # converting tanh range (-1, 1) to RGB range (0, 255)
-    x -= K.min(x)
-    return 255 * (x / (K.max(x) + K.min(x))) # converting relu range (0, <unbounded>) to RGB range (0, 255)
+    return (x + 1) * 127.5 # converting tanh range (-1, 1) to RGB range (0, 255)
 
   def compute_output_shape(self, input_shape):
     return input_shape

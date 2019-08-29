@@ -70,7 +70,10 @@ class NSTTransform(NetworkInterface):
 
     a = NSTTransform.conv_norm_block(64, (3, 3), norm = self.norm, strides = (2, 2), transpose = True)(a)
     a = NSTTransform.conv_norm_block(32, (3, 3), norm = self.norm, strides = (2, 2), transpose = True)(a)
-    a = NSTTransform.conv_norm_block(3, (9, 9), norm = self.norm, strides = (1, 1), transpose = True)(a)
+    a = NSTTransform.conv_norm_block(3, (9, 9), norm = self.norm, strides = (1, 1), include_relu = False,
+                                     transpose = True)(a)
+
+    a = keras.layers.Activation("tanh")(a) # using tanh for easier image pixel scaling
 
     y = Denormalize(name = "img_transform_output")(a)
 
@@ -89,6 +92,11 @@ class NSTLoss(StaticInterface):
              "_tf_dim_ordering_tf_kernels_notop.h5",
     "vgg19": "https://github.com/fchollet/deep-learning-models/releases/download/v0.1/vgg19_weights"
              "_tf_dim_ordering_tf_kernels_notop.h5"
+  }
+
+  WEIGHT_FILE = {
+    "vgg16": "vgg16_weights_tf_dim_ordering_tf_kernels_notop.h5",
+    "vgg19": "vgg19_weights_tf_dim_ordering_tf_kernels_notop.h5"
   }
 
   @staticmethod
@@ -129,8 +137,8 @@ class NSTLoss(StaticInterface):
     model = keras.Model(inputs, x, name = "vgg16")
 
     # load weights
-    weights_path = keras.utils.data_utils.get_file("vgg16_weights_tf_dim_ordering_tf_kernels_notop.h5",
-                                                   NSTLoss.WEIGHTS_PATH_NO_TOP["vgg16"], cache_subdir = "models")
+    weights_path = keras.utils.data_utils.get_file(NSTLoss.WEIGHT_FILE["vgg16"], NSTLoss.WEIGHTS_PATH_NO_TOP["vgg16"],
+                                                   cache_subdir = "models")
     model.load_weights(weights_path, by_name = True)
 
     return model
@@ -176,8 +184,8 @@ class NSTLoss(StaticInterface):
     model = keras.Model(inputs, x, name = "vgg19")
 
     # load weights
-    weights_path = keras.utils.data_utils.get_file("vgg19_weights_tf_dim_ordering_tf_kernels_notop.h5",
-                                                   NSTLoss.WEIGHTS_PATH_NO_TOP["vgg19"], cache_subdir = "models")
+    weights_path = keras.utils.data_utils.get_file(NSTLoss.WEIGHT_FILE["vgg19"], NSTLoss.WEIGHTS_PATH_NO_TOP["vgg19"],
+                                                   cache_subdir = "models")
     model.load_weights(weights_path, by_name = True)
 
     return model
