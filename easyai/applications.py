@@ -10,6 +10,7 @@ on keras since easyai is not flexible enough to meet the demands of these algori
 
 import importlib
 import os
+import random
 
 import matplotlib.pyplot as plt
 from PIL import Image
@@ -486,13 +487,14 @@ class FastNST(NetworkInterface):
     assert batch_size == 2, "only batch size of 2 is supported"
 
     path_to_coco = os.getenv("HOME") + "/coco"
+    coco_dataset = "unlabeled2017"
 
     self.train_init(style, target_size = target_size, noise = init_noise, norm = "instance", verbose = verbose)
 
     with HidePrints(): # hiding print messages called when using ImageDataGenerator
       datagen = keras.preprocessing.image.ImageDataGenerator()
       generator = datagen.flow_from_directory(path_to_coco, target_size = target_size, batch_size = batch_size,
-                                              classes = ["unlabeled2017"], class_mode = "input")
+                                              classes = [coco_dataset], class_mode = "input")
 
     print("Training with Adam (another gradient-based optimization algorithm) in a {0}-D space. During each epoch, "
           "network parameters will be changed approximately {1} times in an attempt to minimize loss."
@@ -500,7 +502,9 @@ class FastNST(NetworkInterface):
 
     num_batches = round(generator.samples / batch_size)
 
-    content_example = Image.open(path_to_coco + "/unlabeled/000000000001.jpg") # example to be used to evaluate
+    # example for verbose output
+    path_to_coco_imgs = path_to_coco + "/" + coco_dataset
+    content_example = Image.open(path_to_coco_imgs + "/" + random.choice(os.listdir(path_to_coco + "/" + coco_dataset)))
     content_example = np.array(content_example).astype(np.uint8)
     SlowNST.display_img(content_example, "Content example image", deprocess = False)
 
@@ -591,7 +595,7 @@ if __name__ == "__main__":
   # SlowNST.HYPERPARAMS["COEF_V"] = 0
 
   from easyai.support.load import load_imgs
-  style = load_imgs("/Users/ryan/Downloads/drive-download-20190820T070132Z-001/starry_night_van_gogh.jpg")
+  style = load_imgs("https://drive.google.com/uc?export=download&id=18MpTOAt40ngCRpX1xcckwxUXNhOiBemJ")
 
   test = FastNST()
   test.train(style, batch_size = 2)
