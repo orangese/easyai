@@ -63,6 +63,7 @@ class SlowNST(NetworkInterface):
     :param style: style image as PIL Image.
     :param noise: amount of noise in initially generated image. Range is [0., 1.].
     :param verbose: if true, prints additional information.
+    :raises ModuleNotFoundError: if provided net is not valid.
     """
     self.k_net_module = importlib.import_module("keras.applications.{0}".format(self.net))
 
@@ -81,11 +82,13 @@ class SlowNST(NetworkInterface):
   def model_init(self):
     """
     Initializes model based on net type provided in __init__.
+
+    :raises ModuleNotFoundError: if provided net is not valid.
     """
     try:
       net_name = getattr(self.k_net_module, SlowNST.MODELS[self.net])
     except KeyError:
-      raise ModuleNotFoundError("{0} is not currently supported for slow neural style transfer".format(self.net))
+      raise ModuleNotFoundError("{0} is not supported for slow neural style transfer".format(self.net))
 
     self.k_model = net_name(input_tensor = self.img_tensor, weights = "imagenet", include_top = False)
     # no need for FC layers since no predictions occur
@@ -384,6 +387,7 @@ class FastNST(NetworkInterface):
     :param noise: amount of noise in initially generated image. Range is [0., 1.].
     :param norm: type of normalization to apply. Either "batch" for batch norm or "instance" for instance norm.
     :param verbose: if true, prints additional information.
+    :raises ModuleNotFoundError: if provided loss net is not valid.
     """
     # IMAGE INIT
     self.num_rows, self.num_cols = target_size
@@ -448,9 +452,9 @@ class FastNST(NetworkInterface):
     img_tensor = VGGNormalize(name = "vgg_normalize")(img_tensor)
 
     try:
-      loss_net = getattr(NSTLoss, SlowNST.MODELS[self.loss_net].upper())
+      loss_net = getattr(NSTLoss, SlowNST.MODELS[self.loss_net])
     except AttributeError:
-      raise ModuleNotFoundError("{0} is not currently supported for fast neural style transfer".format(self.loss_net))
+      raise ModuleNotFoundError("{0} is not supported for fast neural style transfer".format(self.loss_net))
 
     self.k_model = loss_net(input_tensor = img_tensor) # automatically excludes top
 
@@ -463,7 +467,7 @@ class FastNST(NetworkInterface):
 
   # TRAINING
   def train(self, style: Image.Image, epochs: int = 1, batch_size = 2, init_noise: float = 0.6,
-            target_size: tuple = (256, 256), verbose: bool = True, save_path: str = None):
+            target_size: tuple = (256, 256), verbose: bool = True, save_path: str = None) -> np.ndarray:
     """
     Trains the image transform network on the MS COCO dataset (https://cocodataset.org/#download) to match a certain
     style. This dataset does not come preinstalled with easyai and takes a while to download (~4 hours).
@@ -476,6 +480,8 @@ class FastNST(NetworkInterface):
     :param target_size: all training images will be reshaped to target_size.
     :param verbose: if true, prints additional training information.
     :param save_path: path to save training results
+    :return: fast NST run on content example (numpy array).
+    :raises ModuleNotFoundError: if provided loss net is not valid.
     """
     assert batch_size == 2, "only batch size of 2 is supported"
 
@@ -494,6 +500,10 @@ class FastNST(NetworkInterface):
 
     num_batches = round(generator.samples / batch_size)
 
+    content_example = Image.open(path_to_coco + "/unlabeled/000000000001.jpg") # example to be used to evaluate
+    content_example = np.array(content_example).astype(np.uint8)
+    SlowNST.display_img(content_example, "Content example image", deprocess = False)
+
     for epoch in range(epochs):
       if verbose:
         print("Epoch {0}/{1}".format(epoch + 1, epochs))
@@ -502,7 +512,6 @@ class FastNST(NetworkInterface):
 
       batch_nums = [1, 1] # batch_nums[0] is the current batch, and batch_nums[1] is the current batch of batches
       batch_start = time()
-      content_example = None # example to be used to evaluate
 
       eta = None # estimated time until to the next epoch
 
@@ -512,11 +521,6 @@ class FastNST(NetworkInterface):
         loss = self.k_model.train_on_batch(batch, labels) # train single batch
 
         self.losses.append(loss)
-
-        # DISPLAY
-        if content_example is None:
-          content_example = np.squeeze(batch[0]).astype(np.uint8)
-          SlowNST.display_img(content_example, "Content example image", deprocess = False)
 
         # VERBOSE OUTPUT
         if verbose and batch_nums[0] % int(num_batches / 20) == 0: # if verbose, display information every 20 batches
@@ -531,8 +535,8 @@ class FastNST(NetworkInterface):
           print(" - {}s - batches {}-{} of {} completed ({}%) - time until next epoch - {}s - loss - {:.4e}".format(
             elapsed, *reversed(batch_nums), num_batches, round(batch_nums[0] / num_batches * 100, 1), eta,
             self.losses[-1])) # {:.4e} represents the loss in scientific notation, rounded to 4 significant figures
-          SlowNST.display_img(self.run_nst(content_example).astype(np.uint8),
-                              "Epoch {0}: batch {1}".format(epoch, batch_nums[0]), deprocess = False)
+          SlowNST.display_img(self.run_nst(content_example), "Epoch {0}: batch {1}".format(epoch, batch_nums[0]),
+                              deprocess = False)
 
           batch_nums[1] = batch_nums[0] + 1
           batch_start = time()
@@ -552,20 +556,23 @@ class FastNST(NetworkInterface):
         full_save_path = save_path + "/epoch{0}.png".format(epoch + 1)
         keras.preprocessing.image.save_img(full_save_path, self.run_nst(content_example))
 
+    return self.run_nst(content_example)
+
   # TESTING
   def run_nst(self, content: Union[list, Image.Image, np.ndarray]) -> np.ndarray:
     """
     Run fast NST on content image.
 
     :param content: image (as PIL image or numpy array) on which to run NST.
-    :return: final result as a (deprocessed) numpy array.
+    :return: final result as a numpy array.
     """
     if isinstance(content, Image.Image):
       content = np.array(content)
+    content = content.astype(np.float32) # converting image to proper dtype
     try:
-      return np.squeeze(self.img_transform_net.k_model.predict(content.astype(np.float32)))
+      return np.squeeze(self.img_transform_net.k_model.predict(content)).astype(np.uint8)
     except ValueError:
-      return np.squeeze(self.img_transform_net.k_model.predict(np.expand_dims(content.astype(np.float32), axis = 0)))
+      return np.squeeze(self.img_transform_net.k_model.predict(np.expand_dims(content, axis = 0))).astype(np.uint8)
 
   # CUSTOM LOSS
   @staticmethod
