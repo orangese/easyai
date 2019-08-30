@@ -21,7 +21,7 @@ suppress_tf_warnings()
 from . import applications
 from . import core
 from . import support
+from .core import NN
 
 # Importable from root
 from .core import StaticInterface
-from .core import NN

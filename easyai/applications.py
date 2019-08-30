@@ -14,11 +14,11 @@ import os
 import matplotlib.pyplot as plt
 from PIL import Image
 from scipy.optimize import fmin_l_bfgs_b
-import tensorflow as tf
 
 from easyai._advanced import HidePrints
-from easyai._advanced._nets import *
 from easyai._advanced._losses import *
+from easyai._advanced._nets import *
+
 
 # NEURAL NETWORK APPLICATION
 class SlowNST(NetworkInterface):

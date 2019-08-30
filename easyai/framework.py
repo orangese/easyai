@@ -21,7 +21,6 @@ class StaticInterface(object):
     """
     raise NotImplementedError("class is static")
 
-
 class NetworkInterface(object):
   """Interface for all network-like classes."""
 
@@ -55,7 +54,7 @@ class AbstractLayer(StaticInterface):
   Abstract class that acts as the base for all layer classes. Should not be implemented.
   """
 
-  def __init__(self, num_neurons: int , actv: str):
+  def __init__(self, num_neurons: int, actv: str):
     """
     As AbstractLayer objects should not be created, __init__ throws a NotImplementedError.
 

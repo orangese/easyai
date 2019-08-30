@@ -7,10 +7,11 @@ Program that implements easyai.support.datasets.datasets and easyai.core in exam
 
 """
 
-from easyai.layers import *
 from easyai.applications import *
+from easyai.layers import *
 from easyai.support.datasets.datasets import *
 from easyai.support.models import *
+
 
 # CLASSES
 class MNIST(StaticInterface):

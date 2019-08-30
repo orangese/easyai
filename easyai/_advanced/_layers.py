@@ -8,7 +8,6 @@ Advanced keras layers. Not for use by easyai users-- does not use easyai API.
 """
 
 import keras
-from keras import backend as K
 import tensorflow as tf
 
 # CONV LAYERS

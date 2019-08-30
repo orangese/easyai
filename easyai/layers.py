@@ -10,6 +10,7 @@ flexibility and diversity.
 
 from easyai.core import *
 
+
 # CORE LAYERS
 class Input(AbstractLayer):
   """

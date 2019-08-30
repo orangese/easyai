@@ -13,6 +13,7 @@ import random
 
 from easyai.core import *
 
+
 class TrainedModelInterface(StaticInterface):
   """
   Model for all model classes.
