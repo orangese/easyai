@@ -13,7 +13,7 @@ class StaticInterface(object):
   Static interface for other programs. An object of this class cannot be created.
   """
 
-  def __init__(self):
+  def __init__(self, **kwargs):
     """
     As StaticInterface objects should not be created, __init__ throws a NotImplementedError.
 
@@ -25,7 +25,7 @@ class StaticInterface(object):
 class NetworkInterface(object):
   """Interface for all network-like classes."""
 
-  def __init__(self):
+  def __init__(self, **kwargs):
     """
     Initialization for interfaces should not be used.
 
@@ -34,7 +34,7 @@ class NetworkInterface(object):
     self.k_model = None  # to be explicit, every NetworkInterface should have a k_model attribute
     raise NotImplementedError("class is an interface")
 
-  def train_init(self):
+  def train_init(self, **kwargs):
     """
     Creates keras mask.
 
@@ -42,7 +42,7 @@ class NetworkInterface(object):
     """
     raise NotImplementedError("class is an interface")
 
-  def train(self):
+  def train(self, **kwargs):
     """
     Trains network.
 
@@ -50,12 +50,12 @@ class NetworkInterface(object):
     """
     raise NotImplementedError("class is an interface")
 
-class AbstractLayer(StaticInterface):
+class AbstractLayer(object):
   """
   Abstract class that acts as the base for all layer classes. Should not be implemented.
   """
 
-  def __init__(self, num_neurons: int , actv: str):
+  def __init__(self, num_neurons: int, actv: str, **kwargs):
     """
     As AbstractLayer objects should not be created, __init__ throws a NotImplementedError.
 
@@ -65,7 +65,7 @@ class AbstractLayer(StaticInterface):
     self.actv = actv
     self.prev = None
     self.k_model = None
-    raise NotImplementedError("abstract class should not be implemented")
+    raise NotImplementedError("class is abstract")
 
   def __str__(self):
     try:
@@ -76,7 +76,7 @@ class AbstractLayer(StaticInterface):
   def __repr__(self):
     return self.__str__()
 
-  def train_init(self):
+  def train_init(self, **kwargs):
     """
      Creates keras mask. This mask will be used for training and all computations.
 
