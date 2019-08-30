@@ -211,6 +211,9 @@ if __name__ == "__main__":
   nst = SlowNST()
   SlowNST.HYPERPARAMS["coef_s"] = 1e5
   for link in list(NST.style.keys()):
-    final_img = nst.train(load_imgs("https://static.playoverwatch.com/media/thumbnail/genji-concept.jpg"),
-                          load_imgs(NST.style[link]), epochs = 25, verbose = False)
-    keras.preprocessing.image.save_img("/home/ryan/Pictures/nst_generated/genji_{0}.jpg".format(link), final_img)
+    final_img = nst.train(load_imgs("/Users/ryan/Downloads/test.jpg"),
+                          # load_imgs(NST.style[link]), epochs = 25, verbose = True)
+                          load_imgs("/Users/ryan/Downloads/drive-download-20190820T070132Z-001/"
+                                    "wheatfields_with_crows_van_gogh.jpg"), epochs = 25, verbose = True)
+
+    keras.preprocessing.image.save_img("/Users/ryan/Pictures/nst_generated/genji_{0}.jpg".format(link), final_img)

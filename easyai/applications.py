@@ -148,7 +148,7 @@ class SlowNST(NetworkInterface):
 
     print("Training with L-BFGS-B (another gradient-based optimization algorithm) in a {0}-D space. During "
            "each epoch, the pixels of the generated image will be changed {1} times in an attempt to minimize loss."
-           .format(np.prod(content.size), num_iters))
+           .format(np.prod(self.generated.shape[1:]), num_iters))
 
     if verbose:
       SlowNST.display_original(content, style)
