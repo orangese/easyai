@@ -7,11 +7,11 @@ Program that implements easyai.core and provides wrapper for keras data loaders.
 
 """
 
-import os
-import random
-import subprocess
 from io import BytesIO
 from typing import Tuple
+import os
+import subprocess
+import random
 
 import pandas as pd
 import requests
@@ -19,7 +19,6 @@ from PIL import Image
 
 import easyai
 from easyai.core import *
-
 
 # LINK DATASETS
 class NST(StaticInterface):

@@ -7,12 +7,11 @@ Loads new, user-supplied data.
 
 """
 
-from io import BytesIO
 from typing import Union, List
+from io import BytesIO
 
-import requests
 from PIL import Image
-
+import requests
 
 # GENERAL FUNCTIONS
 def load_imgs(*paths) -> Union[List[Image.Image], Image.Image]:
