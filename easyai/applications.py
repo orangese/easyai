@@ -563,7 +563,7 @@ class FastNST(NetworkInterface):
     return self.run_nst(content_example)
 
   # TESTING
-  def run_nst(self, content: Union[list, Image.Image, np.ndarray]) -> np.ndarray:
+  def run_nst(self, content: Union[Image.Image, np.ndarray]) -> np.ndarray:
     """
     Run fast NST on content image.
 
