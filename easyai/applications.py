@@ -505,7 +505,7 @@ class FastNST(NetworkInterface):
     # example for verbose output
     path_to_coco_imgs = path_to_coco + "/" + coco_dataset
     content_example = Image.open(path_to_coco_imgs + "/" + random.choice(os.listdir(path_to_coco + "/" + coco_dataset)))
-    content_example = np.array(content_example).astype(np.uint8)
+    content_example = np.array(content_example.resize(target_size)).astype(np.uint8)
     SlowNST.display_img(content_example, "Content example image", deprocess = False)
 
     for epoch in range(epochs):
@@ -527,7 +527,7 @@ class FastNST(NetworkInterface):
         self.losses.append(loss)
 
         # VERBOSE OUTPUT
-        if verbose and batch_nums[0] % int(num_batches / 20) == 0: # if verbose, display information every 20 batches
+        if verbose and batch_nums[0] % int(num_batches / 20) == 0: # if verbose, display information ~20 times per epoch
           elapsed = round(time() - batch_start)
 
           if eta is None:
@@ -548,7 +548,7 @@ class FastNST(NetworkInterface):
         # BATCH COUNT
         batch_nums[0] += 1
 
-        if batch_nums[0] >= generator.samples:
+        if batch_nums[0] >= generator.samples or (generator.samples - batch_nums[0]) < batch_size:
           break
 
       if verbose:
