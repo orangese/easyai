@@ -23,7 +23,7 @@ The most basic EasyAI model is the `NN` object.
 from easyai import NN
 from easyai.layers import Input, FC
 
-neural_network = NN(Input(100), FC(200), FC(5))
+neural_network = NN(Input(num_neurons = 100), FC(num_neurons = 200), FC(num_neurons = 5))
 
 ```
 
@@ -31,7 +31,7 @@ You can add and remove layers using the `add_layer` and `rm_layer` functions.
 
 ```python
 
-neural_network.add_layer(FC(200), position = 1)
+neural_network.add_layer(FC(num_neurons = 200), position = 1)
 
 neural_network.rm_layer(position = 1)
 
@@ -60,7 +60,7 @@ style_img = "your style image here"
 neural_style_transfer_net = SlowNST()
 neural_style_transfer_net.train(content_img, style_img)
 
-# runs neural style transfer, which combines the style of an image (e.g., Starry Night)
+# runs neural style transfer, which combines the style of an image (e.g., Van Gogh's Starry Night)
 # with the content of another one (e.g., a dog) to create a new, unique image (Starry Dog!)
 
 ```
