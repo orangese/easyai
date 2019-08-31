@@ -18,10 +18,13 @@ def suppress_tf_warnings():
 
 suppress_tf_warnings()
 
+from . import _advanced
+from . import support
 from . import applications
 from . import core
-from . import support
+from . import framework
+from . import layers
 
 # Importable from root
-from .core import StaticInterface
+from .framework import *
 from .core import NN
