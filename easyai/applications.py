@@ -20,6 +20,7 @@ import tensorflow as tf
 from easyai._advanced import HidePrints
 from easyai._advanced._nets import *
 from easyai._advanced._losses import *
+from easyai.support.datasets.datasets import Extras
 
 # NEURAL NETWORK APPLICATION
 class SlowNST(NetworkInterface):
@@ -468,7 +469,7 @@ class FastNST(NetworkInterface):
 
   # TRAINING
   def train(self, style: Image.Image, epochs: int = 1, batch_size = 2, init_noise: float = 0.6,
-            target_size: tuple = (256, 256), verbose: bool = True, save_path: str = None) -> np.ndarray:
+            target_size: tuple = (256, 256), verbose: bool = True, save_path: str = None) -> Union[np.ndarray, None]:
     """
     Trains the image transform network on the MS COCO dataset (https://cocodataset.org/#download) to match a certain
     style. This dataset does not come preinstalled with easyai and takes a while to download (~4 hours).
@@ -489,6 +490,17 @@ class FastNST(NetworkInterface):
     path_to_coco = os.getenv("HOME") + "/coco"
     coco_dataset = "unlabeled2017"
 
+    # COCO DOWNLOAD
+    if os.path.exists(path_to_coco + "/" + coco_dataset):
+      print("COCO already downloaded. Starting training")
+    else:
+      if input("Downloading COCO dataset... press Y to download and any other key to abort").upper() == "Y":
+        Extras.load_coco()
+      else:
+        print("COCO not downloaded-- aborting.")
+        return None
+
+    # TRAIN INIT AND SETUP
     self.train_init(style, target_size = target_size, noise = init_noise, norm = "instance", verbose = verbose)
 
     with HidePrints(): # hiding print messages called when using ImageDataGenerator
@@ -508,6 +520,7 @@ class FastNST(NetworkInterface):
     content_example = np.array(content_example.resize(target_size)).astype(np.uint8)
     SlowNST.display_img(content_example, "Content example image", deprocess = False)
 
+    # TRAINING LOOP
     for epoch in range(epochs):
       if verbose:
         print("Epoch {0}/{1}".format(epoch + 1, epochs))
@@ -521,7 +534,7 @@ class FastNST(NetworkInterface):
 
       for batch, labels in generator: # batch == labels == content image
 
-        # TRAINING
+        # TRAINING ON BATCH
         loss = self.k_model.train_on_batch(batch, labels) # train single batch
 
         self.losses.append(loss)
