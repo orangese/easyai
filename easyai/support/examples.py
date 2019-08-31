@@ -29,7 +29,7 @@ class MNIST(StaticInterface):
     (x_train, y_train), (x_test, y_test) = Builtins.load_mnist(version = version, mode = "mlp")
     print("Loaded MNIST data\n")
 
-    mlp = NN(Input(784), Dense(100), Dense(10, actv = "softmax"), loss = "categorical_crossentropy")
+    mlp = NN(Input(784), FC(100), FC(10, actv = "softmax"), loss = "categorical_crossentropy")
     print(mlp.summary())
 
     mlp.train(x_train, y_train, lr = 3.0, epochs = 1)
@@ -48,7 +48,7 @@ class MNIST(StaticInterface):
     (x_train, y_train), (x_test, y_test) = Builtins.load_mnist(version = version, mode = "conv")
     print("Loaded MNIST data")
 
-    conv_nn = NN(Input(28, 28), Conv((5, 5), 20), Pooling(2, 2), Dense(100), Dense(10, actv = "softmax"),
+    conv_nn = NN(Input(28, 28), Conv((5, 5), 20), Pooling(2, 2), FC(100), FC(10, actv = "softmax"),
                  loss = "categorical_crossentropy")
     print(conv_nn.summary())
 
@@ -72,7 +72,7 @@ class Lending_Club(StaticInterface):
     (x_train, y_train), (x_test, y_test) = Extras.load_lending_club()
     print("Loaded LendingClub data")
 
-    mlp = NN(Input(9), Dense(200, actv = "relu"), Dense(200, actv = "relu"), Dense(7, actv = "softmax"),
+    mlp = NN(Input(9), FC(200, actv = "relu"), FC(200, actv = "relu"), FC(7, actv = "softmax"),
              loss = "categorical_crossentropy")
     print(mlp.summary())
 

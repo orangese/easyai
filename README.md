@@ -16,28 +16,28 @@ probably find it easiest to transition to Keras from EasyAI.
 
 As previously stated, EasyAI focuses on usability and should be simple to use _if you have some understanding of machine learning concepts_. Since this library is meant to be a teaching library, using it does require a bit of background knowledge.
 
-The most basic EasyAI model is the `NN` object:
+The most basic EasyAI model is the `NN` object.
 
 ```python
 
 from easyai import NN
-from easyai.layers import Input, Dense
+from easyai.layers import Input, FC
 
-neural_network = NN(Input(100), Dense(200), Dense(5))
+neural_network = NN(Input(100), FC(200), FC(5))
 
 ```
 
-You can add and remove layers using the `add_layer` and `rm_layer` functions:
+You can add and remove layers using the `add_layer` and `rm_layer` functions.
 
 ```python
 
-neural_network.add_layer(Dense(200), position = 1)
+neural_network.add_layer(FC(200), position = 1)
 
 neural_network.rm_layer(position = 1)
 
 ```
 
-Training is as easy as `neural_network.train()`:
+Training is as easy as `neural_network.train()`.
 
 ```python
 
@@ -48,13 +48,32 @@ neural_network.train(x_train, y_train, epochs = 10)
 
 ```
 
-Need help getting started? Run `easyai.support.examples`:
+Neural networks are cool, but the real fun is in their applications. Run `easyai.applications` to see neural networks in action!
+
+```python
+
+from easyai.applications import SlowNST
+
+# runs neural style transfer, which combines the style of an image (e.g., Starry Night)
+# with the content of another one (e.g., a dog) to create a new, unique image (Starry Dog!)
+
+content_img = "your content image here"
+style_img = "your style image here"
+
+neural_style_transfer_net = SlowNST()
+neural_style_transfer_net.train(content_img, style_img)
+
+
+```
+
+Need help getting started? Run `easyai.support.examples`.
 
 ```python
 
 from easyai.support.examples import MNIST
 
-MNIST.mlp() # creates and runs a standard neural network on the digit classifying dataset, MNIST
+# creates and runs a neural network on the digit classifying dataset, MNIST
+MNIST.mlp()
 
 ```
 

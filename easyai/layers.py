@@ -30,14 +30,14 @@ class Input(AbstractLayer):
       self.output_shape = (input_shape, 1)
     self.k_model = None # just to be explicit
 
-class Dense(AbstractLayer):
+class FC(AbstractLayer):
   """
-  MLP layer (aka a dense layer).  Has a keras mask.
+  MLP layer (aka a FC or dense layer).  Has a keras mask.
   """
 
   def __init__(self, num_neurons: int , actv: str = "sigmoid"):
     """
-    Initializes Dense object.
+    Initializes FC object.
 
     :param num_neurons: number of neurons in this layer.
     :param actv: activation function of this layer. Default is sigmoid.
