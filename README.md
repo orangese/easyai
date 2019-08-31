@@ -54,15 +54,14 @@ Neural networks are cool, but the real fun is in their applications. Run `easyai
 
 from easyai.applications import SlowNST
 
-# runs neural style transfer, which combines the style of an image (e.g., Starry Night)
-# with the content of another one (e.g., a dog) to create a new, unique image (Starry Dog!)
-
 content_img = "your content image here"
 style_img = "your style image here"
 
 neural_style_transfer_net = SlowNST()
 neural_style_transfer_net.train(content_img, style_img)
 
+# runs neural style transfer, which combines the style of an image (e.g., Starry Night)
+# with the content of another one (e.g., a dog) to create a new, unique image (Starry Dog!)
 
 ```
 
@@ -72,8 +71,9 @@ Need help getting started? Run `easyai.support.examples`.
 
 from easyai.support.examples import MNIST
 
-# creates and runs a neural network on the digit classifying dataset, MNIST
 MNIST.mlp()
+
+# creates and runs a neural network on the digit classifying dataset, MNIST
 
 ```
 
