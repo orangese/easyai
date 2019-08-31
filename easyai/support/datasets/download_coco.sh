@@ -2,6 +2,7 @@
 
 if [ ! -d "$HOME/coco" ] ; then
   echo "Preparing to download COCO. When prompted, please select all default options"
+  sleep 2s
   mkdir coco
   cd coco || echo "Local directory 'coco' was not found" ; exit
   curl https://sdk.cloud.google.com || echo "https://sdk.cloud.google.com is not accesible" ; exit
