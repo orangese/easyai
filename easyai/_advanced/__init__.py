@@ -2,16 +2,16 @@ import os
 import sys
 
 # PRINT HANDLING
-class HidePrints:
-  """Temporarily hides prints. Copied from StackOverflow."""
+class HidePrints(object):
+  """Temporarily hides prints."""
 
   def __enter__(self):
-    self._original_stdout = sys.stdout
-    sys.stdout = open(os.devnull, 'w')
+    self.to_show = sys.stdout
+    sys.stdout = open(os.devnull, "w")
 
   def __exit__(self, exc_type, exc_val, exc_tb):
     sys.stdout.close()
-    sys.stdout = self._original_stdout
+    sys.stdout = self.to_show
 
 from . import HidePrints
 
