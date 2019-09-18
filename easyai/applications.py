@@ -71,7 +71,7 @@ class SlowNST(NetworkInterface):
 
     self.image_init(content, style)
 
-    self.img_tensor = K.concatenate([getattr(self, img) for img in SlowNST.get_hps("img_order")], axis = 0)
+    self.img_tensor = K.concatenate([getattr(self, img) for img in self.get_hps("img_order")], axis = 0)
 
     self.model_init()
 
@@ -119,7 +119,7 @@ class SlowNST(NetworkInterface):
     :param content_layer: layer at which content loss will be evaluated. Is a pre-defined hyperparameter.
     :param style_layers: layer(s) at which style loss will be evaluated. Is a pre-defined hyperparameter.
     """
-    coef_c, coef_s, coef_v = SlowNST.get_hps("coef_c", "coef_s", "coef_v")
+    coef_c, coef_s, coef_v = self.get_hps("coef_c", "coef_s", "coef_v")
 
     loss = self.loss_tensor(content_layer, style_layers, coef_c, coef_s, coef_v)
     grads = K.gradients(loss, self.generated)
@@ -147,7 +147,7 @@ class SlowNST(NetworkInterface):
 
     self.train_init(content, style, verbose = verbose, noise = init_noise)
 
-    content_layer, style_layers = SlowNST.get_hps("content_layer", "style_layers")
+    content_layer, style_layers = self.get_hps("content_layer", "style_layers")
 
     self.tensor_init(content_layer, style_layers)
 
@@ -214,8 +214,8 @@ class SlowNST(NetworkInterface):
       """Computes the content loss at layer "layer"."""
       layer_features = outputs[layer]
 
-      content_actvs = layer_features[SlowNST.get_hps("img_order").index("content"), :, :, :]
-      generated_actvs = layer_features[SlowNST.get_hps("img_order").index("generated"), :, :, :]
+      content_actvs = layer_features[self.get_hps("img_order").index("content"), :, :, :]
+      generated_actvs = layer_features[self.get_hps("img_order").index("generated"), :, :, :]
 
       return K.sum(K.square(generated_actvs - content_actvs)) # i.e., squared norm
 
@@ -247,8 +247,8 @@ class SlowNST(NetworkInterface):
     for layer in style_layers: # style loss
       layer_features = self.outputs[layer]
 
-      generated_actvs = layer_features[SlowNST.get_hps("img_order").index("generated"), :, :, :]
-      style_actvs = layer_features[SlowNST.get_hps("img_order").index("style"), :, :, :]
+      generated_actvs = layer_features[self.get_hps("img_order").index("generated"), :, :, :]
+      style_actvs = layer_features[self.get_hps("img_order").index("style"), :, :, :]
 
       layer_shape = layer_features.get_shape().as_list()
       norm_term = 4.0 * (layer_shape[-1] ** 2) * (np.prod(layer_shape[1:-1]) ** 2)
@@ -290,7 +290,7 @@ class SlowNST(NetworkInterface):
     img = np.copy(img_)
     if target_shape is not None:
       img = img.reshape(target_shape)
-    means = SlowNST.get_hps("means")
+    means = self.get_hps("means")
     for i in range(len(means)):
       img[:, :, i] += means[i] # adding mean pixel values
     img = img[:, :, ::-1] #BGR -> RBG
@@ -342,21 +342,9 @@ class SlowNST(NetworkInterface):
 
     plt.show(block = False)
 
-  # MISCELLANEOUS
-  @staticmethod
-  def get_hps(*hyperparams: str) -> Union[str, tuple, float]:
-    """
-    Fetches hyperparameters. Merely a syntax simplification tool.
-
-    :param hyperparams: any number of hyperparameters to fetch.
-    :return: feched hyperparameters.
-    """
-    fetched = tuple(SlowNST.HYPERPARAMS[hp.upper()] for hp in hyperparams)
-    return fetched[0] if len(fetched) == 1 else fetched
-
 class FastNST(NetworkInterface):
   """
-  Fast neural style transfer, uses implementation of slow neural style transfer.
+  Fast neural style transfer.
 
   Paper: https://cs.stanford.edu/people/jcjohns/papers/eccv16/JohnsonECCV16.pdf
   Supplementary material: https://cs.stanford.edu/people/jcjohns/papers/eccv16/JohnsonECCV16Supplementary.pdf
@@ -364,6 +352,19 @@ class FastNST(NetworkInterface):
   Fast NST trains on the COCO dataset (~4 hours) and then can stylize images 1e3 times faster than slow NST. However,
   each unique style requires another round of training on the COCO dataset.
   """
+
+  # CONSTANTS
+  HYPERPARAMS = SlowNST.HYPERPARAMS.copy()
+
+  CUSTOM_LAYERS = {
+    "Normalize": Normalize,
+    "ReflectionPadding2D": ReflectionPadding2D,
+    "InstanceNorm": InstanceNorm,
+    "conv_norm_block": NSTTransform.conv_norm_block,
+    "conv_res_block": NSTTransform.conv_res_block,
+    "Denormalize": Denormalize,
+    "TVRegularizer": TVRegularizer
+  }
 
   # INITS
   def __init__(self, img_transform_net: NetworkInterface = NSTTransform(), loss_net: str = "vgg16"):
@@ -396,7 +397,8 @@ class FastNST(NetworkInterface):
     self.style = style.resize(target_size)
 
     # NET INIT
-    self.img_transform_net.train_init(target_size, coef_v = SlowNST.get_hps("coef_v"), noise = noise, norm = norm)
+    self.img_transform_net.train_init(target_size, self.get_hps("coef_v"), noise = noise, norm = norm,
+                                      verbose = verbose)
     self.loss_net_init()
 
     self.k_model.compile(optimizer = keras.optimizers.Adam(), loss = FastNST.dummy_loss)
@@ -415,7 +417,7 @@ class FastNST(NetworkInterface):
 
       def add_style_loss(style_img, layers, outputs, target_size):
         # retrieving hyperparameters
-        style_layers = SlowNST.get_hps("style_layers")
+        style_layers = self.get_hps("style_layers")
 
         # preprocessing
         style_img = style_img.resize(reversed(target_size))
@@ -425,19 +427,19 @@ class FastNST(NetworkInterface):
         # +3 to account for Normalize, Denormalize, and Concatenate layers
         style_features = style_func([style_img])
 
-        weight = SlowNST.get_hps("coef_s") / len(style_layers)
+        weight = self.get_hps("coef_s") / len(style_layers)
         for layer_num, layer_name in enumerate(style_layers): # adding style loss
           layer = layers[layer_name]
           style_regularizer = StyleRegularizer(K.variable(style_features[layer_num][0]), weight)(layer)
           layer.add_loss(style_regularizer)
 
       def add_content_loss(layers):
-        content_layer = layers[SlowNST.get_hps("content_layer")]
-        content_regularizer = ContentRegularizer(SlowNST.get_hps("coef_c"))(content_layer)
+        content_layer = layers[self.get_hps("content_layer")]
+        content_regularizer = ContentRegularizer(self.get_hps("coef_c"))(content_layer)
         content_layer.add_loss(content_regularizer)
 
       def add_tv_loss(tv_layer):
-        tv_layer.add_loss(TVRegularizer(SlowNST.get_hps("coef_v"))(tv_layer))
+        tv_layer.add_loss(TVRegularizer(self.get_hps("coef_v"))(tv_layer))
 
       outputs = dict([(layer.name, layer.output) for layer in model.layers[-(vgg_num + 2):]])
       layers = dict([(layer.name, layer) for layer in model.layers[-(vgg_num + 2):]])
@@ -484,6 +486,7 @@ class FastNST(NetworkInterface):
     :param save_path: path to save training results
     :return: fast NST run on content example (numpy array).
     :raises ModuleNotFoundError: if provided loss net is not valid.
+    :raises FileNotFoundError: if COCO is not downloaded.
     """
     assert batch_size == 2, "only batch size of 2 is supported"
 
@@ -492,13 +495,13 @@ class FastNST(NetworkInterface):
 
     # COCO DOWNLOAD
     if os.path.exists(path_to_coco + "/" + coco_dataset):
-      print("COCO already downloaded. Starting training")
+      if verbose:
+        print("COCO already downloaded. Starting training")
     else:
-      if input("Downloading COCO dataset... press Y to download and any other key to abort").upper() == "Y":
+      if input("Downloading COCO dataset... press Y to download and any other key to abort: ").upper() == "Y":
         Extras.load_coco()
       else:
-        print("COCO not downloaded-- aborting.")
-        return None
+        raise FileNotFoundError("COCO not downloaded")
 
     # TRAIN INIT AND SETUP
     self.train_init(style, target_size = target_size, noise = init_noise, norm = "instance", verbose = verbose)
@@ -535,7 +538,11 @@ class FastNST(NetworkInterface):
       for batch, labels in generator: # batch == labels == content image
 
         # TRAINING ON BATCH
-        loss = self.k_model.train_on_batch(batch, labels) # train single batch
+        try:
+          loss = self.k_model.train_on_batch(batch, labels) # train single batch
+        except tf.errors.InvalidArgumentError:
+          break # TODO: fix training bug that causes an "incompatible shape" error at the end of training
+                #       (tensorflow.python.framework.errors_impl.invalidargumenterror)
 
         self.losses.append(loss)
 
@@ -544,10 +551,9 @@ class FastNST(NetworkInterface):
           elapsed = round(time() - batch_start)
 
           if eta is None:
-            eta = round(elapsed * num_batches - elapsed)
+            eta = round(elapsed * num_batches - elapsed * batch_nums[0])
           else:
-            eta = round((0.95 * eta + 0.05 * (elapsed * (num_batches - batch_nums[0]))) - elapsed)
-            # exponentially weighted average of previous ETAs and current elapsed time
+            eta -= round(elapsed)
 
           print(" - {}s - batches {}-{} of {} completed ({}%) - time until next epoch - {}s - loss - {:.4e}".format(
             elapsed, *reversed(batch_nums), num_batches, round(batch_nums[0] / num_batches * 100, 1), eta,
@@ -570,8 +576,9 @@ class FastNST(NetworkInterface):
         self.losses = []
 
       if save_path is not None:
-        full_save_path = save_path + "/epoch{0}.png".format(epoch + 1)
-        keras.preprocessing.image.save_img(full_save_path, self.run_nst(content_example))
+        full_save_path = save_path + "/epoch{0}.h5".format(epoch + 1)
+        keras.models.save_model(self.img_transform_net.k_model, full_save_path)
+        print("Saved image transform net at {}".format(full_save_path))
 
     return self.run_nst(content_example)
 
@@ -603,12 +610,21 @@ class FastNST(NetworkInterface):
     """
     return K.variable(0.0)
 
+  # INIT FROM H5
+  def load_model(self, filepath):
+    """
+    Loads a pretrained image transform network.
+
+    :param filepath: path to keras h5 model file.
+    """
+    self.img_transform_net.k_model = keras.models.load_model(filepath, custom_objects = FastNST.CUSTOM_LAYERS)
+
 if __name__ == "__main__":
-  # SlowNST.HYPERPARAMS["COEF_S"] = 0
+  FastNST.HYPERPARAMS["COEF_S"] = 1.0
   # SlowNST.HYPERPARAMS["COEF_V"] = 0
 
   from easyai.support.load import load_imgs
   style = load_imgs("https://drive.google.com/uc?export=download&id=18MpTOAt40ngCRpX1xcckwxUXNhOiBemJ")
 
   test = FastNST()
-  test.train(style, batch_size = 2)
+  test.train(style, batch_size = 2, save_path = "/home/ryan", epochs = 2, verbose = True)
