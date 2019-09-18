@@ -7,13 +7,15 @@ Framework for other files (abstract classes, interfaces, etc.).
 
 """
 
+from typing import Union
+
 # FRAMEWORK
 class StaticInterface(object):
   """
   Static interface for other programs. An object of this class cannot be created.
   """
 
-  def __init__(self, **kwargs):
+  def __init__(self, *args, **kwargs):
     """
     As StaticInterface objects should not be created, __init__ throws a NotImplementedError.
 
@@ -25,7 +27,9 @@ class StaticInterface(object):
 class NetworkInterface(object):
   """Interface for all network-like classes."""
 
-  def __init__(self, **kwargs):
+  HYPERPARAMS = {} # to be filled by child classes
+
+  def __init__(self, *args, **kwargs):
     """
     Initialization for interfaces should not be used.
 
@@ -34,7 +38,7 @@ class NetworkInterface(object):
     self.k_model = None  # to be explicit, every NetworkInterface should have a k_model attribute
     raise NotImplementedError("class is an interface")
 
-  def train_init(self, **kwargs):
+  def train_init(self, *args, **kwargs):
     """
     Creates keras mask.
 
@@ -42,7 +46,7 @@ class NetworkInterface(object):
     """
     raise NotImplementedError("class is an interface")
 
-  def train(self, **kwargs):
+  def train(self, *args, **kwargs):
     """
     Trains network.
 
@@ -50,12 +54,23 @@ class NetworkInterface(object):
     """
     raise NotImplementedError("class is an interface")
 
+  # PRE-IMPLEMENTED FUNCTIONS
+  def get_hps(self, *hyperparams: str) -> Union[str, tuple, float]:
+    """
+    Fetches hyperparameters from a NetworkInterface class. Merely a syntax simplification tool.
+
+    :param hyperparams: any number of hyperparameters to fetch.
+    :return: feched hyperparameters.
+    """
+    fetched = tuple(self.HYPERPARAMS[hp.upper()] for hp in hyperparams)
+    return fetched[0] if len(fetched) == 1 else fetched
+
 class AbstractLayer(object):
   """
   Abstract class that acts as the base for all layer classes. Should not be implemented.
   """
 
-  def __init__(self, num_neurons: int, actv: str, **kwargs):
+  def __init__(self, num_neurons: int, actv: str, *args, **kwargs):
     """
     As AbstractLayer objects should not be created, __init__ throws a NotImplementedError.
 
@@ -76,7 +91,7 @@ class AbstractLayer(object):
   def __repr__(self):
     return self.__str__()
 
-  def train_init(self, **kwargs):
+  def train_init(self, *args, **kwargs):
     """
      Creates keras mask. This mask will be used for training and all computations.
 
