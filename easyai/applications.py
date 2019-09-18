@@ -15,7 +15,6 @@ import random
 import matplotlib.pyplot as plt
 from PIL import Image
 from scipy.optimize import fmin_l_bfgs_b
-import tensorflow as tf
 
 from easyai._advanced import HidePrints
 from easyai._advanced._nets import *
@@ -290,7 +289,7 @@ class SlowNST(AbstractNetwork):
     img = np.copy(img_)
     if target_shape is not None:
       img = img.reshape(target_shape)
-    means = self.get_hps("means")
+    means = SlowNST().get_hps("means")
     for i in range(len(means)):
       img[:, :, i] += means[i] # adding mean pixel values
     img = img[:, :, ::-1] #BGR -> RBG

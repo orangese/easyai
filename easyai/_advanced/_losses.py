@@ -7,6 +7,8 @@ Advanced keras losses, activity regularizers, and support. Not for use by easyai
 
 """
 
+from keras import backend as K
+
 from easyai.core import *
 
 # SUPPORT FOR CUSTOM LOSS

@@ -8,11 +8,9 @@ Contains core functionality for easyai: the NN class.
 """
 
 # IMPORTS
-from typing import Union, List
 from time import time
 
 import keras
-import keras.backend as K
 import numpy as np
 
 from easyai.framework import *
