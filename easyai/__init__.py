@@ -28,3 +28,5 @@ from . import layers
 # Importable from root
 from .framework import *
 from .core import NN
+
+__version__ = "0.0a"
