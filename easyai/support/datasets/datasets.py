@@ -306,11 +306,19 @@ class Extras(StaticInterface):
 class Helpers(StaticInterface):
 
   @staticmethod
-  def get_img(img_name: str, key: str, images: dict):
+  def get_img(img_name: str, key: str, images: dict) -> Image.Image:
+    """
+    Gets image from dictionary.
+
+    :param img_name: name of image to be retrieved.
+    :param key: type of image (must be in dictionary keys).
+    :param images: image dictionary.
+    :return: retrieved image.
+    """
     if img_name is None:
-      return random.choice(list(images[key].items()))
+      return random.choice(list(images[key].values()))
     else:
       try:
-        return img_name, images[key][img_name]
+        return images[key][img_name]
       except KeyError:
         raise ValueError("supported {0} images are {1}".format(key, list(images[key].keys())))
