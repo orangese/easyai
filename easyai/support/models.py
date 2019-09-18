@@ -37,17 +37,17 @@ class FastNSTModels(TrainedModelInterface):
   # TODO: created pretrained fast NST net and write load_net function
 
   @staticmethod
-  def load_net(net_name: str) -> NetworkInterface:
+  def load_net(net_name: str) -> AbstractNetwork:
     """
     Loads pretrained fast NST model.
 
     :param net_name: name of model to be loaded.
-    :return: pretrained model as a NetworkInterface.
+    :return: pretrained model as a AbstractNetwork.
     """
     raise NotImplementedError()
 
   @staticmethod
-  def random_net() -> NetworkInterface:
+  def random_net() -> AbstractNetwork:
     """
     Loads random pretrained fast NST model.
 

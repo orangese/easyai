@@ -23,9 +23,8 @@ class StaticInterface(object):
     """
     raise NotImplementedError("class is static")
 
-
-class NetworkInterface(object):
-  """Interface for all network-like classes."""
+class AbstractNetwork(object):
+  """Abstract parent for all network-like classes."""
 
   HYPERPARAMS = {} # to be filled by child classes
 
@@ -35,7 +34,7 @@ class NetworkInterface(object):
 
     :raises NotImplementedError: class is an interface
     """
-    self.k_model = None  # to be explicit, every NetworkInterface should have a k_model attribute
+    self.k_model = None  # to be explicit, every AbstractNetwork should have a k_model attribute
     raise NotImplementedError("class is an interface")
 
   def train_init(self, *args, **kwargs):
@@ -57,7 +56,7 @@ class NetworkInterface(object):
   # PRE-IMPLEMENTED FUNCTIONS
   def get_hps(self, *hyperparams: str) -> Union[str, tuple, float]:
     """
-    Fetches hyperparameters from a NetworkInterface class. Merely a syntax simplification tool.
+    Fetches hyperparameters from a AbstractNetwork class. Merely a syntax simplification tool.
 
     :param hyperparams: any number of hyperparameters to fetch.
     :return: feched hyperparameters.

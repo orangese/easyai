@@ -18,7 +18,7 @@ import numpy as np
 from easyai.framework import *
 
 # NEURAL NETWORK IMPLEMENTATION
-class NN(NetworkInterface):
+class NN(AbstractNetwork):
   """
   Uses easyai layer objects to create a functional keras model.
   """

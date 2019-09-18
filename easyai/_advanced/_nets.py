@@ -11,7 +11,7 @@ from easyai._advanced._layers import *
 from easyai._advanced._losses import *
 
 # NST TRANSFORM NET
-class NSTTransform(NetworkInterface):
+class NSTTransform(AbstractNetwork):
   """Image transform NST layers. Implementation of network described in
   https://cs.stanford.edu/people/jcjohns/papers/eccv16/JohnsonECCV16.pdf. See 
   https://cs.stanford.edu/people/jcjohns/papers/eccv16/JohnsonECCV16Supplementary.pdf for exact network structure."""

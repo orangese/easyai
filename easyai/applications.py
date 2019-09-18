@@ -23,7 +23,7 @@ from easyai._advanced._losses import *
 from easyai.support.datasets.datasets import Extras
 
 # NEURAL NETWORK APPLICATION
-class SlowNST(NetworkInterface):
+class SlowNST(AbstractNetwork):
   """
   Class implementation of neural style transfer learning. As of August 2019, only VGG19 and VGG16 is supported.
   Borrowed heavily from the keras implementation of neural style transfer.
@@ -342,7 +342,7 @@ class SlowNST(NetworkInterface):
 
     plt.show(block = False)
 
-class FastNST(NetworkInterface):
+class FastNST(AbstractNetwork):
   """
   Fast neural style transfer.
 
@@ -367,7 +367,7 @@ class FastNST(NetworkInterface):
   }
 
   # INITS
-  def __init__(self, img_transform_net: NetworkInterface = NSTTransform(), loss_net: str = "vgg16"):
+  def __init__(self, img_transform_net: AbstractNetwork = NSTTransform(), loss_net: str = "vgg16"):
     """
     Initializes fast NST object. This network has two parts: a trainable network (img_transform_net) and a fixed
     network (loss_net).
