@@ -574,7 +574,7 @@ class FastNST(NetworkInterface):
           break
 
       if verbose:
-        print("Epoch {0} completed in {1}s with average loss of {2}".format(epoch, round(time() - start),
+        print("Epoch {0} completed in {1}s with average loss of {2}".format(epoch + 1, round(time() - start),
                                                                             np.average(np.array(self.losses))))
         self.losses = []
 
@@ -613,7 +613,7 @@ class FastNST(NetworkInterface):
     """
     return K.variable(0.0)
 
-  # INIT FROM H5
+  # LOAD FROM H5
   def load_model(self, filepath):
     """
     Loads a pretrained image transform network.
@@ -630,4 +630,7 @@ if __name__ == "__main__":
   style = load_imgs("https://drive.google.com/uc?export=download&id=18MpTOAt40ngCRpX1xcckwxUXNhOiBemJ")
 
   test = FastNST()
-  test.train(style, batch_size = 2, save_path = "/home/ryan", epochs = 2, verbose = True)
+  # test.train(style, batch_size = 2, save_path = "/home/ryan", epochs = 2, verbose = True)
+  test.load_model('/home/ryan/epoch2.h5')
+  plt.imshow(test.run_nst(load_imgs("/home/ryan/PycharmProjects/food-404/images/acai_bowl/1.ACAIBOWLF8.jpg").resize((256, 256))))
+  plt.show()
