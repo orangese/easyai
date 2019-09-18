@@ -14,7 +14,7 @@ from PIL import Image
 import requests
 
 # GENERAL FUNCTIONS
-def load_imgs(*paths) -> Union[List[Image.Image], Image.Image]:
+def load_imgs(*paths: str) -> Union[List[Image.Image], Image.Image]:
   """
   Loads new images from paths or links. Images will be of shape (width, height, 3) and will have pixel values
   ranging from 0 to 255.

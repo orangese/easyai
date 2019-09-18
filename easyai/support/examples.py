@@ -8,7 +8,6 @@ Program that implements easyai.support.datasets.datasets and easyai.core in exam
 """
 
 from easyai.layers import *
-from easyai.applications import *
 from easyai.support.datasets.datasets import *
 from easyai.support.models import *
 
@@ -87,14 +86,14 @@ class Art(StaticInterface):
   """
 
   @staticmethod
-  def slow_nst(content = None, style = None, save_path = None):
+  def slow_nst(content: str = None, style: str = None, save_path: str = None) -> np.ndarray:
     """
     (Slow) neural style transfer with art and photographs.
 
     :param content: name of content image from dataset. Default is a random image from built-in datasets.
     :param style: name of style image from dataset. Default is a random image from built-in datasets.
     :param save_path: path to which to save final result. Default is None.
-    :return: trained SlowNST object.
+    :return: final image.
     """
     images = Extras.load_nst_imgs()
     print("Loaded NST images")
@@ -115,20 +114,22 @@ class Art(StaticInterface):
       keras.preprocessing.image.save_img(full_save_path, final_img)
       print("Saved image at \"{0}\"".format(full_save_path))
 
+    return final_img
+
   @staticmethod
-  def fast_nst(content = None, style_net = None, save_path = None):
+  def fast_nst(content_name: str = None, style_net: str = None, save_path: str = None) -> np.ndarray:
     """
     (Fast) neural style transfer with arts and photographs, using pretrained models.
 
-    :param content: name of content image. Default is None.
+    :param content_name: name of content image. Default is None.
     :param style_net: name of style network. Default is None.
     :param save_path: path to which to save the final result. Default is None.
-    :return: final result.
+    :return: final image.
     """
     images = Extras.load_nst_imgs()
     print("Loaded NST images")
 
-    content_name, content_img = Helpers.get_img(content, "content", images)
+    content_img = Helpers.get_img(content_name, "content", images)
 
     if style_net is None:
       model = FastNSTModels.random_net()
@@ -137,7 +138,7 @@ class Art(StaticInterface):
 
     print("Using content image \"{0}\" and style net trained on  \"{1}\"".format(content_name, style_net))
 
-    final_img = model.run_nst(content)
+    final_img = model.run_nst(content_img)
 
     SlowNST.display_img(final_img, "Final result")
 
@@ -145,6 +146,8 @@ class Art(StaticInterface):
       full_save_path = save_path + "/{0}_{1}.jpg".format(content_img, style_net)
       keras.preprocessing.image.save_img(full_save_path, final_img)
       print("Saved image at \"{0}\"".format(full_save_path))
+
+    return final_img
 
 #--BELOW NOT SUPPORTED--
 from tkinter import *
