@@ -410,6 +410,9 @@ class FastNST(NetworkInterface):
       print("Loaded NST loss net")
 
   def loss_net_init(self):
+    """
+    Loss net initialization. Implements many of the methods and classes in easyai._advanced.
+    """
 
     vgg_num = self.vgg_num
 
@@ -578,7 +581,7 @@ class FastNST(NetworkInterface):
       if save_path is not None:
         full_save_path = save_path + "/epoch{0}.h5".format(epoch + 1)
         keras.models.save_model(self.img_transform_net.k_model, full_save_path)
-        print("Saved image transform net at {}".format(full_save_path))
+        print("Saved image transform net (iteration {}) at {}".format(epoch + 1, full_save_path))
 
     return self.run_nst(content_example)
 
