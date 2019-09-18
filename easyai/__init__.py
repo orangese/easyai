@@ -1,7 +1,7 @@
 # ERROR HANDLING
 def suppress_tf_warnings():
   """
-  Suppresses tensorflow warnings. Does not work if tensorflow is outdated.
+  Suppresses tensorflow warnings for tensorflow == 1.14.0 or tensorflow-gpu == 1.8.0.
   """
   import os
   os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
