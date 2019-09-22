@@ -354,6 +354,8 @@ class FastNST(AbstractNetwork):
 
   # CONSTANTS
   HYPERPARAMS = SlowNST.HYPERPARAMS.copy()
+  HYPERPARAMS["CONTENT LAYER"] = "block2_conv2"
+  HYPERPARAMS["STYLE LAYERS"] = ["block1_conv2", "block2_conv2", "block3_conv3", "block4_conv3"]
 
   CUSTOM_LAYERS = {
     "Normalize": Normalize,
@@ -396,8 +398,7 @@ class FastNST(AbstractNetwork):
     self.style = style.resize(target_size)
 
     # NET INIT
-    self.img_transform_net.train_init(target_size, self.get_hps("coef_v"), noise = noise, norm = norm,
-                                      verbose = verbose)
+    self.img_transform_net.train_init(target_size, norm = norm, verbose = verbose)
     self.loss_net_init()
 
     self.k_model.compile(optimizer = keras.optimizers.Adam(), loss = FastNST.dummy_loss)
@@ -549,7 +550,7 @@ class FastNST(AbstractNetwork):
         self.losses.append(loss)
 
         # VERBOSE OUTPUT
-        if verbose and batch_nums[0] % int(num_batches / 20) == 0: # if verbose, display information ~20 times per epoch
+        if verbose and batch_nums[0] % 40 == 0:#int(num_batches / 20) == 0: # if verbose, display information ~20 times per epoch
           elapsed = round(time() - batch_start)
 
           if eta is None:
@@ -622,14 +623,15 @@ class FastNST(AbstractNetwork):
     self.img_transform_net.k_model = keras.models.load_model(filepath, custom_objects = FastNST.CUSTOM_LAYERS)
 
 if __name__ == "__main__":
-  FastNST.HYPERPARAMS["COEF_S"] = 1.0
-  # SlowNST.HYPERPARAMS["COEF_V"] = 0
+  # FastNST.HYPERPARAMS["COEF_S"] = 0.0
+  # FastNST.HYPERPARAMS["COEF_V"] = 0
+  # FastNST.HYPERPARAMS["COEF_V"] = 1.0
 
   from easyai.support.load import load_imgs
   style = load_imgs("https://drive.google.com/uc?export=download&id=18MpTOAt40ngCRpX1xcckwxUXNhOiBemJ")
 
   test = FastNST()
-  # test.train(style, batch_size = 2, save_path = "/home/ryan", epochs = 2, verbose = True)
-  test.load_model('/home/ryan/epoch2.h5')
+  test.train(style, batch_size = 2, save_path = "/home/ryan", epochs = 2, verbose = True)
+  # test.load_model('/home/ryan/epoch2.h5')
   plt.imshow(test.run_nst(load_imgs("/home/ryan/PycharmProjects/food-404/images/acai_bowl/1.ACAIBOWLF8.jpg").resize((256, 256))))
   plt.show()

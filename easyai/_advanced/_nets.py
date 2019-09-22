@@ -20,10 +20,8 @@ class NSTTransform(AbstractNetwork):
     self.num_rows = num_rows
     self.num_cols = None
 
-  def train_init(self, target_size, coef_v, noise = 0.6, norm = "batch", verbose = True):
+  def train_init(self, target_size, norm = "batch", verbose = True):
     self.num_rows, self.num_cols = target_size
-    self.coef_v = coef_v
-    self.noise = noise
     self.norm = norm
 
     self.net_init() # assumes img is a PIL image
@@ -52,7 +50,7 @@ class NSTTransform(AbstractNetwork):
     def _conv_res_block(x):
       identity = keras.layers.convolutional.Cropping2D(cropping = ((2, 2), (2, 2)))(x) # 2 is the number of conv layers
       a = NSTTransform.conv_norm_block(filters, filter_size, norm = norm, include_relu = True, padding = "valid")(x)
-      a = NSTTransform.conv_norm_block(filters, filter_size, norm = norm, include_relu = False,padding = "valid")(a)
+      a = NSTTransform.conv_norm_block(filters, filter_size, norm = norm, include_relu = False, padding = "valid")(a)
       return keras.layers.merge.add([identity, a])
     return _conv_res_block
 
@@ -72,16 +70,11 @@ class NSTTransform(AbstractNetwork):
     a = NSTTransform.conv_norm_block(32, (3, 3), norm = self.norm, strides = (2, 2), transpose = True)(a)
     a = NSTTransform.conv_norm_block(3, (9, 9), norm = self.norm, strides = (1, 1), include_relu = False,
                                      transpose = True)(a)
-
     a = keras.layers.Activation("tanh")(a) # using tanh for easier image pixel scaling
 
     y = Denormalize(name = "img_transform_output")(a)
 
     self.k_model = keras.Model(inputs = x, outputs = y)
-
-    tv_regularizer = TVRegularizer(self.coef_v)(self.k_model.layers[-1])
-    self.k_model.layers[-1].add_loss(tv_regularizer)
-    # adding total variation loss
 
 # VGG NETS
 class NSTLoss(StaticInterface):
