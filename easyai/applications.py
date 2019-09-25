@@ -430,7 +430,7 @@ class FastNST(AbstractNetwork):
         # +3 to account for Normalize, Denormalize, and Concatenate layers
         style_features = style_func([style_img])
 
-        weight = self.get_hps("coef_s") / len(style_layers)
+        weight = 1.0 # self.get_hps("coef_s") / len(style_layers)
         for layer_num, layer_name in enumerate(style_layers): # adding style loss
           layer = layers[layer_name]
           style_regularizer = StyleRegularizer(K.variable(style_features[layer_num][0]), weight)(layer)
@@ -623,15 +623,15 @@ class FastNST(AbstractNetwork):
     self.img_transform_net.k_model = keras.models.load_model(filepath, custom_objects = FastNST.CUSTOM_LAYERS)
 
 if __name__ == "__main__":
-  # FastNST.HYPERPARAMS["COEF_S"] = 0.0
-  # FastNST.HYPERPARAMS["COEF_V"] = 0
-  # FastNST.HYPERPARAMS["COEF_V"] = 1.0
+  # FastNST.HYPERPARAMS["COEF_S"] = 1e1
+  # FastNST.HYPERPARAMS["COEF_C"] = 1e3
+  # FastNST.HYPERPARAMS["COEF_V"] = 1e2
 
   from easyai.support.load import load_imgs
   style = load_imgs("https://drive.google.com/uc?export=download&id=18MpTOAt40ngCRpX1xcckwxUXNhOiBemJ")
 
   test = FastNST()
-  test.train(style, batch_size = 2, save_path = "/home/ryan", epochs = 2, verbose = True)
+  test.train(style, batch_size = 2, save_path = "/home/ryan", epochs = 2, verbose = True, target_size=(256, 256))
   # test.load_model('/home/ryan/epoch2.h5')
   plt.imshow(test.run_nst(load_imgs("/home/ryan/PycharmProjects/food-404/images/acai_bowl/1.ACAIBOWLF8.jpg").resize((256, 256))))
   plt.show()
