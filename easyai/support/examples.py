@@ -208,6 +208,8 @@ if __name__ == "__main__":
   # Unsupported.draw("test.png")
   # activation = Unsupported.getActivation(filename)
   # Unsupported.display_image(activation)
+  MNIST.cnn()
+
   from easyai.support.load import load_imgs
   from easyai.support.datasets.datasets import NST
 

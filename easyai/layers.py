@@ -27,7 +27,7 @@ class Input(AbstractLayer):
       self.output_shape = input_shape
     else:
       self.is_3d = False
-      self.output_shape = (input_shape, 1)
+      self.output_shape = (*input_shape, 1)
     self.num_neurons = self.output_shape
     self.k_model = None # just to be explicit
 
@@ -51,7 +51,7 @@ class FC(AbstractLayer):
     self.output_shape = (self.num_neurons, )
 
   def train_init(self):
-    if isinstance(self.prev, Conv):
+    if isinstance(self.prev, Conv) or isinstance(self.prev, Pooling):
       self.k_model = [keras.layers.Flatten(), keras.layers.Dense(units = self.num_neurons, activation = self.actv)]
     else:
       self.k_model = keras.layers.Dense(units = self.num_neurons, activation = self.actv)
