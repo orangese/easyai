@@ -28,6 +28,7 @@ class Input(AbstractLayer):
     else:
       self.is_3d = False
       self.output_shape = (input_shape, 1)
+    self.num_neurons = self.output_shape
     self.k_model = None # just to be explicit
 
 class FC(AbstractLayer):
