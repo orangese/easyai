@@ -32,7 +32,8 @@ class NST(StaticInterface):
              "flower": "https://drive.google.com/uc?export=download&id=1baUPRVEh82szkeQ0601O4gpj_mNNbpbe",
              "dog": "https://drive.google.com/uc?export=download&id=1f8aNYIJqBrMqYEYYSMPOmzgVmS_9C969",
              "arno_river_buildings":
-               "https://drive.google.com/uc?export=download&id=1ynBPvxuUOUo4upgTNE4KCab4F26leSLi"
+               "https://drive.google.com/uc?export=download&id=1ynBPvxuUOUo4upgTNE4KCab4F26leSLi",
+             "chicago": "https://drive.google.com/uc?export=download&id=1zdPEaHyI_JFjbBrckr765xc5XamWDxwk"
              }
 
   style = {"wheatfields_with_crows_van_gogh":
@@ -51,8 +52,10 @@ class NST(StaticInterface):
            "bottle_and_fishes_braque":
              "https://drive.google.com/uc?export=download&id=1JfBSd7CHIUIEKI7Zyl4XKX4Wy8W6X4e-",
            "great_wave_off_kanagawa_hokusai":
-             "https://drive.google.com/uc?export=download&id=104dqfFU4z3ul-hGgbNYAvLUP4OuD2GBw"
-           }
+             "https://drive.google.com/uc?export=download&id=104dqfFU4z3ul-hGgbNYAvLUP4OuD2GBw",
+           "modernist_bernstein": "https://drive.google.com/uc?export=download&id=1PM48RtqKkZVOUQIjeARZ1H6Nkt5hk0Dk",
+           "red_stained_glass": "https://drive.google.com/uc?export=download&id=1GiIkzNIPtIO-_pDYSlJc6fzh8DD8TY3f"
+          }
 
 # DATA LOADERS
 class Builtins(StaticInterface):
@@ -140,7 +143,7 @@ class Extras(StaticInterface):
 
     :return: a dictionary of two dictionaries. The first dictionary contains the names of the content images mapped to
              the content images (Image objects), and the second contains the names of the style images mapped to the
-              style images.
+             style images.
     """
     # helper variables and lambdas
     urls_to_imgs = lambda urls: [Image.open(BytesIO(requests.get(url).content)) for url in urls]
@@ -306,7 +309,7 @@ class Extras(StaticInterface):
 class Helpers(StaticInterface):
 
   @staticmethod
-  def get_img(img_name: str, key: str, images: dict) -> Image.Image:
+  def get_img(img_name: str, key: str, images: dict) -> Tuple[str, Image.Image]:
     """
     Gets image from dictionary.
 
@@ -316,9 +319,10 @@ class Helpers(StaticInterface):
     :return: retrieved image.
     """
     if img_name is None:
-      return random.choice(list(images[key].values()))
+      img_name = random.choice(list(images[key].keys()))
+      return img_name, images[key][img_name]
     else:
       try:
-        return images[key][img_name]
+        return img_name, images[key][img_name]
       except KeyError:
-        raise ValueError("supported {0} images are {1}".format(key, list(images[key].keys())))
+        raise KeyError("supported {0} images are {1}".format(key, list(images[key].keys())))

@@ -28,6 +28,11 @@ class MNIST(StaticInterface):
     (x_train, y_train), (x_test, y_test) = Builtins.load_mnist(version = version, mode = "mlp")
     print("Loaded MNIST data\n")
 
+    plt.imshow(x_train[0])
+    plt.title("Label: {}".format(y_train[0]))
+    plt.axis("off")
+    plt.show()
+
     mlp = NN(Input(784), FC(100), FC(10, actv = "softmax"), loss = "categorical_crossentropy")
     print(mlp.summary())
 
@@ -46,6 +51,14 @@ class MNIST(StaticInterface):
     """
     (x_train, y_train), (x_test, y_test) = Builtins.load_mnist(version = version, mode = "conv")
     print("Loaded MNIST data")
+
+    labels = ["t_shirt_top", "trouser", "pullover", "dress", "coat", "sandal", "shirt", "sneaker", "bag", "ankle_boots"]
+    if version == "digits":
+      labels = list(range(10))
+    plt.imshow(x_train[0].reshape(*x_train[0].shape[:-1]), cmap="gray")
+    plt.title("Label: {}".format(labels[np.asscalar(np.argmax(y_train[0]))]))
+    plt.axis("off")
+    plt.show()
 
     conv_nn = NN(Input(28, 28), Conv((5, 5), 20), Pooling(2, 2), FC(100), FC(10, actv = "softmax"),
                  loss = "categorical_crossentropy")
@@ -86,20 +99,20 @@ class Art(StaticInterface):
   """
 
   @staticmethod
-  def slow_nst(content: str = None, style: str = None, save_path: str = None) -> np.ndarray:
+  def slow_nst(content_name: str = None, style_name: str = None, save_path: str = None) -> np.ndarray:
     """
     (Slow) neural style transfer with art and photographs.
 
-    :param content: name of content image from dataset. Default is a random image from built-in datasets.
-    :param style: name of style image from dataset. Default is a random image from built-in datasets.
+    :param content_name: name of content image from dataset. Default is a random image from built-in datasets.
+    :param style_name: name of style image from dataset. Default is a random image from built-in datasets.
     :param save_path: path to which to save final result. Default is None.
     :return: final image.
     """
     images = Extras.load_nst_imgs()
     print("Loaded NST images")
 
-    content_name, content_img = Helpers.get_img(content, "content", images)
-    style_name, style_img = Helpers.get_img(style, "style", images)
+    content_name, content_img = Helpers.get_img(content_name, "content", images)
+    style_name, style_img = Helpers.get_img(style_name, "style", images)
 
     print("Using content image \"{0}\" and style image \"{1}\"".format(content_name, style_name))
 
@@ -129,7 +142,7 @@ class Art(StaticInterface):
     images = Extras.load_nst_imgs()
     print("Loaded NST images")
 
-    content_img = Helpers.get_img(content_name, "content", images)
+    content_name, content_img = Helpers.get_img(content_name, "content", images)
 
     if style_net is None:
       model = FastNSTModels.random_net()
@@ -208,7 +221,10 @@ if __name__ == "__main__":
   # Unsupported.draw("test.png")
   # activation = Unsupported.getActivation(filename)
   # Unsupported.display_image(activation)
-  MNIST.cnn()
+  MNIST.cnn("digits")
+  nst = SlowNST()
+  nst.train(Image.open("/home/ryan/test.jpg"), Image.open("/home/ryan/style.jpg"), 25)
+
 
   from easyai.support.load import load_imgs
   from easyai.support.datasets.datasets import NST

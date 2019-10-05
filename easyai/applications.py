@@ -32,7 +32,7 @@ class SlowNST(AbstractNetwork):
   HYPERPARAMS = {"CONTENT_LAYER": "block5_conv2",
                  "STYLE_LAYERS": ["block1_conv1", "block2_conv1", "block3_conv1", "block4_conv1", "block5_conv1"],
                  "COEF_C": 1e0,
-                 "COEF_S": 1e3,
+                 "COEF_S": 1e0,
                  "COEF_V": 1e-4,
                  "MEANS": [103.939, 116.779, 123.68], # not a hp-- don"t edit
                  "IMG_ORDER": ["content", "style", "generated"]
@@ -286,7 +286,7 @@ class SlowNST(AbstractNetwork):
     :param target_shape: target shape.
     :return: deprocessed image.
     """
-    img = np.copy(img_)
+    img = np.copy(img_).astype(np.float64)
     if target_shape is not None:
       img = img.reshape(target_shape)
     means = SlowNST().get_hps("means")
