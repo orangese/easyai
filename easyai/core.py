@@ -21,7 +21,7 @@ class NN(AbstractNetwork):
     Uses easyai layer objects to create a functional keras model.
     """
 
-    def __init__(self, *layers, loss: str="binary_crossentropy"):
+    def __init__(self, *layers, loss: str = "binary_crossentropy"):
         """
         Initializes NN (neural network) object.
 
@@ -49,7 +49,7 @@ class NN(AbstractNetwork):
                 self.k_layers.append(layer.k_model)
         self.k_model = keras.Sequential(self.k_layers)
 
-    def add_layer(self, layer: AbstractLayer, position: int=None):
+    def add_layer(self, layer: AbstractLayer, position: int = None):
         """Adds a layer and creates a new keras object.
 
         :param layer: layer to be added. Should be instance of easyai core layer classes.
@@ -61,7 +61,7 @@ class NN(AbstractNetwork):
         new_layers.insert(position, layer)
         self.__init__(new_layers)
 
-    def rm_layer(self, position: int=None, layer: AbstractLayer=None):
+    def rm_layer(self, position: int = None, layer: AbstractLayer = None):
         """Removes a layer and creates a new keras object.
 
         :param position: position at which layer should be removed. Recommended instead of `layer`.
@@ -75,7 +75,7 @@ class NN(AbstractNetwork):
             del new_layers[position]
         self.__init__(new_layers)
 
-    def train(self, x: np.ndarray, y: np.ndarray, lr: float=0.1, epochs: int=1, batch_size: int=10):
+    def train(self, x: np.ndarray, y: np.ndarray, lr: float = 0.1, epochs: int = 1, batch_size: int = 10):
         """Trains and compiles this NN object. Only SGD is used.
 
         :param x: input data. For example, if classifying an image, `x` would the pixel vectors.
@@ -95,7 +95,7 @@ class NN(AbstractNetwork):
         self.k_model.fit(x, y, epochs=epochs, batch_size=batch_size, validation_split=0.2, verbose=2)
         self.is_trained = True
 
-    def evaluate(self, x: np.ndarray, y: np.ndarray, verbose: bool=True) -> list:
+    def evaluate(self, x: np.ndarray, y: np.ndarray, verbose: bool = True) -> list:
         """Evaluates this NN object using test data.
 
         :param x: inputs. See train documentation for more information.
@@ -121,12 +121,11 @@ class NN(AbstractNetwork):
         print("Getting output encoding of x")
         return self.k_model.predict(x)
 
-    def summary(self, advanced: bool=False) -> str:
+    def summary(self, advanced: bool = False) -> None:
         """
         Summary of model.
 
         :param advanced: if true, print advanced information.
-        :return: summary of this NN object.
         """
         alphabet = list(map(chr, range(97, 123)))
         result = "Network summary: \n"
@@ -138,7 +137,7 @@ class NN(AbstractNetwork):
             result += "Advanced: \n"
             result += "    1. Loss function: {0}\n".format(self.loss)
             result += "    2. Training algorithm: {0}\n".format("stochastic gradient descent")
-        return result
+        print(result)
 
     def save(self, filename: str):
         """

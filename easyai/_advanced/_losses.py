@@ -13,7 +13,8 @@ from easyai.core import *
 
 # SUPPORT FOR CUSTOM LOSS
 class Evaluator(object):
-    """Class used for custom loss and gradient functions. Should be used in conjunction with scipy.optimize.[whatever]."""
+    """Class used for custom loss and gradient functions. Should be used in conjunction with scipy.optimize.[whatever].
+    """
 
     def __init__(self, obj):
         self.obj = obj

@@ -16,9 +16,9 @@ class NSTTransform(AbstractNetwork):
     https://cs.stanford.edu/people/jcjohns/papers/eccv16/JohnsonECCV16.pdf. See
     https://cs.stanford.edu/people/jcjohns/papers/eccv16/JohnsonECCV16Supplementary.pdf for exact network structure."""
 
-    def __init__(self, num_rows=512):
-        self.num_rows = num_rows
-        self.num_cols = None
+    def __init__(self, path=None):
+        if path:
+            self.k_model = keras.models.load_model(path)
 
     def train_init(self, target_size, norm="batch", verbose=True):
         self.num_rows, self.num_cols = target_size

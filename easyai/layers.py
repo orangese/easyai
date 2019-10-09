@@ -16,7 +16,7 @@ class Input(AbstractLayer):
     MLP input layer with no activation, bias, or weights of its own.  No keras mask.
     """
 
-    def __init__(self, *input_shape):
+    def __init__(self, input_shape: Union[tuple, int]):
         """
         Initializes Input object. Please flatten data before using this object.
 
@@ -29,7 +29,7 @@ class Input(AbstractLayer):
             self.is_3d = False
             self.output_shape = (*input_shape, 1)
         self.num_neurons = self.output_shape
-        self.k_model = None  # just to be explicit
+        self.k_model = None
 
 
 class FC(AbstractLayer):
@@ -37,7 +37,7 @@ class FC(AbstractLayer):
     MLP layer (aka a FC or dense layer).  Has a keras mask.
     """
 
-    def __init__(self, num_neurons: int, actv: str="sigmoid"):
+    def __init__(self, num_neurons: int, actv: str = "sigmoid"):
         """
         Initializes FC object.
 
@@ -64,7 +64,7 @@ class Conv(AbstractLayer):
     Convolutional layer.  Has a keras mask, padding = "valid".
     """
 
-    def __init__(self, filter_size: tuple, num_filters: int, actv: str="sigmoid", strides: int=1):
+    def __init__(self, filter_size: tuple, num_filters: int, actv: str = "sigmoid", strides: int = 1):
         """
         Initializes Conv object.  No padding and a stride of 1 is assumed.
 

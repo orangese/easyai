@@ -65,7 +65,7 @@ class Builtins(Static):
     """
 
     @staticmethod
-    def load_mnist(version: str="digits", mode: str="mlp") -> Tuple[Tuple[np.ndarray, np.ndarray],
+    def load_mnist(version: str = "digits", mode: str = "mlp") -> Tuple[Tuple[np.ndarray, np.ndarray],
                                                                         Tuple[np.ndarray, np.ndarray]]:
         """
         Loads MNIST or Fashion-MNIST data. These two datasets are combined into one method because they are so similar.
@@ -303,7 +303,7 @@ class Extras(Static):
             num_train = int(ratio * len(big_data[0]))
 
             return (big_data[0][:num_train], big_data[1][:num_train]), (
-            big_data[0][num_train:], big_data[1][num_train:])
+                big_data[0][num_train:], big_data[1][num_train:])
 
         return load_data(
             "https://drive.google.com/uc?export=download&id=1HYE7qIgAjdYve_sS1ixZH8TJTE5wB-sv")

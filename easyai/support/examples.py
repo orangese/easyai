@@ -18,7 +18,7 @@ class MNIST(Static):
     """
 
     @staticmethod
-    def mlp(version: str="digits") -> NN:
+    def mlp(version: str = "digits") -> NN:
         """
         MNIST multi-layer perceptron network.
 
@@ -34,7 +34,7 @@ class MNIST(Static):
         plt.show()
 
         mlp = NN(Input(784), FC(100), FC(10, actv="softmax"), loss="categorical_crossentropy")
-        print(mlp.summary())
+        mlp.summary()
 
         mlp.train(x_train, y_train, lr=3.0, epochs=1)
         mlp.evaluate(x_test, y_test)
@@ -42,7 +42,7 @@ class MNIST(Static):
         return mlp
 
     @staticmethod
-    def cnn(version: str="digits") -> NN:
+    def cnn(version: str = "digits") -> NN:
         """
         MNIST convolutional network.
 
@@ -63,7 +63,7 @@ class MNIST(Static):
 
         conv_nn = NN(Input(28, 28), Conv((5, 5), 20), Pooling(2, 2), FC(100), FC(10, actv="softmax"),
                      loss="categorical_crossentropy")
-        print(conv_nn.summary())
+        conv_nn.summary()
 
         conv_nn.train(x_train, y_train, lr=0.1, epochs=60)
         conv_nn.evaluate(x_test, y_test)
@@ -88,7 +88,7 @@ class Lending_Club(Static):
 
         mlp = NN(Input(9), FC(200, actv="relu"), FC(200, actv="relu"), FC(7, actv="softmax"),
                  loss="categorical_crossentropy")
-        print(mlp.summary())
+        mlp.summary()
 
         mlp.train(x_train, y_train, lr=0.01, epochs=50)
         mlp.evaluate(x_test, y_test)
@@ -102,7 +102,7 @@ class Art(Static):
     """
 
     @staticmethod
-    def slow_nst(content_name: str=None, style_name: str=None, save_path: str=None) -> np.ndarray:
+    def slow_nst(content_name: str = None, style_name: str = None, save_path: str = None) -> np.ndarray:
         """
         (Slow) neural style transfer with art and photographs.
 
@@ -133,7 +133,7 @@ class Art(Static):
         return final_img
 
     @staticmethod
-    def fast_nst(content_name: str=None, style_net: str=None, save_path: str=None) -> np.ndarray:
+    def fast_nst(content_name: str = None, style_net: str = None, save_path: str = None) -> np.ndarray:
         """
         (Fast) neural style transfer with arts and photographs, using pretrained models.
 
@@ -164,63 +164,6 @@ class Art(Static):
             print("Saved image at \"{0}\"".format(full_save_path))
 
         return final_img
-
-
-# --BELOW NOT SUPPORTED--
-from tkinter import *
-from PIL import Image, ImageDraw
-import PIL
-import numpy as np
-
-
-class Unsupported(Static):
-
-    @staticmethod
-    def draw(fileName):
-        width = 200
-        height = 200
-        white = (255, 255, 255)
-
-        def save():
-            image1.save(fileName)
-
-        def drawIm(event):
-            x1, y1 = (event.x - 5), (event.y - 5)
-            x2, y2 = (event.x + 5), (event.y + 5)
-            cv.create_oval(x1, y1, x2, y2, width=5, fill="black")
-            draw.line(((x2, y2), (x1, y1)), fill="black", width=10)
-
-        root = Tk()
-        cv = Canvas(root, width=width, height=height, bg="white")
-        cv.pack()
-        image1 = PIL.Image.new("RGB", (width, height), white)
-        draw = ImageDraw.Draw(image1)
-        cv.bind("<B1-Motion>", drawIm)
-        button = Button(text="save", command=save)
-        button.pack()
-        root.mainloop()
-
-    @staticmethod
-    def getActivation(fileName):
-        img = Image.open(fileName)
-        img = img.resize((28, 28))
-        img = np.take(np.asarray(img), [0], axis=2).reshape(28, 28)
-        return np.abs(img - 255)
-
-    @staticmethod
-    def display_image(pixels, label=None):
-        # function that displays an image using matplotlib-- not really necessary for the digit classifier
-        import matplotlib.pyplot as plt
-        figure = plt.gcf()
-        figure.canvas.set_window_title("Number display")
-
-        if label:
-            plt.title("Label: \"{label}\"".format(label=label))
-        else:
-            plt.title("No label")
-
-        plt.imshow(pixels, cmap="gray")
-        plt.show()
 
 
 if __name__ == "__main__":

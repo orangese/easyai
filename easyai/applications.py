@@ -370,15 +370,18 @@ class FastNST(AbstractNetwork):
     }
 
     # INITS
-    def __init__(self, img_transform_net: AbstractNetwork = NSTTransform(), loss_net: str = "vgg16"):
+    def __init__(self, img_transform_net: Union[AbstractNetwork, str] = NSTTransform(), loss_net: str = "vgg16"):
         """
         Initializes fast NST object. This network has two parts: a trainable network (img_transform_net) and a fixed
         network (loss_net).
 
-        :param img_transform_net: image transform networkeras. Will be trained.
+        :param img_transform_net: image transform network. Either a path to a model or nothing. Will be trained.
         :param loss_net: fixed network, either "vgg16" or "vgg19". Is pre-trained.
         """
-        self.img_transform_net=img_transform_net
+        if isinstance(img_transform_net, str):
+            self.img_transform_net = NSTTransform(img_transform_net)
+        else:
+            self.img_transform_net = img_transform_net
         self.loss_net = loss_net
 
         self.vgg_num = int(self.loss_net.replace("vgg", ""))
@@ -564,9 +567,9 @@ class FastNST(AbstractNetwork):
                         eta -= round(elapsed)
 
                     print(
-                      " - {}s - batches {}-{} of {} completed ({}%) - time until next epoch - {}s - loss - {:.4e}"
-                        .format(elapsed, *reversed(batch_nums), num_batches,
-                                round(batch_nums[0] / num_batches * 100, 1),eta, self.losses[-1]))
+                        " - {}s - batches {}-{} of {} completed ({}%) - time until next epoch - {}s - loss - {:.4e}"
+                            .format(elapsed, *reversed(batch_nums), num_batches,
+                                    round(batch_nums[0] / num_batches * 100, 1), eta, self.losses[-1]))
                     SlowNST.display_img(self.run_nst(content_example),
                                         "Epoch {0}: batch {1}".format(epoch, batch_nums[0]),
                                         deprocess=False)
