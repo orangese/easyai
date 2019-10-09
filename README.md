@@ -1,7 +1,11 @@
 
 # EasyAI
 
-EasyAI (`easyai`) is a small wrapper API for Keras, written for use by CSII AI at Millburn High School. It simplifies Keras' syntax so that a person with little programming experience and even less knowledge of machine learning can use it. Users should use this API as a springboard from which they can start coding using advanced and capable tools. Despite what its name might imply, EasyAI is centered around neural network algorithms (mainly their applications in visual fields) due to their recent prevalence and popularity.
+EasyAI (`easyai`) is a small wrapper API for Keras, written for use by CSII AI at Millburn High School. It simplifies Keras so that a person with little programming experience and machine learning knowledge can use it. Users should use this API as a springboard from which they can start coding using advanced and capable tools. EasyAI is centered around neural network algorithms  due to their recent prevalence and popularity.
+
+EasyAI was created as a teaching library in order to minimize code frustration. In this case, code is just the means of implementing concepts already learned-- it should be the easy part. While this attitude towards code may (should) change in the future, this style of learning will allow for users to learn with minimal programming difficulties.
+
+Author: Ryan Park (22parkr@millburn.org)
 
 ## Core principles
 
@@ -23,7 +27,7 @@ The most basic EasyAI model is the `NN` object.
 from easyai import NN
 from easyai.layers import Input, FC
 
-neural_network = NN(Input(num_neurons = 100), FC(num_neurons = 200), FC(num_neurons = 5))
+net = NN(Input(input_shape=100), FC(num_neurons=200), FC(num_neurons=5))
 
 ```
 
@@ -31,9 +35,9 @@ You can add and remove layers using the `add_layer` and `rm_layer` functions.
 
 ```python
 
-neural_network.add_layer(FC(num_neurons = 200), position = 1)
+net.add_layer(FC(num_neurons=200), position=1)
 
-neural_network.rm_layer(position = 1)
+net.rm_layer(position=1)
 
 ```
 
@@ -44,7 +48,7 @@ Training is as easy as `neural_network.train()`.
 x_train = "your training examples here"
 y_train = "your training labels here"
 
-neural_network.train(x_train, y_train, epochs = 10)
+neural_network.train(x_train, y_train, epochs=10)
 
 ```
 
@@ -53,12 +57,13 @@ Neural networks are cool, but the real fun is in their applications. Run `easyai
 ```python
 
 from easyai.applications import SlowNST
+from easyai.support.load import load_imgs
 
-content_img = "your content image here"
-style_img = "your style image here"
+content_img = load_imgs("your content image here")
+style_img = load_imgs("your style image here")
 
-neural_style_transfer_net = SlowNST()
-neural_style_transfer_net.train(content_img, style_img)
+style_transfer_net = SlowNST()
+style_transfer_net.train(content_img, style_img)
 
 # runs neural style transfer, which combines the style of an image (e.g., Van Gogh's Starry Night)
 # with the content of another one (e.g., a dog) to create a new, unique image (Starry Dog!)
