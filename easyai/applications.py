@@ -386,14 +386,13 @@ class FastNST(AbstractNetwork):
 
         self.vgg_num = int(self.loss_net.replace("vgg", ""))
 
-    def train_init(self, style: Image.Image, target_size, noise=0.6, norm="batch", verbose: bool = True):
+    def train_init(self, style: Image.Image, target_size, norm="batch", verbose: bool = True):
         """
         Initializes processed images (style and generated) as keras tensors in preparation for training.
         Also initializes the function and models that will be used for training.
 
         :param style: style image as PIL Image.
         :param target_size: all training images will be reshaped to target_size.
-        :param noise: amount of noise in initially generated image. Range is [0., 1.].
         :param norm: type of normalization to apply. Either "batch" for batch norm or "instance" for instance norm.
         :param verbose: if true, prints additional information.
         :raises ModuleNotFoundError: if provided loss net is not valid.
@@ -435,8 +434,8 @@ class FastNST(AbstractNetwork):
                 # +3 to account for Normalize, Denormalize, and Concatenate layers
                 style_features = style_func([style_img])
 
-                weight = 1.0  # self.get_hps("coef_s") / len(style_layers)
-                for layer_num, layer_name in enumerate(style_layers):  # adding style loss
+                weight = self.get_hps("coef_s") / len(style_layers)
+                for layer_num, layer_name in enumerate(style_layers):
                     layer = layers[layer_name]
                     style_regularizer = StyleRegularizer(K.variable(style_features[layer_num][0]), weight)(layer)
                     layer.add_loss(style_regularizer)
@@ -453,8 +452,8 @@ class FastNST(AbstractNetwork):
             layers = dict([(layer.name, layer) for layer in model.layers[-(vgg_num + 2):]])
             # +2 to account for the addition of the input tensor (Concatenate) and the VGGNormalize layer
 
-            add_style_loss(style_img, layers, outputs, target_size)
             add_content_loss(layers)
+            add_style_loss(style_img, layers, outputs, target_size)
             add_tv_loss(model.get_layer("img_transform_output"))
             # tv loss is evaluated on the output of the transform net
 
@@ -479,8 +478,8 @@ class FastNST(AbstractNetwork):
         # adding loss and regularizers
 
     # TRAINING
-    def train(self, style: Image.Image, epochs: int = 1, batch_size=2, init_noise: float = 0.6,
-              target_size: tuple = (256, 256), verbose: bool = True, save_path: str = None) -> Union[np.ndarray, None]:
+    def train(self, style: Image.Image, epochs: int = 1, batch_size: int = 2, target_size: tuple = (256, 256),
+              verbose: bool = True, save_path: str = None) -> Union[np.ndarray, None]:
         """
         Trains the image transform network on the MS COCO dataset (https://cocodataset.org/#download) to match a
         certain style. This dataset does not come preinstalled with easyai and takes a while to download (~4 hours).
@@ -489,7 +488,6 @@ class FastNST(AbstractNetwork):
         :param style: style image as PIL Image.
         :param epochs: number of iterations or epochs.
         :param batch_size: batch size.
-        :param init_noise: amount of noise in initially generated image. Range is [0., 1.].
         :param target_size: all training images will be reshaped to target_size.
         :param verbose: if true, prints additional training information.
         :param save_path: path to save training results
@@ -513,7 +511,7 @@ class FastNST(AbstractNetwork):
                 raise FileNotFoundError("COCO not downloaded")
 
         # TRAIN INIT AND SETUP
-        self.train_init(style, target_size=target_size, noise=init_noise, norm="instance", verbose=verbose)
+        self.train_init(style, target_size=target_size, norm="instance", verbose=verbose)
 
         with HidePrints():  # hiding print messages called when using ImageDataGenerator
             datagen = keras.preprocessing.image.ImageDataGenerator()
@@ -634,9 +632,9 @@ class FastNST(AbstractNetwork):
 
 
 if __name__ == "__main__":
-    # FastNST.HYPERPARAMS["COEF_S"] = 1e1
-    # FastNST.HYPERPARAMS["COEF_C"] = 1e3
-    # FastNST.HYPERPARAMS["COEF_V"] = 1e2
+    FastNST.HYPERPARAMS["COEF_S"] = 0
+    FastNST.HYPERPARAMS["COEF_C"] = 1
+    FastNST.HYPERPARAMS["COEF_V"] = 0
 
     from easyai.support.load import load_imgs
 

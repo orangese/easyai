@@ -1,23 +1,19 @@
-# ERROR HANDLING
-def suppress_tf_warnings():
-    """
-    Suppresses tensorflow warnings for tensorflow == 1.14.0 or tensorflow-gpu == 1.8.0.
-    """
-    import os
-    os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+# ERROR SUPPRESSION
+import os
 
-    import warnings
-    warnings.simplefilter(action="ignore", category=FutureWarning)
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
-    import tensorflow as tf
-    try:
-        tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
-    except AttributeError:
-        tf.logging.set_verbosity(tf.logging.ERROR)
-    # compatible with tensorflow == 1.14.0 and tensorflow-gpu == 1.8.0
+import warnings
 
+warnings.simplefilter(action="ignore", category=FutureWarning)
 
-suppress_tf_warnings()
+import tensorflow as tf
+
+try:
+    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+except AttributeError:
+    tf.logging.set_verbosity(tf.logging.ERROR)
+# compatible with tensorflow == 1.14.0 and tensorflow-gpu == 1.8.0
 
 from . import _advanced
 from . import applications
@@ -26,6 +22,7 @@ from . import framework
 from . import layers
 from . import support
 from .core import NN
+
 # Importable from root
 from .framework import *
 

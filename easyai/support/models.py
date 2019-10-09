@@ -11,7 +11,7 @@ Holds links to pre-trained easyai models stored on Google Drive.
 from easyai.applications import *
 
 
-class TrainedModelInterface(Static):
+class TrainedModels(Static):
     """
     Model for all model classes.
     """
@@ -27,7 +27,7 @@ class TrainedModelInterface(Static):
         raise NotImplementedError("abstract class methods should not be implemented")
 
 
-class FastNSTModels(TrainedModelInterface):
+class FastNSTModels(TrainedModels):
     """
     Contains links to pretrained fast NST models as well as model loaders.
     """
@@ -37,7 +37,7 @@ class FastNSTModels(TrainedModelInterface):
     # TODO: created pretrained fast NST net and write load_net function
 
     @staticmethod
-    def load_net(net_name: str) -> FastNST:
+    def load_net(net_name: str) -> AbstractNetwork:
         """
         Loads pretrained fast NST model.
 
@@ -47,7 +47,7 @@ class FastNSTModels(TrainedModelInterface):
         raise NotImplementedError()
 
     @staticmethod
-    def random_net() -> FastNST:
+    def random_net() -> AbstractNetwork:
         """
         Loads random pretrained fast NST model.
 
