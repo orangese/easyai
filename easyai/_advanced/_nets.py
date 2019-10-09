@@ -81,7 +81,7 @@ class NSTTransform(AbstractNetwork):
 
 
 # VGG NETS
-class NSTLoss(StaticInterface):
+class NSTLoss(Static):
     """Pre-trained NST loss networks. Copied from keras source code and changed to fit this API's needs."""
 
     WEIGHTS_PATH_NO_TOP = {

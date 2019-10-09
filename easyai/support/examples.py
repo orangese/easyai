@@ -12,7 +12,7 @@ from easyai.support.models import *
 
 
 # CLASSES
-class MNIST(StaticInterface):
+class MNIST(Static):
     """
     Contains examples using MNIST and Fashion-MNIST datasets.
     """
@@ -71,7 +71,7 @@ class MNIST(StaticInterface):
         return conv_nn
 
 
-class Lending_Club(StaticInterface):
+class Lending_Club(Static):
     """
     Contains examples using LendingClub credit rating dataset.
     """
@@ -96,7 +96,7 @@ class Lending_Club(StaticInterface):
         return mlp
 
 
-class Art(StaticInterface):
+class Art(Static):
     """
     Art generated with AI.
     """
@@ -173,7 +173,7 @@ import PIL
 import numpy as np
 
 
-class Unsupported(StaticInterface):
+class Unsupported(Static):
 
     @staticmethod
     def draw(fileName):

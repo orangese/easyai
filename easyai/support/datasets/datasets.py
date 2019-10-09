@@ -21,7 +21,7 @@ from easyai.core import *
 
 
 # LINK DATASETS
-class NST(StaticInterface):
+class NST(Static):
     content = {"girl_with_balloon_banksy":
                    "https://drive.google.com/uc?export=download&id=1FnhuYsx2sjSqI5qwZQxd7cmh8A5z74tj",
                "mountain_painting": "https://drive.google.com/uc?export=download&id=1_bmWZxTdE4cXvSiZZ_HQpzFsiytkZV5z",
@@ -58,7 +58,7 @@ class NST(StaticInterface):
 
 
 # DATA LOADERS
-class Builtins(StaticInterface):
+class Builtins(Static):
     """
     Data loaders (including preprocessing) for built-in keras datasets. These include: MNIST, Fashion-MNIST,
     CIFAR-10, CIFAR-100, Boston housing, IMDB, Reuters.
@@ -131,7 +131,7 @@ class Builtins(StaticInterface):
         raise NotImplementedError()
 
 
-class Extras(StaticInterface):
+class Extras(Static):
     """
     Data loaders (including pre-processing) for other datasets, including user-importd ones and native easyai
     datasets. These include: LendingClub (credit rating) dataset and neural style transfer images.
@@ -309,7 +309,7 @@ class Extras(StaticInterface):
             "https://drive.google.com/uc?export=download&id=1HYE7qIgAjdYve_sS1ixZH8TJTE5wB-sv")
 
 
-class Helpers(StaticInterface):
+class Helpers(Static):
 
     @staticmethod
     def get_img(img_name: str, key: str, images: dict) -> Tuple[str, Image.Image]:

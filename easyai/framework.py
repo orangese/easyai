@@ -10,14 +10,14 @@ from typing import Union
 
 
 # FRAMEWORK
-class StaticInterface(object):
+class Static(object):
     """
-    Static interface for other programs. An object of this class cannot be created.
+    Static interface for other programs. An object of this class cannot be created. It's for organizational purposes.
     """
 
     def __init__(self, *args, **kwargs):
         """
-        As StaticInterface objects should not be created, __init__ throws a NotImplementedError.
+        As Static objects should not be created, __init__ throws a NotImplementedError.
 
         :raises NotImplementedError
         """

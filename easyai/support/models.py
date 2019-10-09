@@ -11,7 +11,7 @@ Holds links to pre-trained easyai models stored on Google Drive.
 from easyai.applications import *
 
 
-class TrainedModelInterface(StaticInterface):
+class TrainedModelInterface(Static):
     """
     Model for all model classes.
     """
