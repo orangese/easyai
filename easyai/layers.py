@@ -16,11 +16,11 @@ class Input(AbstractLayer):
     MLP input layer with no activation, bias, or weights of its own.  No keras mask.
     """
 
-    def __init__(self, input_shape: Union[tuple, int]):
+    def __init__(self, *input_shape):
         """
         Initializes Input object. Please flatten data before using this object.
 
-        :param input_shape: shape of the input. Either an int (for MLP networks) or a tuple (for conv networks).
+        :param input_shape: shape of the input.
         """
         if len(input_shape) > 2:
             self.is_3d = True
@@ -56,7 +56,6 @@ class FC(AbstractLayer):
             self.k_model = [keras.layers.Flatten(), keras.layers.Dense(units=self.num_neurons, activation=self.actv)]
         else:
             self.k_model = keras.layers.Dense(units=self.num_neurons, activation=self.actv)
-
 
 # CONV NET LAYERS
 class Conv(AbstractLayer):

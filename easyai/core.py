@@ -47,7 +47,8 @@ class NN(AbstractNetwork):
                     self.k_layers.append(mask)
             else:
                 self.k_layers.append(layer.k_model)
-        self.k_model = keras.Sequential(self.k_layers)
+        self.k_model = keras.Sequential(layers=[keras.layers.InputLayer(self.layers[0].output_shape), *self.k_layers],
+                                        name="k_model")
 
     def add_layer(self, layer: AbstractLayer, position: int = None):
         """Adds a layer and creates a new keras object.
