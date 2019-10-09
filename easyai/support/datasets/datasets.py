@@ -1,4 +1,3 @@
-
 """
 
 "easyai.support.datasets.datasets.py"
@@ -7,11 +6,11 @@ Program that implements easyai.core and provides wrapper for keras data loaders.
 
 """
 
+import os
+import random
+import subprocess
 from io import BytesIO
 from typing import Tuple
-import os
-import subprocess
-import random
 
 import pandas as pd
 import requests
@@ -20,309 +19,313 @@ from PIL import Image
 import easyai
 from easyai.core import *
 
+
 # LINK DATASETS
 class NST(StaticInterface):
+    content = {"girl_with_balloon_banksy":
+                   "https://drive.google.com/uc?export=download&id=1FnhuYsx2sjSqI5qwZQxd7cmh8A5z74tj",
+               "mountain_painting": "https://drive.google.com/uc?export=download&id=1_bmWZxTdE4cXvSiZZ_HQpzFsiytkZV5z",
+               "mona_lisa_da_vinci": "https://drive.google.com/uc?export=download&id=1nfJ0-200MkjbuQEWsmKeO0C-byrZSQRF",
+               "nyc": "https://drive.google.com/uc?export=download&id=1EZiItOnGA8LuetejrW5HYMzk6sGYTlqN",
+               "golden_gate_bridge": "https://drive.google.com/uc?export=download&id=1XH5vHXQfdKs4XOhWj4DN31Npwg6PVykb",
+               "flower": "https://drive.google.com/uc?export=download&id=1baUPRVEh82szkeQ0601O4gpj_mNNbpbe",
+               "dog": "https://drive.google.com/uc?export=download&id=1f8aNYIJqBrMqYEYYSMPOmzgVmS_9C969",
+               "arno_river_buildings":
+                   "https://drive.google.com/uc?export=download&id=1ynBPvxuUOUo4upgTNE4KCab4F26leSLi",
+               "chicago": "https://drive.google.com/uc?export=download&id=1zdPEaHyI_JFjbBrckr765xc5XamWDxwk"
+               }
 
-  content = {"girl_with_balloon_banksy":
-               "https://drive.google.com/uc?export=download&id=1FnhuYsx2sjSqI5qwZQxd7cmh8A5z74tj",
-             "mountain_painting": "https://drive.google.com/uc?export=download&id=1_bmWZxTdE4cXvSiZZ_HQpzFsiytkZV5z",
-             "mona_lisa_da_vinci": "https://drive.google.com/uc?export=download&id=1nfJ0-200MkjbuQEWsmKeO0C-byrZSQRF",
-             "nyc": "https://drive.google.com/uc?export=download&id=1EZiItOnGA8LuetejrW5HYMzk6sGYTlqN",
-             "golden_gate_bridge": "https://drive.google.com/uc?export=download&id=1XH5vHXQfdKs4XOhWj4DN31Npwg6PVykb",
-             "flower": "https://drive.google.com/uc?export=download&id=1baUPRVEh82szkeQ0601O4gpj_mNNbpbe",
-             "dog": "https://drive.google.com/uc?export=download&id=1f8aNYIJqBrMqYEYYSMPOmzgVmS_9C969",
-             "arno_river_buildings":
-               "https://drive.google.com/uc?export=download&id=1ynBPvxuUOUo4upgTNE4KCab4F26leSLi",
-             "chicago": "https://drive.google.com/uc?export=download&id=1zdPEaHyI_JFjbBrckr765xc5XamWDxwk"
+    style = {"wheatfields_with_crows_van_gogh":
+                 "https://drive.google.com/uc?export=download&id=1YH2IE42KcwxOzu3C_xs6F_cLT4VJqpAW",
+             "the_scream_munch": "https://drive.google.com/uc?export=download&id=1kUybhXBJF8NfWm8A1-Ry7KksbG3jx8hb",
+             "starry_night_van_gogh":
+                 "https://drive.google.com/uc?export=download&id=18MpTOAt40ngCRpX1xcckwxUXNhOiBemJ",
+             "blue_green_stained_glass":
+                 "https://drive.google.com/uc?export=download&id=1LxjKiXAiPM1OFg2s9c-cbFEqIwHp2ffN",
+             "little_village_duncanson":
+                 "https://drive.google.com/uc?export=download&id=1ys1wrH6Glhfvr28kvgvLLwP5NoSL_0JS",
+             "udnie_picabia": "https://drive.google.com/uc?export=download&id=1sFVDVyWgNle7La5sgz9vks42uNAUYIVv",
+             "femme_nue_assise_picasso":
+                 "https://drive.google.com/uc?export=download&id=1IACcGYMY0kYS9K5Ng-mTPQc3USCEu7Or",
+             "cubist_karthik": "https://drive.google.com/uc?export=download&id=19AKRyeJxNHWg8w50xE0VWyI33r-VMZTe",
+             "bottle_and_fishes_braque":
+                 "https://drive.google.com/uc?export=download&id=1JfBSd7CHIUIEKI7Zyl4XKX4Wy8W6X4e-",
+             "great_wave_off_kanagawa_hokusai":
+                 "https://drive.google.com/uc?export=download&id=104dqfFU4z3ul-hGgbNYAvLUP4OuD2GBw",
+             "modernist_bernstein": "https://drive.google.com/uc?export=download&id=1PM48RtqKkZVOUQIjeARZ1H6Nkt5hk0Dk",
+             "red_stained_glass": "https://drive.google.com/uc?export=download&id=1GiIkzNIPtIO-_pDYSlJc6fzh8DD8TY3f"
              }
 
-  style = {"wheatfields_with_crows_van_gogh":
-             "https://drive.google.com/uc?export=download&id=1YH2IE42KcwxOzu3C_xs6F_cLT4VJqpAW",
-           "the_scream_munch": "https://drive.google.com/uc?export=download&id=1kUybhXBJF8NfWm8A1-Ry7KksbG3jx8hb",
-           "starry_night_van_gogh":
-             "https://drive.google.com/uc?export=download&id=18MpTOAt40ngCRpX1xcckwxUXNhOiBemJ",
-           "blue_green_stained_glass":
-             "https://drive.google.com/uc?export=download&id=1LxjKiXAiPM1OFg2s9c-cbFEqIwHp2ffN",
-           "little_village_duncanson":
-             "https://drive.google.com/uc?export=download&id=1ys1wrH6Glhfvr28kvgvLLwP5NoSL_0JS",
-           "udnie_picabia": "https://drive.google.com/uc?export=download&id=1sFVDVyWgNle7La5sgz9vks42uNAUYIVv",
-           "femme_nue_assise_picasso":
-             "https://drive.google.com/uc?export=download&id=1IACcGYMY0kYS9K5Ng-mTPQc3USCEu7Or",
-           "cubist_karthik": "https://drive.google.com/uc?export=download&id=19AKRyeJxNHWg8w50xE0VWyI33r-VMZTe",
-           "bottle_and_fishes_braque":
-             "https://drive.google.com/uc?export=download&id=1JfBSd7CHIUIEKI7Zyl4XKX4Wy8W6X4e-",
-           "great_wave_off_kanagawa_hokusai":
-             "https://drive.google.com/uc?export=download&id=104dqfFU4z3ul-hGgbNYAvLUP4OuD2GBw",
-           "modernist_bernstein": "https://drive.google.com/uc?export=download&id=1PM48RtqKkZVOUQIjeARZ1H6Nkt5hk0Dk",
-           "red_stained_glass": "https://drive.google.com/uc?export=download&id=1GiIkzNIPtIO-_pDYSlJc6fzh8DD8TY3f"
-          }
 
 # DATA LOADERS
 class Builtins(StaticInterface):
-  """
-  Data loaders (including preprocessing) for built-in keras datasets. These include: MNIST, Fashion-MNIST,
-  CIFAR-10, CIFAR-100, Boston housing, IMDB, Reuters.
-  """
-
-  @staticmethod
-  def load_mnist(version: str = "digits", mode: str = "mlp") -> Tuple[Tuple[np.ndarray, np.ndarray],
-                                                                      Tuple[np.ndarray, np.ndarray]]:
     """
-    Loads MNIST or Fashion-MNIST data. These two datasets are combined into one method because they are so similar.
-
-    :param version: either "digits" for regular MNIST or "fashion" for Fashion-MNIST.
-    :param mode: either "mlp" or "conv".
-    :return: two tuples: (x_train, y_train) and (x_test, y_test).
+    Data loaders (including preprocessing) for built-in keras datasets. These include: MNIST, Fashion-MNIST,
+    CIFAR-10, CIFAR-100, Boston housing, IMDB, Reuters.
     """
-    assert version == "digits" or version == "fashion", "only MNIST or Fashion-MNIST are available"
 
-    if version == "digits":
-      (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
-    else:
-      (x_train, y_train), (x_test, y_test) = keras.datasets.fashion_mnist.load_data()
+    @staticmethod
+    def load_mnist(version: str="digits", mode: str="mlp") -> Tuple[Tuple[np.ndarray, np.ndarray],
+                                                                        Tuple[np.ndarray, np.ndarray]]:
+        """
+        Loads MNIST or Fashion-MNIST data. These two datasets are combined into one method because they are so similar.
 
-    x_train = (x_train / 255).astype("float32")
-    x_test = (x_test / 255).astype("float32")
+        :param version: either "digits" for regular MNIST or "fashion" for Fashion-MNIST.
+        :param mode: either "mlp" or "conv".
+        :return: two tuples: (x_train, y_train) and (x_test, y_test).
+        """
+        assert version == "digits" or version == "fashion", "only MNIST or Fashion-MNIST are available"
 
-    y_train = y_train.astype("float32")
-    y_test = y_test.astype("float32")
+        if version == "digits":
+            (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
+        else:
+            (x_train, y_train), (x_test, y_test) = keras.datasets.fashion_mnist.load_data()
 
-    if mode == "mlp":
-      x_train = x_train.reshape(x_train.shape[0], -1)
-      x_test = x_test.reshape(x_test.shape[0], -1)
-    elif mode == "conv":
-      x_train.resize(*x_train.shape, 1)
-      x_test.resize(*x_test.shape, 1)
+        x_train = (x_train / 255).astype("float32")
+        x_test = (x_test / 255).astype("float32")
 
-    num_classes = 10
-    y_train = keras.utils.to_categorical(y_train, num_classes)
-    y_test = keras.utils.to_categorical(y_test, num_classes)
+        y_train = y_train.astype("float32")
+        y_test = y_test.astype("float32")
 
-    return (x_train, y_train), (x_test, y_test)
+        if mode == "mlp":
+            x_train = x_train.reshape(x_train.shape[0], -1)
+            x_test = x_test.reshape(x_test.shape[0], -1)
+        elif mode == "conv":
+            x_train.resize(*x_train.shape, 1)
+            x_test.resize(*x_test.shape, 1)
 
-  @staticmethod
-  def load_cifar(version: int) -> Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray]]:
-    """
-    Loads CIFAR-10 or CIFAR-100 data.
+        num_classes = 10
+        y_train = keras.utils.to_categorical(y_train, num_classes)
+        y_test = keras.utils.to_categorical(y_test, num_classes)
 
-    :param version: either 10 for CIFAR-10 or 100 for CIFAR-100
-    :return: two tuples: (x_train, y_train) and (x_test, y_test).
-    """
-    assert version == 10 or version == 100, "only CIFAR-10 and CIFAR-100 are available"
+        return (x_train, y_train), (x_test, y_test)
 
-    (x_train, y_train), (x_test, y_test) = keras.datasets.cifar10.load_data()
+    @staticmethod
+    def load_cifar(version: int) -> Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray]]:
+        """
+        Loads CIFAR-10 or CIFAR-100 data.
 
-    num_classes = version
-    y_train = keras.utils.to_categorical(y_train, num_classes)
-    y_test = keras.utils.to_categorical(y_test, num_classes)
+        :param version: either 10 for CIFAR-10 or 100 for CIFAR-100
+        :return: two tuples: (x_train, y_train) and (x_test, y_test).
+        """
+        assert version == 10 or version == 100, "only CIFAR-10 and CIFAR-100 are available"
 
-    return (x_train, y_train), (x_test, y_test)
+        (x_train, y_train), (x_test, y_test) = keras.datasets.cifar10.load_data()
 
-  @staticmethod
-  def load_boston_housing():
-    raise NotImplementedError()
+        num_classes = version
+        y_train = keras.utils.to_categorical(y_train, num_classes)
+        y_test = keras.utils.to_categorical(y_test, num_classes)
 
-  @staticmethod
-  def load_imdb():
-    raise NotImplementedError()
+        return (x_train, y_train), (x_test, y_test)
 
-  @staticmethod
-  def load_reuters():
-    raise NotImplementedError()
+    @staticmethod
+    def load_boston_housing():
+        raise NotImplementedError()
+
+    @staticmethod
+    def load_imdb():
+        raise NotImplementedError()
+
+    @staticmethod
+    def load_reuters():
+        raise NotImplementedError()
+
 
 class Extras(StaticInterface):
-  """
-  Data loaders (including pre-processing) for other datasets, including user-importd ones and native easyai
-  datasets. These include: LendingClub (credit rating) dataset and neural style transfer images.
-  """
-
-  @staticmethod
-  def load_nst_imgs() -> dict:
     """
-    Method to load images used as examples for neural style transfer.
-
-    :return: a dictionary of two dictionaries. The first dictionary contains the names of the content images mapped to
-             the content images (Image objects), and the second contains the names of the style images mapped to the
-             style images.
+    Data loaders (including pre-processing) for other datasets, including user-importd ones and native easyai
+    datasets. These include: LendingClub (credit rating) dataset and neural style transfer images.
     """
-    # helper variables and lambdas
-    urls_to_imgs = lambda urls: [Image.open(BytesIO(requests.get(url).content)) for url in urls]
-    dict_from_lists = lambda keys, values: dict(zip(keys, values))
-    content_dict = NST.content
-    style_dict = NST.style
 
-    images = {"content": None, "styles": None}
+    @staticmethod
+    def load_nst_imgs() -> dict:
+        """
+        Method to load images used as examples for neural style transfer.
 
-    #retrieving names of images and values and mapping them
-    content_keys = list(content_dict.keys())
-    content_imgs = urls_to_imgs(list(content_dict.values()))
-    images["content"] = dict_from_lists(content_keys, content_imgs)
+        :return: a dictionary of two dictionaries. The first dictionary contains the names of the content images mapped to
+                 the content images (Image objects), and the second contains the names of the style images mapped to the
+                 style images.
+        """
+        # helper variables and lambdas
+        urls_to_imgs = lambda urls: [Image.open(BytesIO(requests.get(url).content)) for url in urls]
+        dict_from_lists = lambda keys, values: dict(zip(keys, values))
+        content_dict = NST.content
+        style_dict = NST.style
 
-    style_keys = list(style_dict.keys())
-    style_imgs = urls_to_imgs(list(style_dict.values()))
-    images["style"] = dict_from_lists(style_keys, style_imgs)
+        images = {"content": None, "styles": None}
 
-    return images
+        # retrieving names of images and values and mapping them
+        content_keys = list(content_dict.keys())
+        content_imgs = urls_to_imgs(list(content_dict.values()))
+        images["content"] = dict_from_lists(content_keys, content_imgs)
 
-  @staticmethod
-  def load_coco():
-    """
-    Runs bash script "download_coco.sh" to download MS-COCO if it is not already downloaded. Used for fast NST.
-    """
-    sh_path = os.path.abspath(easyai.__file__).replace("/__init__.py", "/support/datasets/download_coco.sh")
-    subprocess.run([sh_path])
+        style_keys = list(style_dict.keys())
+        style_imgs = urls_to_imgs(list(style_dict.values()))
+        images["style"] = dict_from_lists(style_keys, style_imgs)
 
-  # FIXME: loading of lending club is not working
-  @staticmethod
-  def load_lending_club() -> Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray]]:
-    """
-    Loads LendingClub credit rating dataset.
+        return images
 
-    :return: two tuples: (x_train, y_train) and (x_test, y_test).
-    """
-    raise NotImplementedError("LendingClub data loader is currently under construction")
+    @staticmethod
+    def load_coco():
+        """
+        Runs bash script "download_coco.sh" to download MS-COCO if it is not already downloaded. Used for fast NST.
+        """
+        sh_path = os.path.abspath(easyai.__file__).replace("/__init__.py", "/support/datasets/download_coco.sh")
+        subprocess.run([sh_path])
 
-    globals_ = {}
+    # FIXME: loading of lending club is not working
+    @staticmethod
+    def load_lending_club() -> Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray]]:
+        """
+        Loads LendingClub credit rating dataset.
 
-    def sigmoid_normalize(raw_array, range_ = None):
-      """Function that converts a list of values between any range to [0, 1]."""
-      array = np.copy(raw_array).astype(np.float32)
-      if range_ is None:
-        range_ = (min(array), max(array))
-      if range_ == (0, 1):
-        return array
-      #  Step 1: subtract minimum from everything
-      array -= range_[0]
-      #  Step 2: divide by range
-      dist = abs(range_[0]) + abs(range_[1])
-      array /= dist
-      return np.nan_to_num(array)
+        :return: two tuples: (x_train, y_train) and (x_test, y_test).
+        """
+        raise NotImplementedError("LendingClub data loader is currently under construction")
 
-    def convert_categorical(categoricals, range_):
-      """Converts a list of categorical variables to an integer list, range = [0, 1]."""
-      to_int = len(range_)
-      fractions = np.array([i / (to_int - 1) for i in range(to_int)], dtype = np.float32)
-      if isinstance(categoricals, str):
-        return fractions[range_.index(categoricals)]
-      else:
-        return np.nan_to_num(np.array([fractions[range_.index(categorical)]
-                                       for categorical in categoricals], dtype = np.float32))
+        globals_ = {}
 
-    def to_int(n):
-      """Turns every element in a list into an int."""
-      if isinstance(n, list):
-        fin = []
-        for element in n:
-          try:
-            fin.append(int(element))
-          except ValueError:
-            fin.append(0)
-        return np.nan_to_num(np.array(fin, dtype = np.float32))
-      else:
-        try:
-          return int(n)
-        except ValueError:
-          return 0
+        def sigmoid_normalize(raw_array, range_=None):
+            """Function that converts a list of values between any range to [0, 1]."""
+            array = np.copy(raw_array).astype(np.float32)
+            if range_ is None:
+                range_ = (min(array), max(array))
+            if range_ == (0, 1):
+                return array
+            #  Step 1: subtract minimum from everything
+            array -= range_[0]
+            #  Step 2: divide by range
+            dist = abs(range_[0]) + abs(range_[1])
+            array /= dist
+            return np.nan_to_num(array)
 
-    def strip(n):
-      """Strips a list of strings of everything but digits and decimals."""
-      if isinstance(n, str) or isinstance(n, float) or isinstance(n, int):
-        return "".join(ch for ch in str(n) if str(ch).isdigit() or str(ch) == ".")
-      else:
-        return ["".join(ch for ch in str(s) if str(ch).isdigit() or str(ch) == ".") for s in n]
+        def convert_categorical(categoricals, range_):
+            """Converts a list of categorical variables to an integer list, range = [0, 1]."""
+            to_int = len(range_)
+            fractions = np.array([i / (to_int - 1) for i in range(to_int)], dtype=np.float32)
+            if isinstance(categoricals, str):
+                return fractions[range_.index(categoricals)]
+            else:
+                return np.nan_to_num(np.array([fractions[range_.index(categorical)]
+                                               for categorical in categoricals], dtype=np.float32))
 
-    def vectorize(value, range_):
-      """Takes a value and vectorizes it (one-hot encoder)."""
-      result = np.zeros((len(range_), ))
-      result[range_.index(value)] = 1.0
-      return result
+        def to_int(n):
+            """Turns every element in a list into an int."""
+            if isinstance(n, list):
+                fin = []
+                for element in n:
+                    try:
+                        fin.append(int(element))
+                    except ValueError:
+                        fin.append(0)
+                return np.nan_to_num(np.array(fin, dtype=np.float32))
+            else:
+                try:
+                    return int(n)
+                except ValueError:
+                    return 0
 
-    def get_range(data):
-      """Gets the ranges for a list."""
-      ranges = []
-      for element in data:
-        if element in ranges:
-          continue
-        else:
-          ranges.append(element)
-      return ranges
+        def strip(n):
+            """Strips a list of strings of everything but digits and decimals."""
+            if isinstance(n, str) or isinstance(n, float) or isinstance(n, int):
+                return "".join(ch for ch in str(n) if str(ch).isdigit() or str(ch) == ".")
+            else:
+                return ["".join(ch for ch in str(s) if str(ch).isdigit() or str(ch) == ".") for s in n]
 
-    def unison_shuffle(a, b):
-      """Returns unison shuffled copies of two np.arrays."""
-      p = np.random.permutation(len(a))
-      return a[p], b[p]
+        def vectorize(value, range_):
+            """Takes a value and vectorizes it (one-hot encoder)."""
+            result = np.zeros((len(range_),))
+            result[range_.index(value)] = 1.0
+            return result
 
-    def load_file(filestream):
-      """Reads a specific excel file and prepares it for data processing."""
-      data = pd.read_excel(filestream, engine = "xlrd")
-      del data["loan_status"]
-      del data["funded_amnt"]
-      del data["sub_grade"]
-      del data["funded_amnt_inv"]
-      del data["inq_last_6mths"]
-      del data["open_acc"]
-      del data["revol_bal"]
-      del data["revol_util"]
-      del data["total_acc"]
-      del data["total_pymnt"]
-      del data["total_pymnt_inv"]
-      del data["total_rec_prncp"]
-      del data["total_rec_int"]
-      del data["total_rec_late_fee"]
-      del data["recoveries"]
-      del data["collection_recovery_fee"]
-      del data["last_pymnt_amnt"]
+        def get_range(data):
+            """Gets the ranges for a list."""
+            ranges = []
+            for element in data:
+                if element in ranges:
+                    continue
+                else:
+                    ranges.append(element)
+            return ranges
 
-      labels = []
-      range_ = get_range(data["grade"])
-      for label in np.asarray(data["grade"]):
-        labels.append(vectorize(label, range_))
-      del data["grade"]
+        def unison_shuffle(a, b):
+            """Returns unison shuffled copies of two np.arrays."""
+            p = np.random.permutation(len(a))
+            return a[p], b[p]
 
-      for feature in data.columns:
-        if feature == "term" or feature == "emp_length":
-          globals_[feature] = range_
-          data[feature] = to_int(strip(data[feature]))
-        try:
-          globals_[feature] = (min(data[feature]), max(data[feature]))
-          data[feature] = sigmoid_normalize(data[feature])
-        except ValueError:
-          range_ = get_range(data[feature])
-          globals_[feature] = [r.lower() for r in range_]
-          data[feature] = convert_categorical(data[feature], range_)
+        def load_file(filestream):
+            """Reads a specific excel file and prepares it for data processing."""
+            data = pd.read_excel(filestream, engine="xlrd")
+            del data["loan_status"]
+            del data["funded_amnt"]
+            del data["sub_grade"]
+            del data["funded_amnt_inv"]
+            del data["inq_last_6mths"]
+            del data["open_acc"]
+            del data["revol_bal"]
+            del data["revol_util"]
+            del data["total_acc"]
+            del data["total_pymnt"]
+            del data["total_pymnt_inv"]
+            del data["total_rec_prncp"]
+            del data["total_rec_int"]
+            del data["total_rec_late_fee"]
+            del data["recoveries"]
+            del data["collection_recovery_fee"]
+            del data["last_pymnt_amnt"]
 
-      return data.values.reshape(len(data.index), len(data.columns), 1), np.array(labels)
+            labels = []
+            range_ = get_range(data["grade"])
+            for label in np.asarray(data["grade"]):
+                labels.append(vectorize(label, range_))
+            del data["grade"]
 
-    def load_data(file, ratio = 0.8):
-      """Data processer (essentially a wrapper for load_file). Ratio is the fraction of data that is training data."""
-      inputs, labels = load_file(file)
+            for feature in data.columns:
+                if feature == "term" or feature == "emp_length":
+                    globals_[feature] = range_
+                    data[feature] = to_int(strip(data[feature]))
+                try:
+                    globals_[feature] = (min(data[feature]), max(data[feature]))
+                    data[feature] = sigmoid_normalize(data[feature])
+                except ValueError:
+                    range_ = get_range(data[feature])
+                    globals_[feature] = [r.lower() for r in range_]
+                    data[feature] = convert_categorical(data[feature], range_)
 
-      big_data = unison_shuffle(inputs.reshape(len(inputs), len(inputs[0])),
-                                labels.reshape(len(labels), len(labels[0])))
-      num_train = int(ratio * len(big_data[0]))
+            return data.values.reshape(len(data.index), len(data.columns), 1), np.array(labels)
 
-      return (big_data[0][:num_train], big_data[1][:num_train]), (big_data[0][num_train:], big_data[1][num_train:])
+        def load_data(file, ratio=0.8):
+            """Data processer (essentially a wrapper for load_file). Ratio is the fraction of data that is training data."""
+            inputs, labels = load_file(file)
 
-    return load_data(
-      "https://drive.google.com/uc?export=download&id=1HYE7qIgAjdYve_sS1ixZH8TJTE5wB-sv")
-  
+            big_data = unison_shuffle(inputs.reshape(len(inputs), len(inputs[0])),
+                                      labels.reshape(len(labels), len(labels[0])))
+            num_train = int(ratio * len(big_data[0]))
+
+            return (big_data[0][:num_train], big_data[1][:num_train]), (
+            big_data[0][num_train:], big_data[1][num_train:])
+
+        return load_data(
+            "https://drive.google.com/uc?export=download&id=1HYE7qIgAjdYve_sS1ixZH8TJTE5wB-sv")
+
+
 class Helpers(StaticInterface):
 
-  @staticmethod
-  def get_img(img_name: str, key: str, images: dict) -> Tuple[str, Image.Image]:
-    """
-    Gets image from dictionary.
+    @staticmethod
+    def get_img(img_name: str, key: str, images: dict) -> Tuple[str, Image.Image]:
+        """
+        Gets image from dictionary.
 
-    :param img_name: name of image to be retrieved.
-    :param key: type of image (must be in dictionary keys).
-    :param images: image dictionary.
-    :return: retrieved image.
-    """
-    if img_name is None:
-      img_name = random.choice(list(images[key].keys()))
-      return img_name, images[key][img_name]
-    else:
-      try:
-        return img_name, images[key][img_name]
-      except KeyError:
-        raise KeyError("supported {0} images are {1}".format(key, list(images[key].keys())))
+        :param img_name: name of image to be retrieved.
+        :param key: type of image (must be in dictionary keys).
+        :param images: image dictionary.
+        :return: retrieved image.
+        """
+        if img_name is None:
+            img_name = random.choice(list(images[key].keys()))
+            return img_name, images[key][img_name]
+        else:
+            try:
+                return img_name, images[key][img_name]
+            except KeyError:
+                raise KeyError("supported {0} images are {1}".format(key, list(images[key].keys())))
