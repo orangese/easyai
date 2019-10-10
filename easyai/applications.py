@@ -11,17 +11,17 @@ import importlib
 import os
 import random
 
-import matplotlib.pyplot as plt
-from PIL import Image
+from scipy import ndimage
 from scipy.optimize import fmin_l_bfgs_b
 
 from easyai._advanced import HidePrints
 from easyai._advanced._nets import *
+from easyai._advanced._optimizers import *
 from easyai.support.datasets.datasets import Extras
 
 
 # NEURAL NETWORK APPLICATION
-class SlowNST(AbstractNetwork):
+class SlowNST(AbstractArtNetwork):
     """
     Class implementation of neural style transfer learning. As of August 2019, only VGG19 and VGG16 is supported.
     Borrowed heavily from the keras implementation of neural style transfer.
@@ -124,7 +124,7 @@ class SlowNST(AbstractNetwork):
         grads = K.gradients(loss, self.generated)
         outputs = [loss, *grads] if isinstance(grads, (list, tuple)) else [loss, grads]
 
-        self.model_func = K.function([self.generated], outputs)
+        self.grad_fn = K.function([self.generated], outputs)
         self.evaluator = Evaluator(self)
 
     # TRAINING
@@ -170,7 +170,8 @@ class SlowNST(AbstractNetwork):
 
             if verbose:
                 print(" - {}s - loss: {:.4e}".format(round(time() - start), loss))
-                SlowNST.display_img(self.img, "Epoch {0}/{1}".format(epoch + 1, epochs), self.generated.shape[1:])
+                SlowNST.display_img(self.img, "Epoch {0}/{1}".format(epoch + 1, epochs), self.generated.shape[1:],
+                                    deprocess=self.deprocess)
 
             if save_path is not None:
                 full_save_path = save_path + "/epoch{0}.png".format(epoch + 1)
@@ -188,7 +189,7 @@ class SlowNST(AbstractNetwork):
         :return: loss, gradients.
         """
         img = img.reshape(self.generated.shape)
-        outputs = self.model_func([img])
+        outputs = self.grad_fn([img])
         loss = outputs[0]
         if len(outputs[1:]) == 1:
             grads = outputs[1].flatten().astype(np.float64)
@@ -259,35 +260,16 @@ class SlowNST(AbstractNetwork):
 
         return loss
 
-    # IMAGE PROCESSING
-    def preprocess(self, img: Image.Image, target_size=None) -> np.ndarray:
-        """
-        Preprocesses an image.
-
-        :param img: image to preprocess.
-        :param target_size: target size of the image. If is None, defaults to object attributes.
-        :return: processed image.
-        """
-        if target_size is None:
-            if self.num_cols is None:
-                width, height = img.size
-                self.num_cols = int(width * self.num_rows / height)
-            target_size = (self.num_rows, self.num_cols)
-        img = img.resize(reversed(target_size))
-        img = np.expand_dims(keras.preprocessing.image.img_to_array(img), axis=0)
-        img = self.k_net_module.preprocess_input(img)
-        return img
-
     @staticmethod
-    def deprocess(img_: np.ndarray, target_shape: tuple = None) -> np.ndarray:
+    def deprocess(img: np.ndarray, target_shape: tuple = None) -> np.ndarray:
         """
         Reverses effect of preprocess.
 
-        :param img_: image to deprocess.
+        :param img: image to deprocess.
         :param target_shape: target shape.
         :return: deprocessed image.
         """
-        img = np.copy(img_).astype(np.float64)
+        img = np.copy(img).astype(np.float64)
         if target_shape is not None:
             img = img.reshape(target_shape)
         means = SlowNST().get_hps("means")
@@ -296,30 +278,6 @@ class SlowNST(AbstractNetwork):
         img = img[:, :, ::-1]  # BGR -> RBG
         img = np.clip(img, 0, 255).astype(np.uint8)
         return img
-
-    @staticmethod
-    def display_img(img: np.ndarray, title: str, target_shape: tuple = None, deprocess: bool = True):
-        """
-        Displays image.
-
-        :param img: image to be displayed.
-        :param title: title of maptlotlib plot.
-        :param target_shape: target shape.
-        :param deprocess: whether or not to deprocess the image before displaying it.
-        """
-        if deprocess:
-            img = SlowNST.deprocess(img, target_shape=target_shape)
-
-        fig = plt.gcf()
-
-        fig.canvas.set_window_title("Training...")
-        fig.suptitle(title)
-        plt.axis("off")
-
-        plt.imshow(img.reshape(target_shape))
-        plt.pause(0.1)
-
-        plt.show(block=False)
 
     @staticmethod
     def display_original(content: Image.Image, style: Image.Image):
@@ -343,7 +301,7 @@ class SlowNST(AbstractNetwork):
         plt.show(block=False)
 
 
-class FastNST(AbstractNetwork):
+class FastNST(AbstractArtNetwork):
     """
     Fast neural style transfer.
 
@@ -529,7 +487,7 @@ class FastNST(AbstractNetwork):
         content_example = Image.open(
             path_to_coco_imgs + "/" + random.choice(os.listdir(path_to_coco + "/" + coco_dataset)))
         content_example = np.array(content_example.resize(target_size)).astype(np.uint8)
-        SlowNST.display_img(content_example, "Content example image", deprocess=False)
+        SlowNST.display_img(content_example, "Content example image")
 
         # TRAINING LOOP
         for epoch in range(epochs):
@@ -568,9 +526,8 @@ class FastNST(AbstractNetwork):
                         " - {}s - batches {}-{} of {} completed ({}%) - time until next epoch - {}s - loss - {:.4e}"
                             .format(elapsed, *reversed(batch_nums), num_batches,
                                     round(batch_nums[0] / num_batches * 100, 1), eta, self.losses[-1]))
-                    SlowNST.display_img(self.run_nst(content_example),
-                                        "Epoch {0}: batch {1}".format(epoch, batch_nums[0]),
-                                        deprocess=False)
+                    FastNST.display_img(self.run_nst(content_example),
+                                        "Epoch {0}: batch {1}".format(epoch, batch_nums[0]))
 
                     batch_nums[1] = batch_nums[0] + 1
                     batch_start = time()
@@ -631,12 +588,195 @@ class FastNST(AbstractNetwork):
         self.img_transform_net.k_model = keras.models.load_model(filepath, custom_objects=FastNST.CUSTOM_LAYERS)
 
 
+class DeepDream(AbstractArtNetwork):
+
+    HYPERPARAMS = {
+        "FEATURES": {
+            "mixed2": 0.2,
+            "mixed3": 0.75,
+            "mixed4": 2.25,
+            "mixed5": 1.5,
+        },
+        "MAX_LOSS": 15.0,
+        "OCTAVE_SCALE": 1.4
+    }
+    
+    MODELS = {
+        "inception_v3": "InceptionV3"
+    }
+
+    # INITS
+    def __init__(self, net: str = "inception_v3"):
+        self.net = net
+        self.k_net_module = importlib.import_module("keras.applications.{}".format(self.net))
+        
+    def train_init(self, dream, num_octaves, verbose: bool = True):
+        try:
+            net_name = getattr(self.k_net_module, DeepDream.MODELS[self.net])
+        except KeyError:
+            raise ModuleNotFoundError("{0} is not supported for DeepDream".format(self.net))
+
+        self.k_model = net_name(weights="imagenet", include_top=False)
+
+        if verbose:
+            print("{} loaded".format(self.net))
+
+        self.tensor_init()
+        self.shape_init(dream.shape[1:3], num_octaves)
+
+    def tensor_init(self):
+        self.loss_init()
+
+        grads = K.gradients(self.loss, self.k_model.input)[0]
+        grads /= K.maximum(K.mean(K.abs(grads)), K.epsilon())
+
+        outs = [self.loss, grads]
+        self.grad_fn = K.function([self.k_model.input], outs)
+
+    def loss_init(self):
+        layers = dict((layer.name, layer) for layer in self.k_model.layers)
+
+        self.loss = K.variable(0.)
+        for layer_name in self.get_hps("features"):
+            out = layers[layer_name].output
+            weight = self.get_hps("features")[layer_name]
+            scale_term = K.prod(K.cast(K.shape(out), dtype="float32"))
+
+            self.loss += weight * K.sum(K.square(out[:, 2: -2, 2: -2, :])) / scale_term
+
+    def shape_init(self, original_shape, num_octaves):
+        self.shapes = [original_shape]
+        for i in range(1, num_octaves):
+            shape = tuple(int(dim / (self.get_hps("octave_scale") ** i)) for dim in original_shape)
+            self.shapes.append(shape)
+        self.shapes = list(reversed(self.shapes))
+
+    # LOSS AND GRADS
+    def loss_and_grads(self, img):
+        outs = self.grad_fn([img])
+        return outs[0], outs[1]
+
+    # DREAMING
+    def dream(self, dream: Image.Image, lr=0.01, num_octaves=10, iters=25, jitter=32, verbose=True, save_path=None):
+        K.set_learning_phase(0)
+
+        if verbose:
+            DeepDream.display_img(np.array(dream), "Original dream")
+
+        dream = self.preprocess(dream)
+
+        self.train_init(dream, num_octaves, verbose=verbose)
+
+        original = np.copy(dream)
+        small = self.resize(dream, self.shapes[0])
+
+        for shape_num, shape in enumerate(self.shapes):
+            if verbose:
+                print("Shape {}/{}".format(shape_num + 1, num_octaves))
+
+            dream, ox, oy = self.jitter(self.resize(dream, shape), jitter=jitter)
+
+            dream = gradient_ascent(dream, self.loss_and_grads, lr=lr, iters=iters,
+                                    max_loss=self.get_hps("max_loss"), verbose=verbose)
+
+            original_upscaled = self.resize(small, shape)
+            original_resized = self.resize(original, shape)
+
+            lost_detail = original_resized - original_upscaled
+            dream += lost_detail
+
+            small = self.resize(original, shape)
+
+            dream = self.dejitter(dream, ox, oy)
+
+            if verbose:
+                SlowNST.display_img(dream, "Shape {}/{}".format(shape_num, num_octaves), deprocess=self.deprocess)
+
+        if save_path:
+            keras.preprocessing.image.save_img(save_path + ".jpg", self.deprocess(dream))
+            print("Dream saved at {}".format(save_path + ".jpg"))
+
+        return self.deprocess(dream)
+
+    def extreme_dream(self, dream, iterations=100, verbose=True, save_path=None, *args, **kwargs):
+        K.set_learning_phase(0)
+
+        if verbose:
+            DeepDream.display_img(np.array(dream), "Original dream")
+
+        for iter_num in range(iterations):
+            if verbose:
+                print("Iteration {} of extreme dream".format(iter_num + 1))
+
+            dream = self.dream(dream, *args, **kwargs, verbose=False, save_path=None)
+
+            if verbose:
+                SlowNST.display_img(dream, "Iteration {}/{}".format(iter_num + 1, iterations))
+
+            dream = Image.fromarray(dream)
+
+        if save_path:
+            keras.preprocessing.image.save_img(save_path + ".jpg", self.deprocess(dream))
+            print("Dream saved at {}".format(save_path + ".jpg"))
+
+    # IMAGE PROCESSING
+    @staticmethod
+    def jitter(img, jitter):
+        ox, oy = np.random.randint(-jitter, jitter + 1, 2)
+        return np.roll(np.roll(img, ox, -1), oy, -2), ox, oy
+
+    @staticmethod
+    def dejitter(img, ox, oy):
+        return np.roll(np.roll(img, -ox, -1), -oy, -2)
+
+    @staticmethod
+    def deprocess(img: np.ndarray, target_shape=None) -> np.ndarray:
+        """
+        Reverses effect of preprocess.
+
+        :param img: image to deprocess.
+        :param target_shape: target shape for resizing. Defaults to None.
+        :return: deprocessed image.
+        """
+        try:
+            img = np.copy(img).reshape(*img.shape[1:3], 3)
+        except ValueError:
+            img = np.copy(img)
+        if target_shape is not None:
+            img = DeepDream.resize(img, size=target_shape)
+        img = 255. * ((img / 2) + 0.5)
+        return np.clip(img, 0, 255).astype(np.uint8)
+
+    @staticmethod
+    def resize(img: np.ndarray, size: tuple) -> np.ndarray:
+        img = np.copy(img)
+        factors = (1, float(size[0]) / img.shape[1], float(size[1]) / img.shape[2], 1)
+        return ndimage.zoom(img, zoom=factors, order=1)
+
 if __name__ == "__main__":
+    from easyai.support.load import load_imgs
+
+    # DEEP DREAM
+    deepdream = DeepDream()
+    deepdream.dream(
+        load_imgs(
+            "/home/ryan/clouds.jpg"
+        ),
+        save_path="/home/ryan/deepdream_test"
+    )
+
+    input("Continue?")
+
+    # SLOW NST
+    slownst = SlowNST()
+    slownst.train(Image.open("/home/ryan/test.jpg"), Image.open("/home/ryan/style.jpg"), epochs=5)
+
+    input("Continue?")
+
+    # FAST NST
     FastNST.HYPERPARAMS["COEF_S"] = 0
     FastNST.HYPERPARAMS["COEF_C"] = 1
     FastNST.HYPERPARAMS["COEF_V"] = 0
-
-    from easyai.support.load import load_imgs
 
     style = load_imgs("https://drive.google.com/uc?export=download&id=18MpTOAt40ngCRpX1xcckwxUXNhOiBemJ")
 
