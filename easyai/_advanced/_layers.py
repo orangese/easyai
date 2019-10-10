@@ -1,6 +1,6 @@
 """
 
-"easyai._advanced._layers"
+"easyai._advanced._layers.py"
 
 Advanced keras layers. Not for use by easyai users-- does not use easyai API.
 

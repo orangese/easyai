@@ -1,6 +1,6 @@
 """
 
-"easyai._advanced._losses"
+"easyai._advanced._losses.py"
 
 Advanced keras losses, activity regularizers, and support. Not for use by easyai users-- does not use easyai API.
 

@@ -8,6 +8,10 @@ Framework for other files (abstract classes, interfaces, etc.).
 
 from typing import Union
 
+from PIL import Image
+import numpy as np
+import keras
+import matplotlib.pyplot as plt
 
 # FRAMEWORK
 class Static(object):
@@ -31,28 +35,28 @@ class AbstractNetwork(object):
 
     def __init__(self, *args, **kwargs):
         """
-        Initialization for interfaces should not be used.
+        Initialization for ABCs should not be used.
 
-        :raises NotImplementedError: class is an interface
+        :raises NotImplementedError: class is abstract
         """
         self.k_model = None  # to be explicit, every AbstractNetwork should have a k_model attribute
-        raise NotImplementedError("class is an interface")
+        raise NotImplementedError("class is abstract")
 
     def train_init(self, *args, **kwargs):
         """
         Creates keras mask.
 
-        :raises NotImplementedError: class is an interface
+        :raises NotImplementedError: class is abstract
         """
-        raise NotImplementedError("class is an interface")
+        raise NotImplementedError("class is abstract")
 
     def train(self, *args, **kwargs):
         """
         Trains network.
 
-        :raises NotImplementedError: class is an interface
+        :raises NotImplementedError: class is abstract
         """
-        raise NotImplementedError("class is an interface")
+        raise NotImplementedError("class is abstract")
 
     # PRE-IMPLEMENTED FUNCTIONS
     def get_hps(self, *hyperparams: str) -> Union[str, tuple, float]:
@@ -64,6 +68,64 @@ class AbstractNetwork(object):
         """
         fetched = tuple(self.HYPERPARAMS[hp.upper()] for hp in hyperparams)
         return fetched[0] if len(fetched) == 1 else fetched
+
+
+class AbstractArtNetwork(AbstractNetwork):
+
+    def __init__(self):
+        self.k_net_module = None
+        self.num_cols, self.num_rows = None, None
+
+    # IMAGE PROCESSING
+    def preprocess(self, img: Image.Image, target_size=None) -> np.ndarray:
+        """
+        Preprocesses an image.
+
+        :param img: image to preprocess.
+        :param target_size: target size of the image. If is None, defaults to object attributes.
+        :return: processed image.
+        """
+        if target_size is None:
+            try:
+                if self.num_cols is None:
+                    width, height = img.size
+                    self.num_cols = int(width * self.num_rows / height)
+                target_size = reversed((self.num_rows, self.num_cols))
+            except AttributeError:
+                target_size = img.size
+        img = img.resize(target_size)
+        img = np.expand_dims(keras.preprocessing.image.img_to_array(img), axis=0)
+        img = self.k_net_module.preprocess_input(img)
+        return img
+
+    @staticmethod
+    def deprocess(img: np.ndarray, *args, **kwargs) -> np.ndarray:
+        raise NotImplementedError("deprocess is abstract")
+
+    # DISPLAY
+    @staticmethod
+    def display_img(img: np.ndarray, title: str, target_shape: tuple = None, deprocess=None):
+        """
+        Displays image.
+
+        :param img: image to be displayed.
+        :param title: title of maptlotlib plot.
+        :param target_shape: target shape.
+        :param deprocess: whether or not to deprocess the image before displaying it.
+        """
+        if deprocess:
+            img = deprocess(img, target_shape=target_shape)
+
+        fig = plt.gcf()
+
+        fig.canvas.set_window_title("Training...")
+        fig.suptitle(title)
+        plt.axis("off")
+
+        plt.imshow(img.reshape(target_shape))
+        plt.pause(0.1)
+
+        plt.show(block=False)
 
 
 class AbstractLayer(object):

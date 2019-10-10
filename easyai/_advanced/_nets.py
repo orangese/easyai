@@ -1,6 +1,6 @@
 """
 
-"easyai._advanced._nets"
+"easyai._advanced._nets.py"
 
 Advanced keras nets. Not for use by easyai users-- does not use easyai API.
 
