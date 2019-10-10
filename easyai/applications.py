@@ -593,11 +593,11 @@ class DeepDream(AbstractArtNetwork):
     HYPERPARAMS = {
         "FEATURES": {
             "mixed2": 0.2,
-            "mixed3": 0.75,
-            "mixed4": 2.25,
+            "mixed3": 0.5,
+            "mixed4": 2.,
             "mixed5": 1.5,
         },
-        "MAX_LOSS": 15.0,
+        "MAX_LOSS": 10.0,
         "OCTAVE_SCALE": 1.4
     }
     
@@ -642,7 +642,7 @@ class DeepDream(AbstractArtNetwork):
             weight = self.get_hps("features")[layer_name]
             scale_term = K.prod(K.cast(K.shape(out), dtype="float32"))
 
-            self.loss += weight * K.sum(K.square(out[:, 2: -2, 2: -2, :])) / scale_term
+            self.loss = self.loss + weight * K.sum(K.square(out[:, 2: -2, 2: -2, :])) / scale_term
 
     def shape_init(self, original_shape, num_octaves):
         self.shapes = [original_shape]
@@ -657,7 +657,7 @@ class DeepDream(AbstractArtNetwork):
         return outs[0], outs[1]
 
     # DREAMING
-    def dream(self, dream: Image.Image, lr=0.01, num_octaves=10, iters=25, jitter=32, verbose=True, save_path=None):
+    def dream(self, dream: Image.Image, lr=0.01, num_octaves=3, iters=30, jitter=32, verbose=True, save_path=None):
         K.set_learning_phase(0)
 
         if verbose:
@@ -674,7 +674,8 @@ class DeepDream(AbstractArtNetwork):
             if verbose:
                 print("Shape {}/{}".format(shape_num + 1, num_octaves))
 
-            dream, ox, oy = self.jitter(self.resize(dream, shape), jitter=jitter)
+            dream, ox, oy = self.jitter(dream, jitter=jitter)
+            dream = self.resize(dream, shape)
 
             dream = gradient_ascent(dream, self.loss_and_grads, lr=lr, iters=iters,
                                     max_loss=self.get_hps("max_loss"), verbose=verbose)
@@ -760,9 +761,9 @@ if __name__ == "__main__":
     deepdream = DeepDream()
     deepdream.dream(
         load_imgs(
-            "/home/ryan/clouds.jpg"
+            "https://travel.home.sndimg.com/content/dam/images/travel/fullrights/2019/1/10/0/shutterstock_523401721_Sean-Pavone_montpelier-vermont.jpg.rend.hgtvcom.616.462.suffix/1547155989007.jpeg"
         ),
-        save_path="/home/ryan/deepdream_test"
+        save_path="/Users/ryan/deepdream_test"
     )
 
     input("Continue?")
