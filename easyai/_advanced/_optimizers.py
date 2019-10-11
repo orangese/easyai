@@ -12,9 +12,9 @@ def gradient_ascent(x, fn, iters, lr, max_loss=np.float("inf"), verbose=True):
     for iteration in range(iters):
         loss, grad = fn(x)
         if loss > max_loss:
-            break
             if verbose:
                 print("Loss exceeded max loss")
+            break
         if verbose:
             print(" - iteration: {} - loss: {}".format(iteration, round(loss, 2)))
         x += lr * np.array(grad)
