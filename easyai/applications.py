@@ -21,7 +21,7 @@ from easyai.support.datasets.datasets import Extras
 
 
 # NEURAL NETWORK APPLICATION
-class SlowNST(AbstractArtNetwork):
+class SlowNST(ABImageNetwork):
     """
     Class implementation of neural style transfer learning. As of August 2019, only VGG19 and VGG16 is supported.
     Borrowed heavily from the keras implementation of neural style transfer.
@@ -301,7 +301,7 @@ class SlowNST(AbstractArtNetwork):
         plt.show(block=False)
 
 
-class FastNST(AbstractArtNetwork):
+class FastNST(ABImageNetwork):
     """
     Fast neural style transfer.
 
@@ -328,7 +328,7 @@ class FastNST(AbstractArtNetwork):
     }
 
     # INITS
-    def __init__(self, img_transform_net: Union[AbstractNetwork, str] = NSTTransform(), loss_net: str = "vgg16"):
+    def __init__(self, img_transform_net: Union[ABNetwork, str] = NSTTransform(), loss_net: str = "vgg16"):
         """
         Initializes fast NST object. This network has two parts: a trainable network (img_transform_net) and a fixed
         network (loss_net).
@@ -588,14 +588,14 @@ class FastNST(AbstractArtNetwork):
         self.img_transform_net.k_model = keras.models.load_model(filepath, custom_objects=FastNST.CUSTOM_LAYERS)
 
 
-class DeepDream(AbstractArtNetwork):
+class DeepDream(ABImageNetwork):
 
     HYPERPARAMS = {
         "FEATURES": {
             "mixed2": 0.2,
             "mixed3": 0.5,
-            "mixed4": 2.,
-            "mixed5": 1.5,
+            "mixed4": 2.0,
+            "mixed5": 1.5
         },
         "MAX_LOSS": 10.0,
         "OCTAVE_SCALE": 1.4
@@ -651,11 +651,6 @@ class DeepDream(AbstractArtNetwork):
             self.shapes.append(shape)
         self.shapes = list(reversed(self.shapes))
 
-    # LOSS AND GRADS
-    def loss_and_grads(self, img):
-        outs = self.grad_fn([img])
-        return outs[0], outs[1]
-
     # DREAMING
     def dream(self, dream: Image.Image, lr=0.01, num_octaves=3, iters=30, jitter=32, verbose=True, save_path=None):
         K.set_learning_phase(0)
@@ -677,7 +672,7 @@ class DeepDream(AbstractArtNetwork):
             dream, ox, oy = self.jitter(dream, jitter=jitter)
             dream = self.resize(dream, shape)
 
-            dream = gradient_ascent(dream, self.loss_and_grads, lr=lr, iters=iters,
+            dream = gradient_ascent(dream, self.grad_fn, lr=lr, iters=iters,
                                     max_loss=self.get_hps("max_loss"), verbose=verbose)
 
             original_upscaled = self.resize(small, shape)
@@ -691,7 +686,7 @@ class DeepDream(AbstractArtNetwork):
             dream = self.dejitter(dream, ox, oy)
 
             if verbose:
-                SlowNST.display_img(dream, "Shape {}/{}".format(shape_num, num_octaves), deprocess=self.deprocess)
+                SlowNST.display_img(dream, "Shape {}/{}".format(shape_num + 1, num_octaves), deprocess=self.deprocess)
 
         if save_path:
             keras.preprocessing.image.save_img(save_path + ".jpg", self.deprocess(dream))
@@ -763,7 +758,7 @@ if __name__ == "__main__":
         load_imgs(
             "https://travel.home.sndimg.com/content/dam/images/travel/fullrights/2019/1/10/0/shutterstock_523401721_Sean-Pavone_montpelier-vermont.jpg.rend.hgtvcom.616.462.suffix/1547155989007.jpeg"
         ),
-        save_path="/Users/ryan/deepdream_test"
+        save_path="/home/ryan/deepdream_test"
     )
 
     input("Continue?")

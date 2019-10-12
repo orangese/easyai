@@ -28,7 +28,7 @@ class Static(object):
         raise NotImplementedError("class is static")
 
 
-class AbstractNetwork(object):
+class ABNetwork(object):
     """Abstract parent for all network-like classes."""
 
     HYPERPARAMS = {}  # to be filled by child classes
@@ -39,7 +39,7 @@ class AbstractNetwork(object):
 
         :raises NotImplementedError: class is abstract
         """
-        self.k_model = None  # to be explicit, every AbstractNetwork should have a k_model attribute
+        self.k_model = None  # to be explicit, every ABNetwork should have a k_model attribute
         raise NotImplementedError("class is abstract")
 
     def train_init(self, *args, **kwargs):
@@ -61,7 +61,7 @@ class AbstractNetwork(object):
     # PRE-IMPLEMENTED FUNCTIONS
     def get_hps(self, *hyperparams: str) -> Union[str, tuple, float]:
         """
-        Fetches hyperparameters from a AbstractNetwork class. Merely a syntax simplification tool.
+        Fetches hyperparameters from a ABNetwork class. Merely a syntax simplification tool.
 
         :param hyperparams: any number of hyperparameters to fetch.
         :return: feched hyperparameters.
@@ -70,7 +70,7 @@ class AbstractNetwork(object):
         return fetched[0] if len(fetched) == 1 else fetched
 
 
-class AbstractArtNetwork(AbstractNetwork):
+class ABImageNetwork(ABNetwork):
 
     def __init__(self):
         self.k_net_module = None
@@ -128,14 +128,14 @@ class AbstractArtNetwork(AbstractNetwork):
         plt.show(block=False)
 
 
-class AbstractLayer(object):
+class ABLayer(object):
     """
-    Abstract class that acts as the base for all layer classes. Should not be implemented.
+    Abstract base class that acts as the base for all layer classes. Should not be implemented.
     """
 
     def __init__(self, num_neurons: int, actv: str, *args, **kwargs):
         """
-        As AbstractLayer objects should not be created, __init__ throws a NotImplementedError.
+        As ABLayer objects should not be created, __init__ throws a NotImplementedError.
 
         :raises NotImplementedError
         """

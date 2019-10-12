@@ -11,7 +11,7 @@ from easyai.core import *
 
 
 # CORE LAYERS
-class Input(AbstractLayer):
+class Input(ABLayer):
     """
     MLP input layer with no activation, bias, or weights of its own.  No keras mask.
     """
@@ -32,7 +32,7 @@ class Input(AbstractLayer):
         self.k_model = None
 
 
-class FC(AbstractLayer):
+class FC(ABLayer):
     """
     MLP layer (aka a FC or dense layer).  Has a keras mask.
     """
@@ -58,7 +58,7 @@ class FC(AbstractLayer):
             self.k_model = keras.layers.Dense(units=self.num_neurons, activation=self.actv)
 
 # CONV NET LAYERS
-class Conv(AbstractLayer):
+class Conv(ABLayer):
     """
     Convolutional layer.  Has a keras mask, padding = "valid".
     """
@@ -90,7 +90,7 @@ class Conv(AbstractLayer):
                                            kernel_size=self.filter_size, activation=self.actv)
 
 
-class Pooling(AbstractLayer):
+class Pooling(ABLayer):
     """
     Pooling layer.  Has a keras mask, stride = 1, pooling type = "max pooling".
     """

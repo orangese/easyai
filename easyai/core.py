@@ -16,7 +16,7 @@ from easyai.framework import *
 
 
 # NEURAL NETWORK IMPLEMENTATION
-class NN(AbstractNetwork):
+class NN(ABNetwork):
     """
     Uses easyai layer objects to create a functional keras model.
     """
@@ -50,7 +50,7 @@ class NN(AbstractNetwork):
         self.k_model = keras.Sequential(layers=[keras.layers.InputLayer(self.layers[0].output_shape), *self.k_layers],
                                         name="k_model")
 
-    def add_layer(self, layer: AbstractLayer, position: int = None):
+    def add_layer(self, layer: ABLayer, position: int = None):
         """Adds a layer and creates a new keras object.
 
         :param layer: layer to be added. Should be instance of easyai core layer classes.
@@ -62,7 +62,7 @@ class NN(AbstractNetwork):
         new_layers.insert(position, layer)
         self.__init__(new_layers)
 
-    def rm_layer(self, position: int = None, layer: AbstractLayer = None):
+    def rm_layer(self, position: int = None, layer: ABLayer = None):
         """Removes a layer and creates a new keras object.
 
         :param position: position at which layer should be removed. Recommended instead of `layer`.

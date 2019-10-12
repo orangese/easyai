@@ -37,7 +37,7 @@ class FastNSTModels(TrainedModels):
     # TODO: created pretrained fast NST net and write load_net function
 
     @staticmethod
-    def load_net(net_name: str) -> AbstractNetwork:
+    def load_net(net_name: str) -> ABNetwork:
         """
         Loads pretrained fast NST model.
 
@@ -47,7 +47,7 @@ class FastNSTModels(TrainedModels):
         raise NotImplementedError()
 
     @staticmethod
-    def random_net() -> AbstractNetwork:
+    def random_net() -> ABNetwork:
         """
         Loads random pretrained fast NST model.
 
