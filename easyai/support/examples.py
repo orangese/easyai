@@ -7,8 +7,8 @@ Program that implements easyai.support.datasets.datasets and easyai.core in exam
 """
 
 from easyai.layers import *
-from easyai.support.datasets.datasets import *
 from easyai.support.models import *
+from easyai.support.datasets import *
 
 
 # CLASSES
@@ -178,7 +178,7 @@ if __name__ == "__main__":
     nst.train(Image.open("/home/ryan/test.jpg"), Image.open("/home/ryan/style.jpg"), 25)
 
     from easyai.support.load import load_imgs
-    from easyai.support.datasets.datasets import NST
+    from easyai.support.datasets import NST
 
     nst = SlowNST()
     SlowNST.HYPERPARAMS["coef_s"] = 1e5

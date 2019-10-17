@@ -17,7 +17,7 @@ from scipy.optimize import fmin_l_bfgs_b
 from easyai._advanced import HidePrints
 from easyai._advanced._nets import *
 from easyai._advanced._optimizers import *
-from easyai.support.datasets.datasets import Extras
+from easyai.support.datasets import Extras
 
 
 # NEURAL NETWORK APPLICATION
