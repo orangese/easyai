@@ -14,9 +14,7 @@ from typing import Tuple
 
 import pandas as pd
 import requests
-from PIL import Image
 
-import easyai
 from easyai.core import *
 
 
@@ -170,6 +168,7 @@ class Extras(Static):
         """
         Runs bash script "download_coco.sh" to download MS-COCO if it is not already downloaded. Used for fast NST.
         """
+        raise NotImplementedError("temporarily under construction-- sorry!")
         sh_path = os.path.abspath(easyai.__file__).replace("/__init__.py", "/support/datasets/download_coco.sh")
         subprocess.run([sh_path])
 
