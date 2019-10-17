@@ -6,7 +6,7 @@ Framework for other files (abstract classes, interfaces, etc.).
 
 """
 
-from typing import Union
+from typing import Union, Iterable
 
 from PIL import Image
 import numpy as np
@@ -59,7 +59,7 @@ class ABNetwork(object):
         raise NotImplementedError("class is abstract")
 
     # PRE-IMPLEMENTED FUNCTIONS
-    def get_hps(self, *hyperparams: str) -> Union[str, tuple, float]:
+    def get_hps(self, *hyperparams: str) -> any:
         """
         Fetches hyperparameters from a ABNetwork class. Merely a syntax simplification tool.
 

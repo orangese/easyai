@@ -72,6 +72,7 @@ class ContentRegularizer(keras.regularizers.Regularizer):
         norm_term = self.weight / K.prod(K.cast(K.shape(x.output[0]), dtype="float32"))
         return norm_term * K.sum(K.square(x.output[1] - x.output[0]))
 
+
 class TVRegularizer(keras.regularizers.Regularizer):
 
     def __init__(self, weight):

@@ -31,8 +31,8 @@ class SlowNST(ABImageNetwork):
     HYPERPARAMS = {"CONTENT_LAYER": "block5_conv2",
                    "STYLE_LAYERS": ["block1_conv1", "block2_conv1", "block3_conv1", "block4_conv1", "block5_conv1"],
                    "COEF_C": 1e0,
-                   "COEF_S": 1e0,
-                   "COEF_V": 1e-4,
+                   "COEF_S": 1e1,
+                   "COEF_V": 1e1,
                    "MEANS": [103.939, 116.779, 123.68],  # not a hp-- don't edit
                    "IMG_ORDER": ["content", "style", "generated"]
                    }
@@ -314,7 +314,7 @@ class FastNST(ABImageNetwork):
 
     # CONSTANTS
     HYPERPARAMS = SlowNST.HYPERPARAMS.copy()
-    HYPERPARAMS["CONTENT LAYER"] = "block2_conv2"
+    HYPERPARAMS["CONTENT LAYER"] = "block4_conv2"
     HYPERPARAMS["STYLE LAYERS"] = ["block1_conv2", "block2_conv2", "block3_conv3", "block4_conv3"]
 
     CUSTOM_LAYERS = {
@@ -328,7 +328,7 @@ class FastNST(ABImageNetwork):
     }
 
     # INITS
-    def __init__(self, img_transform_net: Union[ABNetwork, str] = NSTTransform(), loss_net: str = "vgg16"):
+    def __init__(self, img_transform_net: Union[ABNetwork, str] = NSTTransform(), loss_net: str = "vgg19"):
         """
         Initializes fast NST object. This network has two parts: a trainable network (img_transform_net) and a fixed
         network (loss_net).
@@ -406,8 +406,8 @@ class FastNST(ABImageNetwork):
             def add_tv_loss(tv_layer):
                 tv_layer.add_loss(TVRegularizer(self.get_hps("coef_v"))(tv_layer))
 
-            outputs = dict([(layer.name, layer.output) for layer in model.layers[-(vgg_num + 2):]])
-            layers = dict([(layer.name, layer) for layer in model.layers[-(vgg_num + 2):]])
+            outputs = dict((layer.name, layer.output) for layer in model.layers[-(vgg_num + 2):])
+            layers = dict((layer.name, layer) for layer in model.layers[-(vgg_num + 2):])
             # +2 to account for the addition of the input tensor (Concatenate) and the VGGNormalize layer
 
             add_content_loss(layers)
@@ -429,7 +429,7 @@ class FastNST(ABImageNetwork):
         self.k_model = loss_net(input_tensor=img_tensor)  # automatically excludes top
 
         # only freezing VGG layers-- image transform net is trainable
-        for layer in self.k_model.layers[-(self.vgg_num + 2):]:
+        for layer in self.k_model.layers[-(self.vgg_num + 3):]:
             layer.trainable = False
 
         add_regularizers(self.k_model, self.style, (self.num_rows, self.num_cols))
@@ -508,7 +508,7 @@ class FastNST(ABImageNetwork):
                     loss = self.k_model.train_on_batch(batch, labels)  # train single batch
                 except tf.errors.InvalidArgumentError:
                     break  # TODO: fix training bug that causes an "incompatible shape" error at the end of training
-                    #  (tensorflow.python.framework.errors_impl.invalidargumenterror)
+                           #  (tensorflow.python.framework.errors_impl.invalidargumenterror)
 
                 self.losses.append(loss)
 
@@ -579,7 +579,7 @@ class FastNST(ABImageNetwork):
         return K.variable(0.0)
 
     # LOAD FROM H5
-    def load_model(self, filepath):
+    def load_model(self, filepath: str):
         """
         Loads a pretrained image transform network.
 
@@ -587,22 +587,30 @@ class FastNST(ABImageNetwork):
         """
         self.img_transform_net.k_model = keras.models.load_model(filepath, custom_objects=FastNST.CUSTOM_LAYERS)
 
+    def save_model(self, filepath: str):
+        """
+        Saves a trained model.
+
+        :param filepath: filepath at which to save the model
+        """
+        keras.models.save_model(self.k_model, filepath)
 
 class DeepDream(ABImageNetwork):
 
     HYPERPARAMS = {
         "FEATURES": {
-            "mixed2": 0.2,
-            "mixed3": 0.5,
-            "mixed4": 2.0,
-            "mixed5": 1.5
+            "inception_v3": {
+                "mixed2": 1.0,
+                "mixed3": 0.5,
+                "mixed5": 0.2,
+            },
         },
         "MAX_LOSS": 10.0,
         "OCTAVE_SCALE": 1.4
     }
     
     MODELS = {
-        "inception_v3": "InceptionV3"
+        "inception_v3": "InceptionV3",
     }
 
     # INITS
@@ -637,12 +645,12 @@ class DeepDream(ABImageNetwork):
         layers = dict((layer.name, layer) for layer in self.k_model.layers)
 
         self.loss = K.variable(0.)
-        for layer_name in self.get_hps("features"):
+        for layer_name in self.get_hps("features")[self.net]:
             out = layers[layer_name].output
-            weight = self.get_hps("features")[layer_name]
+            weight = self.get_hps("features")[self.net][layer_name]
             scale_term = K.prod(K.cast(K.shape(out), dtype="float32"))
 
-            self.loss = self.loss + weight * K.sum(K.square(out[:, 2: -2, 2: -2, :])) / scale_term
+            self.loss = self.loss + weight * K.sum(K.square(out)) / scale_term
 
     def shape_init(self, original_shape, num_octaves):
         self.shapes = [original_shape]
@@ -652,7 +660,7 @@ class DeepDream(ABImageNetwork):
         self.shapes = list(reversed(self.shapes))
 
     # DREAMING
-    def dream(self, dream: Image.Image, lr=0.01, num_octaves=3, iters=30, jitter=32, verbose=True, save_path=None):
+    def dream(self, dream: Image.Image, lr=0.01, num_octaves=3, iters=20, jitter=32, verbose=True, save_path=None):
         K.set_learning_phase(0)
 
         if verbose:
@@ -752,34 +760,43 @@ class DeepDream(ABImageNetwork):
 if __name__ == "__main__":
     from easyai.support.load import load_imgs
 
+    # FAST NST
+    FastNST.HYPERPARAMS["COEF_S"] = 0
+    FastNST.HYPERPARAMS["COEF_C"] = 1
+    FastNST.HYPERPARAMS["COEF_V"] = 0
+
+    style = load_imgs("https://drive.google.com/uc?export=download&id=1U02CYlh_MVVnF-isOivY9iNiRvhkMzHd")
+
+    test = FastNST()
+    test.train(style, batch_size=2, save_path="/home/ryan", epochs=2, verbose=True, target_size=(256, 256))
+    # test.load_model('/home/ryan/epoch2.h5')
+    test.save_model("/home/ryan/weights.h5")
+    plt.imshow(
+        test.run_nst(
+            load_imgs("/home/ryan/PycharmProjects/food-404/images/acai_bowl/1.ACAIBOWLF8.jpg").resize((256, 256))))
+    plt.show()
+
+    # SLOW NST
+    slownst = SlowNST()
+    keras.preprocessing.image.save_img(
+        "/home/ryan/nyc_cubist_karthik",
+        slownst.train(load_imgs("https://drive.google.com/uc?export=download&id=1EZiItOnGA8LuetejrW5HYMzk6sGYTlqN"),
+                      load_imgs("https://drive.google.com/uc?export=download&id=19AKRyeJxNHWg8w50xE0VWyI33r-VMZTe"),
+                      epochs=100)
+    )
+
+    input("Continue?")
+
     # DEEP DREAM
     deepdream = DeepDream()
-    deepdream.dream(
+    deepdream.extreme_dream(
         load_imgs(
             "https://travel.home.sndimg.com/content/dam/images/travel/fullrights/2019/1/10/0/shutterstock_523401721_Sean-Pavone_montpelier-vermont.jpg.rend.hgtvcom.616.462.suffix/1547155989007.jpeg"
+            # "https://media.mnn.com/assets/images/2018/08/CollectionOfCloudsAgainstABlueSky.jpg.653x0_q80_crop-smart.jpg"
         ),
         save_path="/home/ryan/deepdream_test"
     )
 
     input("Continue?")
 
-    # SLOW NST
-    slownst = SlowNST()
-    slownst.train(Image.open("/home/ryan/test.jpg"), Image.open("/home/ryan/style.jpg"), epochs=5)
 
-    input("Continue?")
-
-    # FAST NST
-    FastNST.HYPERPARAMS["COEF_S"] = 0
-    FastNST.HYPERPARAMS["COEF_C"] = 1
-    FastNST.HYPERPARAMS["COEF_V"] = 0
-
-    style = load_imgs("https://drive.google.com/uc?export=download&id=18MpTOAt40ngCRpX1xcckwxUXNhOiBemJ")
-
-    test = FastNST()
-    test.train(style, batch_size=2, save_path="/home/ryan", epochs=2, verbose=True, target_size=(256, 256))
-    # test.load_model('/home/ryan/epoch2.h5')
-    plt.imshow(
-        test.run_nst(
-            load_imgs("/home/ryan/PycharmProjects/food-404/images/acai_bowl/1.ACAIBOWLF8.jpg").resize((256, 256))))
-    plt.show()

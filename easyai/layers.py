@@ -22,12 +22,15 @@ class Input(ABLayer):
 
         :param input_shape: shape of the input.
         """
-        if len(input_shape) > 2:
+        if len(input_shape) == 2:
             self.is_3d = True
-            self.output_shape = input_shape
+            self.output_shape = (*input_shape, 1)
+        elif len(input_shape) > 2:
+            self.is_3d = True
+            self.output_shape = (*input_shape, 3)
         else:
             self.is_3d = False
-            self.output_shape = (*input_shape, 1)
+            self.output_shape = (*input_shape, )
         self.num_neurons = self.output_shape
         self.k_model = None
 

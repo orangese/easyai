@@ -28,8 +28,8 @@ class MNIST(Static):
         (x_train, y_train), (x_test, y_test) = Builtins.load_mnist(version=version, mode="mlp")
         print("Loaded MNIST data\n")
 
-        plt.imshow(x_train[0])
-        plt.title("Label: {}".format(y_train[0]))
+        plt.imshow(x_train[0].reshape(28, 28), cmap="gray")
+        plt.title("Label: {}".format(np.argmax(y_train[0])))
         plt.axis("off")
         plt.show()
 
@@ -57,7 +57,7 @@ class MNIST(Static):
         if version == "digits":
             labels = list(range(10))
         plt.imshow(x_train[0].reshape(*x_train[0].shape[:-1]), cmap="gray")
-        plt.title("Label: {}".format(labels[np.asscalar(np.argmax(y_train[0]))]))
+        plt.title("Label: {}".format(labels[int(np.argmax(y_train[0]))]))
         plt.axis("off")
         plt.show()
 
@@ -171,7 +171,9 @@ if __name__ == "__main__":
     # Unsupported.draw("test.png")
     # activation = Unsupported.getActivation(filename)
     # Unsupported.display_image(activation)
-    MNIST.cnn("digits")
+    MNIST.mlp("digits")
+
+    raise ValueError()
     nst = SlowNST()
     nst.train(Image.open("/home/ryan/test.jpg"), Image.open("/home/ryan/style.jpg"), 25)
 

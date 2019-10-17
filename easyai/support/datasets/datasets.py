@@ -53,7 +53,8 @@ class NST(Static):
              "great_wave_off_kanagawa_hokusai":
                  "https://drive.google.com/uc?export=download&id=104dqfFU4z3ul-hGgbNYAvLUP4OuD2GBw",
              "modernist_bernstein": "https://drive.google.com/uc?export=download&id=1PM48RtqKkZVOUQIjeARZ1H6Nkt5hk0Dk",
-             "red_stained_glass": "https://drive.google.com/uc?export=download&id=1GiIkzNIPtIO-_pDYSlJc6fzh8DD8TY3f"
+             "red_stained_glass": "https://drive.google.com/uc?export=download&id=1GiIkzNIPtIO-_pDYSlJc6fzh8DD8TY3f",
+             "picasso_cubist": "https://drive.google.com/uc?export=download&id=1U02CYlh_MVVnF-isOivY9iNiRvhkMzHd"
              }
 
 
@@ -68,7 +69,6 @@ class Builtins(Static):
     def load_mnist(version: str = "digits", mode: str = "mlp") -> Tuple[Tuple[np.ndarray, np.ndarray],
                                                                         Tuple[np.ndarray, np.ndarray]]:
         """
-        Loads MNIST or Fashion-MNIST data. These two datasets are combined into one method because they are so similar.
 
         :param version: either "digits" for regular MNIST or "fashion" for Fashion-MNIST.
         :param mode: either "mlp" or "conv".
