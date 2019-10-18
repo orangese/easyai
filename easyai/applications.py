@@ -150,10 +150,6 @@ class SlowNST(ABImageNetwork):
 
         self.tensor_init(content_layer, style_layers)
 
-        print("Training with L-BFGS-B (another gradient-based optimization algorithm) in a {0}-D space. During "
-              "each epoch, the pixels of the generated image will be changed {1} times in an attempt to minimize loss."
-              .format(np.prod(self.generated.shape[1:]), num_iters))
-
         if verbose:
             SlowNST.display_original(content, style)
 
@@ -475,10 +471,6 @@ class FastNST(ABImageNetwork):
             datagen = keras.preprocessing.image.ImageDataGenerator()
             generator = datagen.flow_from_directory(path_to_coco, target_size=target_size, batch_size=batch_size,
                                                     classes=[coco_dataset], class_mode="input")
-
-        print("Training with Adam (another gradient-based optimization algorithm) in a {0}-D space. During each epoch, "
-              "network parameters will be changed approximately {1} times in an attempt to minimize loss."
-              .format(self.img_transform_net.k_model.count_params(), int(generator.samples / batch_size)))
 
         num_batches = round(generator.samples / batch_size)
 
