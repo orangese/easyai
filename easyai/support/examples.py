@@ -33,7 +33,7 @@ class MNIST(Static):
         plt.axis("off")
         plt.show()
 
-        mlp = NN(Input(784), FC(100), FC(10, actv="softmax"), loss="categorical_crossentropy")
+        mlp = NN(Input(784), FC(100), FC(50), FC(10, actv="softmax"), loss="categorical_crossentropy")
         mlp.summary()
 
         mlp.train(x_train, y_train, lr=3.0, epochs=1)
