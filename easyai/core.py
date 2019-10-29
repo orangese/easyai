@@ -8,9 +8,7 @@ Contains core functionality for easyai: the NN class.
 
 # IMPORTS
 from time import time
-
-import keras
-import numpy as np
+from typing import *
 
 from easyai.framework import *
 
@@ -21,7 +19,7 @@ class NN(ABNetwork):
     Uses easyai layer objects to create a functional keras model.
     """
 
-    def __init__(self, *layers, loss: str = "binary_crossentropy"):
+    def __init__(self, *layers, loss: str = "categorical_crossentropy"):
         """
         Initializes NN (neural network) object.
 
@@ -31,6 +29,8 @@ class NN(ABNetwork):
         if layers is None:
             layers = []
         self.layers = layers
+        self.layers[-1].actv = "softmax"  # last layer is softmax
+
         self.link_layers()
 
         self.loss = loss
@@ -42,10 +42,9 @@ class NN(ABNetwork):
         for prev, layer in zip(self.layers, self.layers[1:]):
             layer.prev = prev
             layer.train_init()
-            if isinstance(layer.k_model, list):
-                for mask in layer.k_model:
-                    self.k_layers.append(mask)
-            else:
+            try:
+                self.k_layers.extend(layer.k_model)
+            except TypeError:
                 self.k_layers.append(layer.k_model)
         self.k_model = keras.Sequential(layers=[keras.layers.InputLayer(self.layers[0].output_shape), *self.k_layers],
                                         name="k_model")
