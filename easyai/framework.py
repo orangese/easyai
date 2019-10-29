@@ -6,12 +6,10 @@ Framework for other files (abstract classes, interfaces, etc.).
 
 """
 
-from typing import Union, Iterable
-
-from PIL import Image
-import numpy as np
 import keras
 import matplotlib.pyplot as plt
+import numpy as np
+from PIL import Image
 
 
 # FRAMEWORK
@@ -155,7 +153,7 @@ class ABLayer(object):
     def __repr__(self):
         return self.__str__()
 
-    def train_init(self, *args, **kwargs):
+    def train_init(self):
         """
          Creates keras mask. This mask will be used for training and all computations.
 

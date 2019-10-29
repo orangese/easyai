@@ -7,8 +7,8 @@ Program that implements easyai.support.datasets.datasets and easyai.core in exam
 """
 
 from easyai.layers import *
-from easyai.support.models import *
 from easyai.support.datasets import *
+from easyai.support.models import *
 
 
 # CLASSES
@@ -33,7 +33,7 @@ class MNIST(Static):
         plt.axis("off")
         plt.show()
 
-        mlp = NN(Input(784), FC(100), FC(10, actv="softmax"), loss="categorical_crossentropy")
+        mlp = NN(Input(784), FC(100), FC(50), FC(10, actv="softmax"), loss="categorical_crossentropy")
         mlp.summary()
 
         mlp.train(x_train, y_train, lr=3.0, epochs=1)
@@ -71,7 +71,7 @@ class MNIST(Static):
         return conv_nn
 
 
-class Lending_Club(Static):
+class LendingClub(Static):
     """
     Contains examples using LendingClub credit rating dataset.
     """

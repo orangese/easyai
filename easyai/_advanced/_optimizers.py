@@ -10,6 +10,7 @@ from time import time
 
 import numpy as np
 
+
 def gradient_ascent(x, fn, iters, lr, max_loss=np.float("inf"), verbose=True):
     for iteration in range(iters):
         start = time()
