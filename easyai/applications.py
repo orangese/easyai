@@ -239,7 +239,7 @@ class SlowNST(ABImageNetwork):
 
         loss = K.variable(0.0)
 
-        loss += coef_c * content_loss(content_layer, self.outputs)  # content loss
+        loss = loss + coef_c * content_loss(content_layer, self.outputs)  # content loss
 
         for layer in style_layers:  # style loss
             layer_features = self.outputs[layer]
@@ -250,9 +250,9 @@ class SlowNST(ABImageNetwork):
             layer_shape = layer_features.get_shape().as_list()
             norm_term = 4.0 * (layer_shape[-1] ** 2) * (np.prod(layer_shape[1:-1]) ** 2)
             # norm_term = 4.0 * (K.int_shape(self.generated)[-1] ** 2) * ((self.num_rows * self.num_cols) ** 2)
-            loss += (coef_s / len(style_layers)) * layer_style_loss(generated_actvs, style_actvs) / norm_term
+            loss = loss + (coef_s / len(style_layers)) * layer_style_loss(generated_actvs, style_actvs) / norm_term
 
-        loss += coef_v * total_variation_loss(self.generated, self.num_rows, self.num_cols)
+        loss = loss + coef_v * total_variation_loss(self.generated, self.num_rows, self.num_cols)
 
         return loss
 
@@ -752,6 +752,17 @@ class DeepDream(ABImageNetwork):
 if __name__ == "__main__":
     from easyai.support.load import load_imgs
 
+    # SLOW NST
+    slownst = SlowNST()
+    keras.preprocessing.image.save_img(
+        "/home/ryan/nyc_cubist_karthik",
+        slownst.train(load_imgs("https://drive.google.com/uc?export=download&id=1EZiItOnGA8LuetejrW5HYMzk6sGYTlqN"),
+                      load_imgs("https://drive.google.com/uc?export=download&id=19AKRyeJxNHWg8w50xE0VWyI33r-VMZTe"),
+                      epochs=100)
+    )
+
+    input("Continue?")
+
     # FAST NST
     FastNST.HYPERPARAMS["COEF_S"] = 0
     FastNST.HYPERPARAMS["COEF_C"] = 1
@@ -768,16 +779,7 @@ if __name__ == "__main__":
             load_imgs("/home/ryan/PycharmProjects/food-404/images/acai_bowl/1.ACAIBOWLF8.jpg").resize((256, 256))))
     plt.show()
 
-    # SLOW NST
-    slownst = SlowNST()
-    keras.preprocessing.image.save_img(
-        "/home/ryan/nyc_cubist_karthik",
-        slownst.train(load_imgs("https://drive.google.com/uc?export=download&id=1EZiItOnGA8LuetejrW5HYMzk6sGYTlqN"),
-                      load_imgs("https://drive.google.com/uc?export=download&id=19AKRyeJxNHWg8w50xE0VWyI33r-VMZTe"),
-                      epochs=100)
-    )
 
-    input("Continue?")
 
     # DEEP DREAM
     deepdream = DeepDream()

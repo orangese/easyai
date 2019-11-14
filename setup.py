@@ -10,7 +10,7 @@ setup(name="easyai",
       license=None,
       python_requires=">=3.6.0",
       install_requires=["numpy", "scipy", "keras", "matplotlib", "pandas", "pillow", "requests", "xlrd", "six",
-                        'pyscreenshot', 'scikit-image'],
+                        "pyscreenshot", "scikit-image"],
       packages=find_packages(),
       extras_require={"gpu": ["tensorflow-gpu==1.12.0"], "cpu": ["tensorflow"]},
       zip_safe=False)
